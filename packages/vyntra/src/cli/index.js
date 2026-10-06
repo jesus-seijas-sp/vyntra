@@ -229,7 +229,12 @@ async function main(argv = process.argv.slice(2)) {
   const passed = reporter.onFinish(duration);
   const coverage = collected.map((item) => item.coverage).filter(Boolean);
   const covered = config.coverage ? reportCoverage(mergeCoverage(coverage), config) : true;
-  let exitCode = passed && covered && failedFiles === 0 ? EXIT.passed : EXIT.failed;
+  // Fixtures shared by a worker end with it, after its files: their teardown errors belong to no file.
+  const teardownErrors = collected.flatMap((item) => item?.errors ?? []);
+  teardownErrors.forEach((error) => {
+    process.stderr.write(`${c.red('A worker fixture failed to tear down:')}\n${error.stack || error.message}\n`);
+  });
+  let exitCode = passed && covered && failedFiles === 0 && teardownErrors.length === 0 ? EXIT.passed : EXIT.failed;
   if (brokenFiles > 0) {
     exitCode = EXIT.setup;
   }

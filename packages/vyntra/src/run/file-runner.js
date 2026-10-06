@@ -4,6 +4,7 @@ const { expect } = require('../expect');
 const { clearAllMocks, resetAllMocks, restoreAllMocks } = require('../mock');
 const { realTimers } = require('../timers');
 const { FixtureSet } = require('./fixtures');
+const { builtins } = require('../fixtures');
 const { invoke } = require('./invoke');
 const { serializeError } = require('./serialize-error');
 const { SkipError } = require('./skip-error');
@@ -106,6 +107,17 @@ class FileRunner {
     }
   }
 
+  // The test's fixtures: its own (test.extend), and those it may destructure without them (the config's `use`, the
+  // built-in ones). A test that takes no parameter has none, and costs nothing.
+  fixturesOf(test, context) {
+    const { use } = this.config;
+    const implicit = test.fn?.length > 0 && (use || Object.keys(builtins).length > 0);
+    if (!test.fixtures && !implicit) {
+      return null;
+    }
+    return new FixtureSet(test.fixtures, context, { use: use ?? {}, builtins });
+  }
+
   // The body of one attempt: beforeEach hooks, fixtures, the test and the assertion checks.
   async runBody(test, context, cleanups, fixtures) {
     const suites = test.parent.path;
@@ -179,7 +191,7 @@ class FileRunner {
     test.reset();
     const context = this.createContext(test, record);
     const cleanups = [];
-    const fixtures = test.fixtures ? new FixtureSet(test.fixtures, context) : null;
+    const fixtures = this.fixturesOf(test, context);
     const errors = [];
     let skipped = false;
     state.test = test;

@@ -351,6 +351,30 @@ test('done callback', (done) => {
 dbTest('finds the user', async ({ db, user }) => {
   expect(await db.users.find(user.id)).toEqual(user);
 });</code></pre>
+        <h3 id="fixture-scopes">Shared fixtures and options</h3>
+        <p>
+          A fixture is set up for each test that uses it, unless its <code>scope</code> says otherwise:
+          <code>'file'</code> sets it up once for the tests of a file, and <code>'worker'</code> once per worker, for
+          every file it runs, torn down when the worker ends. Something slow to start (a browser, a database) goes
+          there. A shared fixture destructures what it uses, as test fixtures do, and can only use fixtures that live
+          as long as it does. One whose setup throws fails every test that uses it, at once, with that error.
+        </p>
+        <pre><code class="language-js">const test = base.extend({
+  // An option: this default, or the config's use.baseURL.
+  baseURL: ['http://localhost:3000', { option: true }],
+  db: [
+    async ({ baseURL }, use) => {
+      const db = await startDatabase(baseURL);
+      await use(db);
+      await db.stop();
+    },
+    { scope: 'worker' },
+  ],
+});</code></pre>
+        <p>
+          The config's <code>use</code> gives fixtures their options, and every value in it is a fixture any test can
+          destructure, without <code>test.extend</code>: <code>use: { baseURL: 'http://localhost:4000' }</code>.
+        </p>
 
         <h2 id="assertions">Assertions</h2>
         <p>

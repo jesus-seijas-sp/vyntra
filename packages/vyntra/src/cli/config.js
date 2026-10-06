@@ -51,6 +51,8 @@ const DEFAULTS = {
   // Jest's collectCoverageFrom: globs of the files to report, "!" excluding.
   collectCoverageFrom: undefined,
   coverageThreshold: undefined,
+  // Options of the fixtures: each one a fixture of its own, and the value of a test.extend() option of that name.
+  use: undefined,
   // Fails the run when a test passed only on a retry.
   failOnFlaky: false,
   // Where every run leaves its report (report.json), which --last-failed reads; false: nowhere.

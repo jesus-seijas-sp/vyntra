@@ -20,6 +20,8 @@ const {
 } = require('./environment');
 const globalSnapshot = require('./global-snapshot');
 const { loadPlugins } = require('./plugins');
+const { teardownScope } = require('./run/fixtures');
+const { serializeError } = require('./run/serialize-error');
 
 const CONSOLE_METHODS = ['log', 'info', 'warn', 'error', 'debug', 'trace', 'dir'];
 
@@ -215,7 +217,11 @@ async function createRuntime(config) {
     }
     return result;
   };
-  const finish = async () => ({ coverage: coverage ? await coverage.stop() : null, resolutions: resolutions?.added });
+  const finish = async () => ({
+    errors: (await teardownScope('worker')).map(serializeError),
+    coverage: coverage ? await coverage.stop() : null,
+    resolutions: resolutions?.added,
+  });
   return { run, finish };
 }
 

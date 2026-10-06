@@ -91,7 +91,7 @@
               <tr><td><code>test.runIf(condition)</code></td><td>Runs the test only when <code>condition</code> is truthy</td></tr>
               <tr><td><code>test.each(table)(name, fn)</code></td><td>A test per case: arrays are spread as arguments, objects given as they are, tagged templates as objects</td></tr>
               <tr><td><code>test.for(table)(name, fn)</code></td><td>A test per case, the case given as it is and the context second</td></tr>
-              <tr><td><code>test.extend(fixtures)</code></td><td>A <code>test</code> with fixtures (see <a href="guide.html#context">the guide</a>)</td></tr>
+              <tr><td><code>test.extend(fixtures)</code></td><td>A <code>test</code> with fixtures (see <a href="guide.html#context">the guide</a>). <code>[fn, { scope: 'file' | 'worker' }]</code> shares one, <code>[value, { option: true }]</code> takes its value from the config's <code>use</code>, <code>[fn, { auto: true }]</code> sets it up for every test</td></tr>
             </tbody>
           </table>
         </div>
@@ -395,6 +395,7 @@
               <tr><td><code>exclude</code></td><td><code>node_modules</code>, <code>.git</code>, <code>dist</code>, <code>coverage</code></td><td>Globs of the folders and files left out</td></tr>
               <tr><td><code>excludePatterns</code></td><td><code>[]</code></td><td>Regular expressions of paths left out (Jest's <code>testPathIgnorePatterns</code>)</td></tr>
               <tr><td><code>roots</code></td><td><code>['.']</code></td><td>Folders to look for tests in</td></tr>
+              <tr><td><code>use</code></td><td><code>undefined</code></td><td>Options of the fixtures (<code>{ baseURL: 'http://localhost:4000' }</code>): each a fixture tests can destructure, and the value of a <code>test.extend</code> option of that name</td></tr>
               <tr><td><code>setupFiles</code></td><td><code>[]</code></td><td>Files loaded before every test file: paths from the root, or package names (<code>'reflect-metadata'</code>, <code>'jest-extended/all'</code>)</td></tr>
               <tr><td><code>testTimeout</code></td><td><code>5000</code></td><td>Timeout of tests, in ms</td></tr>
               <tr><td><code>hookTimeout</code></td><td><code>testTimeout</code></td><td>Timeout of hooks</td></tr>

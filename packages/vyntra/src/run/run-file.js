@@ -8,6 +8,7 @@ const { resolveKey } = require('../modules/registry');
 const { releaseMocks } = require('../mock');
 const { timers, realTimers } = require('../timers');
 const { FileRunner } = require('./file-runner');
+const { teardownScope } = require('./fixtures');
 const { serializeError } = require('./serialize-error');
 const { testKey } = require('./test-key');
 
@@ -108,6 +109,7 @@ async function runFile(path, config, shard = null) {
     }
     await runner.runSuite(file.root);
   }
+  file.errors.push(...(await teardownScope('file')).map(serializeError));
   file.errors.push(...file.uncaught.splice(0).map(serializeError));
   const snapshot = saveSnapshots(file, runner.results, shard);
   timers.useRealTimers();
