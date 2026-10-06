@@ -1,7 +1,7 @@
 const http = require('node:http');
 const { SourceMap } = require('node:module');
 const path = require('node:path');
-const { bundleTestFile } = require('./bundle');
+const { bundleTestFile, coreFiles } = require('./bundle');
 const { commandsFor } = require('./commands');
 
 // Vitest's browser mode: each test file runs in a real browser page, through Playwright. Its bundle (see bundle.js)
@@ -143,7 +143,9 @@ class BrowserRunner {
       } finally {
         clearTimeout(timer);
       }
-      return {
+      // eslint-disable-next-line global-require -- vyntra's internals, by path
+      const host = require(coreFiles(rootDir).host);
+      const mapped = {
         ...result,
         path: file,
         errors: mapErrors(result.errors, url, map, rootDir),
@@ -151,6 +153,7 @@ class BrowserRunner {
         console: result.console.map((entry) => ({ ...entry, text: mapStack(entry.text, url, map, rootDir) })),
         tests: result.tests.map((test) => ({ ...test, errors: mapErrors(test.errors, url, map, rootDir) })),
       };
+      return host.saveSnapshots(mapped, this.config, (stack) => mapStack(stack, url, map, rootDir));
     } catch (error) {
       return this.failure(file, error, start);
     } finally {

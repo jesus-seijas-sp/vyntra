@@ -69,7 +69,7 @@ async function collect(file, config) {
 function saveSnapshots(file, results, shard) {
   const complete = !shard && results.every((test) => ['passed', 'flaky', 'failed'].includes(test.status));
   try {
-    return file.snapshot?.save(complete) ?? null;
+    return file.snapshot?.save(complete, results) ?? null;
   } catch (error) {
     file.errors.push(serializeError(error));
     return null;

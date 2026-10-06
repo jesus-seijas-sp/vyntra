@@ -102,21 +102,43 @@ function formatLeaf(value, tag, options) {
 const isDomNode = (value) =>
   typeof value?.nodeType === 'number' && typeof value.nodeName === 'string' && typeof value.cloneNode === 'function';
 
-// A node of a document prints as its markup, as pretty-format's DOM plugins do. Its properties
-// reach the whole document (ownerDocument, parentNode) and would print it again from every node.
-function formatDomNode(node) {
+const DOM_LISTS = new Set(['[object NodeList]', '[object HTMLCollection]']);
+
+const escapeMarkup = (text) => text.replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+
+// A node of a document prints as pretty-format's DOM plugins print it, which stored Jest and vitest snapshots of
+// elements have: attributes sorted, one per line, children each on a line of their own; on one line (min),
+// attributes apart by spaces and children together. Its properties reach the whole document (ownerDocument,
+// parentNode) and would print it again from every node.
+function formatDomNode(node, indent, options) {
   switch (node.nodeType) {
     case 3:
-      return quote(node.data);
+      return escapeMarkup(node.data);
     case 8:
-      return `<!--${node.data}-->`;
+      return `<!--${escapeMarkup(node.data)}-->`;
     case 9:
       return '#document';
-    case 11:
-      return `<DocumentFragment>${[...node.childNodes].map(formatDomNode).join('')}</DocumentFragment>`;
     default:
-      return node.outerHTML ?? `<${node.nodeName.toLowerCase()} />`;
   }
+  const inner = options.min ? '' : `${indent}${options.indent}`;
+  const [attributeBreak, childBreak, closeBreak] = options.min
+    ? [' ', '', '']
+    : [`\n${inner}`, `\n${inner}`, `\n${indent}`];
+  const fragment = node.nodeType === 11;
+  const type = fragment ? 'DocumentFragment' : node.tagName.toLowerCase();
+  const props = fragment
+    ? ''
+    : [...node.attributes]
+        .map((attribute) => attribute.name)
+        .sort()
+        .map((name) => `${attributeBreak}${name}=${quote(node.getAttribute(name), options.escapeString)}`)
+        .join('');
+  const children = [...node.childNodes].map((child) => `${childBreak}${formatDomNode(child, inner, options)}`).join('');
+  const tag = props ? `<${type}${props}${closeBreak}` : `<${type}`;
+  if (!children) {
+    return `${tag}${props && !options.min ? '' : ' '}/>`;
+  }
+  return `${tag}>${children}${closeBreak}</${type}>`;
 }
 
 class Printer {
@@ -141,7 +163,7 @@ class Printer {
       return formatAsymmetric(value);
     }
     if (isDomNode(value)) {
-      return formatDomNode(value);
+      return formatDomNode(value, indent, options);
     }
     if (this.seen.includes(value)) {
       return '[Circular]';
@@ -165,9 +187,11 @@ class Printer {
     const next = `${indent}${options.indent}`;
     const printChild = (child) => this.print(child, next, depth + 1);
     const name = className(value);
-    if (Array.isArray(value) || ArrayBuffer.isView(value)) {
+    // NodeList and HTMLCollection print as lists, as with pretty-format's DOMCollection plugin.
+    if (Array.isArray(value) || ArrayBuffer.isView(value) || DOM_LISTS.has(tag)) {
       const items = Array.from({ length: value.length }, (_, i) => (i in value ? printChild(value[i]) : '<empty>'));
-      return wrap(name === 'Array' ? '[' : `${name} [`, items, ']', options, indent);
+      const bare = name === 'Array' || (options.min && DOM_LISTS.has(tag));
+      return wrap(bare ? '[' : `${name} [`, items, ']', options, indent);
     }
     if (tag === '[object Map]') {
       const items = [...value].map(([key, val]) => `${printChild(key)} => ${printChild(val)}`);

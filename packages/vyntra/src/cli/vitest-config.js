@@ -91,7 +91,8 @@ function compilerOptionsOf(vite) {
 function fromVitestConfig(vite, rootDir) {
   const test = vite.test ?? {};
   const root = path.resolve(rootDir, test.root ?? vite.root ?? '.');
-  const config = {};
+  // New snapshot files as vitest writes them: its header, and "suite > test 1" keys.
+  const config = { snapshotStyle: 'vitest' };
   SAME.filter((key) => test[key] !== undefined).forEach((key) => {
     config[key] = test[key];
   });

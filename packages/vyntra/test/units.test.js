@@ -77,6 +77,22 @@ describe('format', () => {
     expect(format(new TypeError('bad'))).toBe('[TypeError: bad]');
     expect(format(expect.any(Number))).toBe('Any<Number>');
   });
+
+  it("prints DOM nodes as pretty-format's DOM plugins do", () => {
+    const node = (nodeType, props) => ({ nodeType, nodeName: '#', cloneNode() {}, childNodes: [], ...props });
+    const text = (data) => node(3, { data });
+    const element = (tagName, attributes, childNodes = []) =>
+      node(1, {
+        tagName,
+        attributes: Object.keys(attributes).map((name) => ({ name })),
+        getAttribute: (name) => attributes[name],
+        childNodes,
+      });
+    const list = element('UL', { id: 'x', class: 'list' }, [element('LI', {}, [text('a < b')]), element('BR', {})]);
+    expect(format(list)).toBe('<ul\n  class="list"\n  id="x"\n>\n  <li>\n    a &lt; b\n  </li>\n  <br />\n</ul>');
+    expect(format(list, { min: true })).toBe('<ul class="list" id="x"><li>a &lt; b</li><br /></ul>');
+    expect(format({ el: element('I', { a: '1' }) })).toBe('{\n  "el": <i\n    a="1"\n  />,\n}');
+  });
 });
 
 describe('looksLikeJsx', () => {
@@ -192,6 +208,7 @@ describe('fromVitestConfig', () => {
       root
     );
     expect(config).toEqual({
+      snapshotStyle: 'vitest',
       pool: 'forks',
       resetMocks: true,
       hookOrder: 'list',
@@ -218,6 +235,24 @@ describe('snapshot serialization', () => {
   it('stores line breaks as \\n, as Jest does, whatever the system wrote', () => {
     const snapshots = new SnapshotState(path.join(__dirname, 'none.test.js'));
     expect(snapshots.serialize('a\r\nb\rc')).toBe('"a\nb\nc"');
+  });
+
+  it('keeps the snapshots a failed test did not reach: not obsolete, so -u does not remove them', () => {
+    const stored = { 'a > t 1': '1', 'a > t: hint 1': '2', 'a > t 2': '3', 'a > t two 1': '4' };
+    const snapshots = new SnapshotState(path.join(__dirname, 'none.test.js'), {
+      update: true,
+      stored: { data: { ...stored }, style: 'vitest', exists: true },
+    });
+    snapshots.match('a > t 1', '1');
+    snapshots.keepSnapshotsOf(['a', 't']);
+    expect([...snapshots.checked].sort()).toEqual(['a > t 1', 'a > t 2', 'a > t: hint 1']);
+  });
+
+  it('starts new files in the style given, and keeps the style of existing ones', () => {
+    const file = path.join(__dirname, 'none.test.js');
+    expect(new SnapshotState(file, { style: 'vitest' }).style).toBe('vitest');
+    const stored = { data: {}, style: 'jest', exists: true };
+    expect(new SnapshotState(file, { style: 'vitest', stored }).style).toBe('jest');
   });
 });
 

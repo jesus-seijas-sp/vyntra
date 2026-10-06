@@ -946,11 +946,12 @@ test('counts clicks', async () => {
           <code>keyboard</code>, <code>tab</code>), whose actions Playwright performs. <code>expect.element()</code> retries
           for a second, and jest-dom's matchers are there (<code>toBeVisible</code>, <code>toHaveTextContent</code>,
           <code>toHaveValue</code>...). <code>vi.mock</code> works with a factory (async, with
-          <code>importOriginal</code>) or without one. Stylesheets are added to the page, images are data URLs, and
-          failures and console output point at your files.
+          <code>importOriginal</code>) or without one. Snapshots work as in Node: <code>toMatchSnapshot</code> and
+          <code>toMatchInlineSnapshot</code>, with <code>-u</code>, elements printed as Vitest prints them. Stylesheets
+          are added to the page, images are data URLs, and failures and console output point at your files.
         </p>
         <p>
-          Not yet in browser mode: snapshots, coverage, and the WebdriverIO provider.
+          Not yet in browser mode: coverage, and the WebdriverIO provider.
         </p>
 
         <h2 id="typescript">TypeScript and ES modules</h2>
@@ -1075,7 +1076,7 @@ test('counts clicks', async () => {
         </p>
         <h3>What is not supported yet?</h3>
         <p>
-          In browser mode: snapshots, coverage and the WebdriverIO provider.
+          In browser mode: coverage and the WebdriverIO provider.
           <a href="migrating.html#missing">Migrating</a> has the whole list.
         </p>
         <h3>My tests expect <code>NODE_ENV=test</code>.</h3>

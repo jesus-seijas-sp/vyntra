@@ -129,6 +129,8 @@ async function finish({ config, error }) {
     errors: file.errors,
     console: file.console,
     snapshot: null,
+    // Saved by Node (see host.js).
+    snapshotState: file.snapshot?.transfer() ?? null,
     shard: null,
   };
 }

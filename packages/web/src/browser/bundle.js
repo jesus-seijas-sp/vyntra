@@ -49,6 +49,7 @@ function coreFiles(rootDir) {
     runtime: path.join(src, 'browser', 'runtime.js'),
     context: path.join(src, 'browser', 'context.js'),
     stubs: path.join(src, 'browser', 'node-stubs.js'),
+    host: path.join(src, 'browser', 'host.js'),
   };
 }
 
@@ -159,7 +160,10 @@ async function bundleTestFile(file, config) {
   const { rootDir } = config;
   const esbuild = esbuildOf(rootDir);
   const core = coreFiles(rootDir);
+  // eslint-disable-next-line global-require -- vyntra's internals, by path
+  const host = require(core.host);
   const pageConfig = {
+    ...host.pageConfig(file, config),
     rootDir,
     testTimeout: config.testTimeout,
     hookTimeout: config.hookTimeout,
@@ -192,7 +196,8 @@ async function bundleTestFile(file, config) {
     .map((one) => `  await import(${JSON.stringify(one)});`)
     .join('\n');
   const entry = `import { prepare, finish } from ${JSON.stringify(core.runtime)};
-prepare(${JSON.stringify({ path: file, config: pageConfig })});
+const config = ${JSON.stringify(pageConfig)};
+prepare({ path: ${JSON.stringify(file)}, config });
 const registry = globalThis[Symbol.for('vyntra.browserMocks')];
 ${originals}
 let error;
@@ -201,7 +206,7 @@ ${imports}
 } catch (caught) {
   error = caught;
 }
-await globalThis.__vyntraReport(await finish({ config: ${JSON.stringify(pageConfig)}, error }));
+await globalThis.__vyntraReport(await finish({ config, error }));
 `;
   const env = Object.fromEntries(
     Object.entries({ ...config.importMetaEnv, MODE: 'test', DEV: true, PROD: false, SSR: false, BASE_URL: '/' }).map(
@@ -243,4 +248,4 @@ await globalThis.__vyntraReport(await finish({ config: ${JSON.stringify(pageConf
   return { code, map };
 }
 
-module.exports = { bundleTestFile };
+module.exports = { coreFiles, bundleTestFile };

@@ -12,6 +12,8 @@ function snapshotState() {
     update: Boolean(config.update),
     ci: config.ci ?? Boolean(process.env.CI),
     serializers,
+    stored: config.storedSnapshots,
+    style: config.snapshotStyle,
   });
   return file.snapshot;
 }
@@ -89,6 +91,10 @@ function toMatchSnapshot(received, propertiesOrHint, maybeHint) {
 
 // Where in the test file the matcher was called, for rewriting the source.
 function callLocation(matcher) {
+  // In a browser page the stack is the bundle's: Node finds the call through its source map.
+  if (state.config.browserMode) {
+    return { stack: new Error().stack, matcher };
+  }
   const frame = userFrames(new Error().stack).find(({ file }) => samePath(file, state.file.path));
   if (!frame) {
     throw new Error(`${matcher}() must be called in the test file itself`);

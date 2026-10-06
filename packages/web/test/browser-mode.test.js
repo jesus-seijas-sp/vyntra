@@ -52,4 +52,64 @@ describe('browser mode', () => {
       'automocks a module without a factory': ['passed', undefined],
     });
   });
+
+  it('writes, matches and updates snapshots, stored and inline, of DOM elements as pretty-format prints them', () => {
+    const file = path.join(ROOT, 'snapshots.test.js');
+    const stored = path.join(ROOT, '__snapshots__', 'snapshots.test.js.snap');
+    const source = (item) => `import { describe, expect, it } from 'vitest';
+
+describe('snapshots', () => {
+  it('of an element', () => {
+    document.body.innerHTML = '<ul class="list"><li>${item}</li></ul>';
+    expect(document.querySelector('ul')).toMatchSnapshot();
+    expect({ width: window.innerWidth }).toMatchSnapshot('viewport');
+  });
+
+  it('inline', () => {
+    expect({ items: ['a'] }).toMatchInlineSnapshot();
+  });
+});
+`;
+    try {
+      fs.writeFileSync(file, source('One'));
+      expect(run(['snapshots.test.js']).report.files[0].snapshot).toMatchObject({ added: 3, failed: 0 });
+      expect(fs.readFileSync(stored, 'utf8')).toBe(`// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[\`snapshots > of an element 1\`] = \`
+<ul
+  class="list"
+>
+  <li>
+    One
+  </li>
+</ul>
+\`;
+
+exports[\`snapshots > of an element: viewport 1\`] = \`
+{
+  "width": 414,
+}
+\`;
+`);
+      expect(fs.readFileSync(file, 'utf8')).toContain(`toMatchInlineSnapshot(\`
+      {
+        "items": [
+          "a",
+        ],
+      }
+    \`)`);
+      expect(run(['snapshots.test.js']).status).toBe(0);
+
+      fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace('<li>One', '<li>Two'));
+      const { status, tests } = run(['snapshots.test.js']);
+      expect(status).toBe(1);
+      expect(tests['snapshots of an element'].errors[0].message).toContain('+     Two');
+      // The failed test's other snapshot is kept: not obsolete, so -u does not remove it.
+      expect(run(['snapshots.test.js', '-u']).report.files[0].snapshot).toMatchObject({ updated: 1 });
+      expect(fs.readFileSync(stored, 'utf8')).toContain('viewport 1');
+    } finally {
+      fs.rmSync(file, { force: true });
+      fs.rmSync(path.dirname(stored), { recursive: true, force: true });
+    }
+  });
 });

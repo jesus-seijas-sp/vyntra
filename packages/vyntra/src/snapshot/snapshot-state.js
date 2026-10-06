@@ -6,15 +6,17 @@ const { writeInlineSnapshots } = require('./inline-snapshots');
 
 // The snapshots of one test file: its .snap file, the inline ones, and what changed in this run.
 class SnapshotState {
-  constructor(testPath, { update = false, ci = false, serializers = [] } = {}) {
+  // stored: the .snap file as read elsewhere (a browser page has no file system), instead of reading it. style: of
+  // a new file; one that exists keeps its own.
+  constructor(testPath, { update = false, ci = false, serializers = [], stored, style: newStyle = 'jest' } = {}) {
     this.testPath = testPath;
-    this.file = path.join(path.dirname(testPath), '__snapshots__', `${path.basename(testPath)}.snap`);
+    this.file = SnapshotState.pathFor(testPath);
     this.update = update;
     this.ci = ci;
     this.serializers = serializers;
-    const { data, style, exists } = readSnapshotFile(this.file);
+    const { data, style, exists } = stored ?? readSnapshotFile(this.file);
     this.data = data;
-    this.style = style;
+    this.style = exists ? style : newStyle;
     this.exists = exists;
     this.dirty = false;
     // Keys this run wrote: what is merged into the file when other runs (shards of the file) may have written it.
@@ -85,9 +87,19 @@ class SnapshotState {
     return { pass: false, expected, missing: expected === undefined };
   }
 
+  // The snapshots of a test that failed are not obsolete, though it stopped before checking them, as in Jest.
+  keepSnapshotsOf(titlePath) {
+    const name = titlePath.join(this.style === 'vitest' ? ' > ' : ' ').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const ofTest = new RegExp(`^${name}(?:: [\\s\\S]*)? \\d+$`);
+    Object.keys(this.data)
+      .filter((key) => ofTest.test(key))
+      .forEach((key) => this.checked.add(key));
+  }
+
   // Writes what changed and returns the summary of the file. Snapshots no test checked are obsolete, but only
-  // known to be when every test of the file ran (complete).
-  save(complete) {
+  // known to be when every test of the file ran (complete); results: the file's tests, whose failed ones keep theirs.
+  save(complete, results = []) {
+    results.filter((test) => test.status === 'failed').forEach((test) => this.keepSnapshotsOf(test.path));
     const obsolete = complete ? Object.keys(this.data).filter((key) => !this.checked.has(key)) : [];
     if (this.update && obsolete.length > 0) {
       obsolete.forEach((key) => delete this.data[key]);
@@ -114,6 +126,32 @@ class SnapshotState {
       writeInlineSnapshots(this.testPath, this.inlineUpdates);
     }
     return { ...this.counts, obsolete: this.update ? 0 : obsolete.length };
+  }
+
+  static pathFor(testPath) {
+    return path.join(path.dirname(testPath), '__snapshots__', `${path.basename(testPath)}.snap`);
+  }
+
+  // What a browser page sends back to be saved in Node, by restore().
+  transfer() {
+    return {
+      data: this.data,
+      style: this.style,
+      exists: this.exists,
+      dirty: this.dirty,
+      written: [...this.written],
+      checked: [...this.checked],
+      inlineUpdates: this.inlineUpdates,
+      counts: this.counts,
+    };
+  }
+
+  static restore(testPath, options, transferred) {
+    const { data, style, exists, written, checked, ...rest } = transferred;
+    return Object.assign(new SnapshotState(testPath, { ...options, style, stored: { data, style, exists } }), rest, {
+      written: new Set(written),
+      checked: new Set(checked),
+    });
   }
 }
 
