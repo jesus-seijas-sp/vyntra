@@ -417,4 +417,32 @@ describe('run summary', () => {
     expect(replayed.stdout).toContain('AI  no model calls');
     expect(replayed.stdout).toContain('Cache  3 replayed · 0 handed off · 0 missed');
   });
+
+  it('writes every model call to the trace under --ai-trace, secret values hidden', () => {
+    const { dir, run } = project('agent');
+    const env = { APP_PASSWORD: 'hunter2-Correct-Horse', VYNTRA_AI_SRC: path.join(__dirname, '..', 'src', 'index.js') };
+    const traced = run(['todo.e2e.js', 'secret.e2e.js', '--ai-trace'], env);
+    expect(traced.status).toBe(0);
+    expect(traced.stdout).toContain('AI trace  .vyntra/ai-trace.jsonl · 9 model calls');
+    expect(traced.stdout).toContain('Steps  act "');
+    expect(traced.stdout).toMatch(/act "add the todo Buy milk" · 3 calls · 330 tokens · [\d.]+s/);
+    const trace = fs.readFileSync(path.join(dir, '.vyntra', 'ai-trace.jsonl'), 'utf8');
+    expect(trace).not.toContain('hunter2-Correct-Horse');
+    const calls = trace
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    const first = calls.find((call) => call.file === 'todo.e2e.js');
+    expect(first).toMatchObject({
+      test: 'adds a todo by its goal',
+      step: { kind: 'act', text: 'add the todo Buy milk' },
+      request: { tools: expect.arrayContaining(['click', 'fill', 'done', 'give_up']) },
+      response: { toolCalls: [expect.objectContaining({ name: 'fill' })] },
+      usage: { inputTokens: 100, outputTokens: 10 },
+    });
+    expect(first.request.messages[0].content).toContain('Goal: add the todo Buy milk');
+    // Without the flag, no trace.
+    run(['todo.e2e.js'], { CI: '1' });
+    expect(fs.existsSync(path.join(dir, '.vyntra', 'ai-trace.jsonl'))).toBe(false);
+  });
 });

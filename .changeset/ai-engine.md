@@ -29,4 +29,6 @@ An agent that gives up says why (product, environment, credentials, setup, unsup
 
 The run summary and report.json say what the AI steps cost (tokens, model calls, models) and how the replay cache served them (replayed, handed off, missed); engines can add lines to the summary through `summarize()`.
 
+`--ai-trace` writes every model call to `.vyntra/ai-trace.jsonl`, secret values hidden, and the summary lists the slowest traced steps. Engines can name output files the core clears when a run starts.
+
 On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.

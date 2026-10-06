@@ -484,6 +484,9 @@ async function loadConfig(cliOptions) {
   if (config.aiMode) {
     process.env.VYNTRA_AI_MODE = config.aiMode;
   }
+  if (config.aiTrace) {
+    process.env.VYNTRA_AI_TRACE = '1';
+  }
   return config;
 }
 

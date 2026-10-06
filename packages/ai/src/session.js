@@ -3,6 +3,7 @@ const path = require('node:path');
 const { currentTest, ReplayCache, SkipError, redact } = require('vyntra/engine');
 const { settingsOf } = require('./settings');
 const { Budget } = require('./budget');
+const { tracing, traceCall } = require('./trace');
 
 // Bumped when the prompts change what a model would answer: every recorded result is then a miss.
 const PROMPT_VERSION = 4;
@@ -69,6 +70,8 @@ class AiSession {
   }
 
   keyOf({ kind, text, input }) {
+    // The step the session works on now, for the trace.
+    this.step = { kind, text };
     const { model, provider } = this.modelFor(kind);
     // No model set: the provider's own default (OpenRouter's), which the key can not know.
     // A step judged or driven with other vocabulary is another step: the context counts, when there is one.
@@ -157,10 +160,48 @@ class AiSession {
     this.budget.check();
     const { model, effort, provider } = this.modelFor(kind);
     this.asked = model;
-    const completion = await provider.complete({ model, effort, signal: this.test.signal, ...hidden(request) });
+    const sent = hidden(request);
+    const started = Date.now();
+    let completion;
+    try {
+      completion = await provider.complete({ model, effort, signal: this.test.signal, ...sent });
+    } catch (error) {
+      this.trace({ kind, model, effort, sent, started, error: redact(String(error?.message ?? error)) });
+      throw error;
+    }
     this.budget.add(completion.usage, completion.model ?? model);
     this.answeredBy = completion.model;
+    this.trace({ kind, model: completion.model ?? model, effort, sent, started, completion });
     return completion;
+  }
+
+  // One model call in the run's trace (--ai-trace): the test and step, what the model received and what it answered.
+  trace({ kind, model, effort, sent, started, completion, error }) {
+    if (!tracing()) {
+      return;
+    }
+    traceCall(this.settings.traceFile, {
+      run: this.budget.run,
+      at: new Date(started).toISOString(),
+      ms: Date.now() - started,
+      file: path.relative(this.settings.rootDir, this.test.file).split(path.sep).join('/'),
+      test: this.test.fullName,
+      step: { kind, text: this.step?.text },
+      model: model ?? null,
+      effort,
+      request: { system: sent.system, messages: sent.messages, tools: sent.tools?.map((tool) => tool.name) },
+      ...(completion
+        ? {
+            response: hidden({
+              text: completion.text,
+              toolCalls: completion.toolCalls,
+              json: completion.json,
+              stopReason: completion.stopReason,
+            }),
+            usage: completion.usage,
+          }
+        : { error }),
+    });
   }
 
   // What the failure page shows of a step: where its result came from, the result, and its last turns.

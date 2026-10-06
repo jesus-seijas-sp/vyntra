@@ -43,6 +43,7 @@ const OPTIONS = {
   watch: { type: 'boolean' },
   watchAll: { type: 'boolean' },
   ai: { type: 'string' },
+  'ai-trace': { type: 'boolean' },
   // Accepted for compatibility, nothing to do.
   run: { type: 'boolean' },
 };
@@ -79,6 +80,7 @@ Options:
       --outputDir <dir>          Where the run's report goes (default: .vyntra)
       --ci                       Do not write new snapshots
       --ai <mode>                AI steps (@vyntra/ai): replay, record, live or off
+      --ai-trace                 Write every model call of the AI steps to .vyntra/ai-trace.jsonl
   -h, --help                     Show this help
 `;
 
@@ -116,6 +118,7 @@ function parseCli(argv) {
     isolate: values['no-isolate'] ? false : values.isolate,
     colors: values['no-color'] ? false : values.color,
     aiMode: values.ai,
+    aiTrace: values['ai-trace'],
   };
   const given = Object.fromEntries(Object.entries(options).filter(([, value]) => value !== undefined));
   // "jest ." means every file: a pattern that matches everything is no filter.

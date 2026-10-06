@@ -135,6 +135,7 @@ function settingsOf(options = projectConfig().use.ai ?? {}) {
     // Model calls and tokens a whole run may spend, over all its workers.
     budget: { calls: 200, tokens: 2_000_000, ...ai.budget },
     usageFile: path.join(outputDir, 'ai-usage.jsonl'),
+    traceFile: path.join(outputDir, 'ai-trace.jsonl'),
     // The model that judges, when it is not the one that acts.
     judge: judgeOf(ai, rootDir),
     // The app's vocabulary for every model call, and instructions for the acting agent only.

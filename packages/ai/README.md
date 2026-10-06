@@ -276,6 +276,20 @@ interface Provider {
 
 ## When a step fails
 
+`--ai-trace` writes every model call of the run to `.vyntra/ai-trace.jsonl`, one JSON line each: the test and
+step, the model, what it was sent (secret values hidden), what it answered, the tokens and the time. The
+summary then names the file and lists the slowest steps:
+
+```text
+   AI trace  .vyntra/ai-trace.jsonl · 3 model calls
+      Steps  act "add a todo called "Buy milk"" · 2 calls · 6.1k tokens · 4.1s
+             assert "the list has exactly one todo, Buy milk" · 1 call · 350 tokens · 3.1s
+```
+
+Replayed steps make no call and leave no trace: add `--ai live` to trace a whole flow. The file stays on your
+machine; a new run clears it.
+
+
 The failure page of the `markdown` report shows each AI step of the test: where its result came from (the
 recording, or the model), the verdict and its reasoning or the actions taken, and the last turns with the
 model.

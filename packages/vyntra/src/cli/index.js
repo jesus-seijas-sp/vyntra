@@ -267,7 +267,10 @@ async function runOnce(argv, outcome = {}) {
     projectNames: named.length > 0 ? named.map((project) => project.name) : null,
   });
   if (!config.lastFailed) {
-    clearOutputs(config);
+    const engineOutputs = projects.flatMap(({ config: project }) =>
+      enginesOf(project).flatMap(({ engine }) => engine.outputs ?? [])
+    );
+    clearOutputs(config, [...new Set(engineOutputs)]);
   }
   reporter.onStart(files.length + typeFiles.length, layout.workers);
   const onInterrupt = () => {

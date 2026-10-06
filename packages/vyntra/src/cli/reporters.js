@@ -62,11 +62,12 @@ function createReporters(names, config) {
   return new Reporters([main, ...files]);
 }
 
-function clearOutputs(config) {
+// engineOutputs: the files engines write there (@vyntra/ai's usage and trace), cleared the same way.
+function clearOutputs(config, engineOutputs = []) {
   if (!config.outputDir) {
     return;
   }
-  OUTPUTS.forEach((name) =>
+  [...OUTPUTS, ...engineOutputs].forEach((name) =>
     fs.rmSync(path.resolve(config.rootDir, config.outputDir, name), { recursive: true, force: true })
   );
 }
