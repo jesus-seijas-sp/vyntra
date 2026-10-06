@@ -404,7 +404,7 @@
               <tr><td><code>--no-color</code></td><td>Plain output (also with <code>NO_COLOR</code>)</td></tr>
               <tr><td><code>-h, --help</code>, <code>-v, --version</code></td><td>Help, version</td></tr>
               <tr><td><code>vyntra guide [topic]</code></td><td>Prints this documentation, from the copy in the package (no topic: the list of topics)</td></tr>
-              <tr><td><code>vyntra init --agents</code></td><td>Writes <code>.claude/skills/vyntra/SKILL.md</code>, which tells coding agents how to run, read and fix the tests (<code>--dir</code> elsewhere, <code>--force</code> to replace it)</td></tr>
+              <tr><td><code>vyntra init --agents</code></td><td>Writes <code>.agents/skills/vyntra/SKILL.md</code>, which tells coding agents how to run, read and fix the tests, links <code>.claude/skills/vyntra</code> to it for Claude Code, and points <code>AGENTS.md</code> at it when the project has one (<code>--dir</code> writes one copy elsewhere, <code>--force</code> replaces it)</td></tr>
             </tbody>
           </table>
         </div>

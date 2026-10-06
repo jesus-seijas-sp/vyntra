@@ -57,6 +57,18 @@ failed attempts.
 - End-to-end tests: find elements by role and name (`page.getByRole('button', { name: 'Save' })`), and assert
   with the retrying matchers (`await expect(locator).toHaveText('Saved')`): never wait for a fixed time.
 
+## Write an AI step
+
+In a project with `engine: ['web', 'ai']` (`npx vyntra guide ai`), tests get an `agent`:
+
+- One `agent.act('goal in words')` per goal, then a check of its outcome (`await expect(locator)...` or
+  `agent.assert('claim')`): an act is recorded for replay only once a later check passes.
+- Words the page shows, in the goal. Test data in `params`: `secret('ADMIN_PASSWORD')` for a password (never a
+  literal), `unique(value)` for a value that changes every run.
+- Exact values with locators; `agent.assert` and `expect(value).toSatisfy(claim)` for what a rule can not check.
+- Recordings live in `vyntra.ai-cache/`: commit them, never edit them by hand. To see an agent step work, run
+  that test with `--ai live --ai-trace` and read `.vyntra/ai-trace.jsonl`.
+
 ## Look things up
 
 The documentation ships with vyntra. `npx vyntra guide` lists the topics; `npx vyntra guide <topic>` prints one

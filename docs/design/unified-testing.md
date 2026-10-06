@@ -376,7 +376,9 @@ Tags and repeats (core): describe and test take tags (a string or a list), inher
 
 As built: the Markdown docs are generated from the website (`scripts/build-docs.js`, one file per
 section, checked by `pnpm lint`), so the two never drift. The skill goes to
-`.claude/skills/vyntra/SKILL.md` (`--dir` elsewhere). `@vyntra/mcp` has no dependencies: it implements
+`.agents/skills/vyntra/SKILL.md`, with `.claude/skills/vyntra` linked to it (a junction on Windows; a copy when no
+link can be made; a directory of the project's own left alone without `--force`) and a pointer line appended to an
+existing `AGENTS.md` (`--dir` writes one copy elsewhere). `@vyntra/mcp` has no dependencies: it implements
 the stdio transport itself, dual-era (stateless 2026-07-28 requests with `server/discover`, and the
 `initialize` handshake of 2025-11-25 and earlier). Its tools are `run_tests`, `list_failures`,
 `read_failure` (with the screenshot as an image), `guide` and `try_locator`, which parses the locator

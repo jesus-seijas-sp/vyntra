@@ -42,16 +42,37 @@ describe('vyntra guide', () => {
 });
 
 describe('vyntra init --agents', () => {
-  it('writes the skill, and keeps one that is there', () => {
+  it('writes the skill for every agent, linked for Claude Code, and keeps one that is there', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vyntra-init-'));
     const first = run(['init', '--agents'], dir);
     expect(first.status).toBe(0);
-    expect(first.stdout).toContain(`Wrote ${path.join('.claude', 'skills', 'vyntra', 'SKILL.md')}.`);
-    const skill = fs.readFileSync(path.join(dir, '.claude', 'skills', 'vyntra', 'SKILL.md'), 'utf8');
+    expect(first.stdout).toContain(`Wrote ${path.join('.agents', 'skills', 'vyntra', 'SKILL.md')}.`);
+    expect(first.stdout).toContain(`Linked ${path.join('.claude', 'skills', 'vyntra')} to it, for Claude Code.`);
+    const skill = fs.readFileSync(path.join(dir, '.agents', 'skills', 'vyntra', 'SKILL.md'), 'utf8');
     expect(skill).toMatch(/^---\nname: vyntra\ndescription: /);
+    expect(fs.readFileSync(path.join(dir, '.claude', 'skills', 'vyntra', 'SKILL.md'), 'utf8')).toBe(skill);
     expect(run(['init', '--agents'], dir).status).toBe(1);
+    // Replacing it unlinks the link, never what it points at.
     expect(run(['init', '--agents', '--force'], dir).status).toBe(0);
+    expect(fs.existsSync(path.join(dir, '.agents', 'skills', 'vyntra', 'SKILL.md'))).toBe(true);
     expect(run(['init', '--agents', '--dir', 'skills/testing'], dir).status).toBe(0);
     expect(fs.existsSync(path.join(dir, 'skills', 'testing', 'SKILL.md'))).toBe(true);
+  });
+
+  it('points AGENTS.md at the skill once, and leaves a folder of the project alone', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vyntra-init-'));
+    fs.writeFileSync(path.join(dir, 'AGENTS.md'), '# Agents\n\nUse pnpm.');
+    const own = path.join(dir, '.claude', 'skills', 'vyntra');
+    fs.mkdirSync(own, { recursive: true });
+    fs.writeFileSync(path.join(own, 'SKILL.md'), 'mine');
+    const first = run(['init', '--agents'], dir);
+    expect(first.stdout).toContain('Pointed AGENTS.md at it.');
+    expect(first.stdout).toContain(`Left ${path.join('.claude', 'skills', 'vyntra')} as it is`);
+    expect(fs.readFileSync(path.join(own, 'SKILL.md'), 'utf8')).toBe('mine');
+    run(['init', '--agents', '--force'], dir);
+    expect(fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8')).toBe(
+      '# Agents\n\nUse pnpm.\n\nTests run with vyntra: read .agents/skills/vyntra/SKILL.md before writing, running or fixing one.\n'
+    );
+    expect(fs.readFileSync(path.join(own, 'SKILL.md'), 'utf8')).toMatch(/^---\nname: vyntra/);
   });
 });

@@ -33,4 +33,6 @@ The run summary and report.json say what the AI steps cost (tokens, model calls,
 
 Tags on `describe` and `test` (`{ tags: ['slow'] }`), with `--tag` and `--exclude-tag`; `--grep` (as `-t`) and `--grep-invert`; and `--repeat-each <n>` to run every test n times.
 
+`vyntra init --agents` writes the skill to `.agents/skills/vyntra`, links `.claude/skills/vyntra` to it, and points an existing `AGENTS.md` at it; the skill now covers AI steps.
+
 On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.

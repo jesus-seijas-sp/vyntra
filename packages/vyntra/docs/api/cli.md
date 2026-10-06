@@ -42,7 +42,7 @@ Path patterns are regular expressions matched against the path of every test fil
 | `--no-color` | Plain output (also with `NO_COLOR`) |
 | `-h, --help`, `-v, --version` | Help, version |
 | `vyntra guide [topic]` | Prints this documentation, from the copy in the package (no topic: the list of topics) |
-| `vyntra init --agents` | Writes `.claude/skills/vyntra/SKILL.md`, which tells coding agents how to run, read and fix the tests (`--dir` elsewhere, `--force` to replace it) |
+| `vyntra init --agents` | Writes `.agents/skills/vyntra/SKILL.md`, which tells coding agents how to run, read and fix the tests, links `.claude/skills/vyntra` to it for Claude Code, and points `AGENTS.md` at it when the project has one (`--dir` writes one copy elsewhere, `--force` replaces it) |
 
 ## Exit codes
 

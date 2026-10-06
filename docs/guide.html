@@ -746,8 +746,9 @@ module.exports = {
           The documentation ships in the package, as Markdown in <code>node_modules/vyntra/docs</code>, so an agent
           reads the version it runs, offline: <code>npx vyntra guide</code> lists the topics, <code>npx vyntra guide
           projects</code> prints one. <code>npx vyntra init --agents</code> writes a skill
-          (<code>.claude/skills/vyntra/SKILL.md</code>) that tells an agent how to run the tests, read a failure page
-          and fix what failed; <code>@vyntra/mcp</code> gives MCP clients tools for the same.
+          (<code>.agents/skills/vyntra/SKILL.md</code>, linked from <code>.claude/skills/vyntra</code> for Claude Code, and
+          named in <code>AGENTS.md</code> when there is one) that tells an agent how to run the tests, read a failure page,
+          fix what failed and write AI steps; <code>@vyntra/mcp</code> gives MCP clients tools for the same.
         </p>
 
         <h3 id="last-failed">Rerunning failures</h3>

@@ -50,15 +50,56 @@ function guide(args, out = process.stdout) {
   return 1;
 }
 
-// Writes the skill for coding agents into the project: .claude/skills/vyntra/SKILL.md, where Claude Code finds it
-// (--dir puts it elsewhere). An existing one is kept unless --force.
+// Links a skill directory where another agent looks for it (.claude/skills/vyntra to .agents/skills/vyntra): one copy
+// for every agent. A junction on Windows, where a directory symlink needs privileges; a copy when neither works. A
+// directory of the project's own there (an older copy it may have changed) is left alone unless `force`; a link is
+// only unlinked, never followed.
+function linkSkill(from, to, force) {
+  const there = fs.lstatSync(to, { throwIfNoEntry: false });
+  if (there?.isSymbolicLink()) {
+    fs.unlinkSync(to);
+  } else if (there && !force) {
+    return 'kept';
+  } else if (there) {
+    fs.rmSync(to, { recursive: true });
+  }
+  fs.mkdirSync(path.dirname(to), { recursive: true });
+  try {
+    fs.symlinkSync(process.platform === 'win32' ? from : path.relative(path.dirname(to), from), to, 'junction');
+    return 'linked';
+  } catch {
+    fs.cpSync(from, to, { recursive: true });
+    return 'copied';
+  }
+}
+
+// AGENTS.md, when the project has one, points at the skill: agents that read no skills follow it from there.
+function pointAgents(rootDir, skill) {
+  const file = path.join(rootDir, 'AGENTS.md');
+  if (!fs.existsSync(file)) {
+    return false;
+  }
+  const text = fs.readFileSync(file, 'utf8');
+  if (text.includes(skill)) {
+    return false;
+  }
+  const line = `Tests run with vyntra: read ${skill} before writing, running or fixing one.`;
+  const separator = text === '' || text.endsWith('\n') ? '' : '\n';
+  fs.appendFileSync(file, `${separator}\n${line}\n`);
+  return true;
+}
+
+// vyntra init --agents: the skill for coding agents, in .agents/skills/vyntra (read by agents that follow that
+// layout), linked from .claude/skills/vyntra (Claude Code), and named in AGENTS.md when there is one. --dir writes one
+// copy there instead; --force replaces one that is there.
 function init(args, rootDir = process.cwd(), out = process.stdout) {
   if (!args.includes('--agents')) {
     process.stderr.write('vyntra init --agents writes the skill coding agents use to run and fix tests here\n');
     return 1;
   }
   const dirIndex = args.indexOf('--dir');
-  const dir = dirIndex >= 0 && args[dirIndex + 1] ? args[dirIndex + 1] : path.join('.claude', 'skills', 'vyntra');
+  const own = dirIndex >= 0 ? args[dirIndex + 1] : undefined;
+  const dir = own || path.join('.agents', 'skills', 'vyntra');
   const target = path.resolve(rootDir, dir, 'SKILL.md');
   const shown = path.relative(rootDir, target);
   if (fs.existsSync(target) && !args.includes('--force')) {
@@ -67,11 +108,27 @@ function init(args, rootDir = process.cwd(), out = process.stdout) {
   }
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.copyFileSync(SKILL, target);
-  out.write(
-    `Wrote ${shown}.\n` +
-      'Agents that do not read skills can be pointed at it from AGENTS.md: "To run or fix tests, follow ' +
-      `${shown}."\nFor an MCP client, add @vyntra/mcp: npx vyntra-mcp (see its README).\n`
-  );
+  const lines = [`Wrote ${shown}.`];
+  if (!own) {
+    const claude = path.join('.claude', 'skills', 'vyntra');
+    const how = linkSkill(path.dirname(target), path.resolve(rootDir, claude), args.includes('--force'));
+    const said = {
+      linked: `Linked ${claude} to it, for Claude Code.`,
+      copied: `Copied it to ${claude}, for Claude Code.`,
+      kept: `Left ${claude} as it is: --force replaces it with a link.`,
+    };
+    lines.push(said[how]);
+  }
+  const posix = shown.split(path.sep).join('/');
+  if (pointAgents(rootDir, posix)) {
+    lines.push('Pointed AGENTS.md at it.');
+  } else if (!fs.existsSync(path.join(rootDir, 'AGENTS.md'))) {
+    lines.push(
+      `Agents that read no skills can be pointed at it from AGENTS.md: "Tests run with vyntra: read ${posix}."`
+    );
+  }
+  lines.push('For an MCP client, add @vyntra/mcp: npx vyntra-mcp (see its README).');
+  out.write(`${lines.join('\n')}\n`);
   return 0;
 }
 
