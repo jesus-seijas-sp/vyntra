@@ -39,7 +39,8 @@ function lineHits(source, counts, starts) {
     let hits = -1;
     let statement = false;
     for (let i = start; i < end; i += 1) {
-      if (!isSpace(source[i]) && kind[i] !== COMMENT) {
+      // NaN: what a compiled file's source map leaves out, as types, is not code that ran or could run.
+      if (!isSpace(source[i]) && kind[i] !== COMMENT && !Number.isNaN(counts[i])) {
         hits = Math.max(hits, counts[i] ?? 0);
         statement ||= !PUNCTUATION.has(source[i]);
       }
@@ -55,7 +56,7 @@ function lineHits(source, counts, starts) {
 function fileCoverage(file, { counts, functions, blocks }) {
   const source = fs.readFileSync(file, 'utf8');
   const starts = lineStarts(source);
-  const at = (offset) => ({ line: lineOf(starts, offset), count: counts[offset] ?? 0 });
+  const at = (offset) => ({ line: lineOf(starts, offset), count: Number.isNaN(counts[offset]) ? 0 : (counts[offset] ?? 0) });
   return {
     file,
     lines: lineHits(source, counts, starts),

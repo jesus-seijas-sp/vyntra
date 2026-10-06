@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Session } = require('node:inspector');
 const { fileURLToPath } = require('node:url');
+const { remapCoverage } = require('./remap');
 
 const RUNTIME_DIR = path.join(__dirname, '..');
 const NODE_MODULES = `${path.sep}node_modules${path.sep}`;
@@ -119,6 +120,13 @@ class CoverageCollector {
     await this.take();
     await this.post('Profiler.stopPreciseCoverage');
     this.session.disconnect();
+    // Compiled files on their source: their maps are in this thread's compile caches.
+    this.files.forEach((coverage, file) => {
+      const remapped = remapCoverage(file, coverage);
+      if (remapped) {
+        this.files.set(file, remapped);
+      }
+    });
     return serialize(this.files);
   }
 }

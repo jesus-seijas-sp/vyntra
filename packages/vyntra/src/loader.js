@@ -6,6 +6,8 @@ const state = require('./state');
 const { isSpyable, makeSpyable, markSpyable } = require('./modules/spyable');
 const { installCjsLoader, nearestType } = require('./cjs-loader');
 const { rewriteImportMetaEnv } = require('./import-meta-env');
+const { compiledCodeOf } = require('./source-maps');
+const { recordExecuted } = require('./coverage/remap');
 const {
   configure: configureJestTransform,
   handles: jestHandles,
@@ -316,6 +318,10 @@ function hookEsm(config) {
       }
       const source = String(loaded.source);
       const rewritten = rewriteImportMetaEnv(source);
+      // Coverage of a compiled file needs the lines of the code that ran, to map its counts back (coverage/remap.js).
+      if (config.coverage && compiledCodeOf(fileURLToPath(url))) {
+        recordExecuted(fileURLToPath(url), rewritten);
+      }
       return rewritten === source ? loaded : { ...loaded, source: rewritten };
     },
   });

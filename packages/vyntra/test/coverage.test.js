@@ -6,12 +6,12 @@ const { functionStarts } = require('../src/coverage/untested');
 
 const BIN = path.join(__dirname, '..', 'bin', 'vyntra.js');
 
-function coverageOf(config) {
-  const dir = copyFixture('coverage');
+function coverageOf(config, fixture = 'coverage', args = []) {
+  const dir = copyFixture(fixture);
   if (config) {
     fs.writeFileSync(path.join(dir, 'vyntra.config.js'), `module.exports = ${JSON.stringify(config)};\n`);
   }
-  const { stdout } = spawnSync(process.execPath, [BIN, '--root', dir, '--no-color', '--coverage'], {
+  const { stdout } = spawnSync(process.execPath, [BIN, '--root', dir, '--no-color', '--coverage', ...args], {
     encoding: 'utf8',
     env: { ...process.env, CI: '', GITHUB_ACTIONS: '' },
   });
@@ -36,6 +36,14 @@ describe('coverage of files no test loads', () => {
 
   it('reports only the files tests loaded when it does not', () => {
     expect(Object.keys(coverageOf().rows)).toEqual(['src/math.js']);
+  });
+});
+
+describe('coverage of compiled files', () => {
+  it('counts the lines of the source, not of the compiled code', () => {
+    // The fixture's compiler drops blank and comment lines: the throw on line 10 is line 3 of what ran.
+    const { rows } = coverageOf(null, 'sourcemaps', ['cart.test.ts', '-t', 'adds']);
+    expect(rows['cart.ts']).toEqual(['75.00', '0.00', '100.00', '75.00', '10']);
   });
 });
 

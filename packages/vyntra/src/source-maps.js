@@ -14,11 +14,27 @@ function registerCompiledCode(lookup) {
   lookups.push(lookup);
 }
 
+// The compiled code of a file, if a compiler made it.
+const compiledCodeOf = (file) => lookups.reduce((found, lookup) => found ?? lookup(file), null);
+
+// The source map a compiler left inline at the end of its output, as JSON, or null.
+function inlineMapOf(code) {
+  const match = INLINE_MAP.exec(code.slice(Math.max(0, code.lastIndexOf('sourceMappingURL=') - 4)));
+  if (!match) {
+    return null;
+  }
+  try {
+    return JSON.parse(Buffer.from(match[1], 'base64').toString('utf8'));
+  } catch {
+    return null;
+  }
+}
+
 // Decoded maps, per file and compiled code: a file compiled again (another source) gets its own.
 const decoded = new Map();
 
 function mapOf(file) {
-  const code = lookups.reduce((found, lookup) => found ?? lookup(file), null);
+  const code = compiledCodeOf(file);
   if (!code) {
     return null;
   }
@@ -26,15 +42,8 @@ function mapOf(file) {
   if (cached?.code === code) {
     return cached.map;
   }
-  let map = null;
-  const match = INLINE_MAP.exec(code.slice(Math.max(0, code.lastIndexOf('sourceMappingURL=') - 4)));
-  if (match) {
-    try {
-      map = new SourceMap(JSON.parse(Buffer.from(match[1], 'base64').toString('utf8')));
-    } catch {
-      map = null;
-    }
-  }
+  const payload = inlineMapOf(code);
+  const map = payload ? new SourceMap(payload) : null;
   decoded.set(file, { code, map });
   return map;
 }
@@ -83,4 +92,4 @@ function mapStack(stack) {
     .join('\n');
 }
 
-module.exports = { registerCompiledCode, mapStack, originalPosition };
+module.exports = { registerCompiledCode, mapStack, originalPosition, compiledCodeOf, inlineMapOf };
