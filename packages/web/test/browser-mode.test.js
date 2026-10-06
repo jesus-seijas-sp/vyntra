@@ -1,4 +1,5 @@
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
@@ -110,6 +111,42 @@ exports[\`snapshots > of an element: viewport 1\`] = \`
     } finally {
       fs.rmSync(file, { force: true });
       fs.rmSync(path.dirname(stored), { recursive: true, force: true });
+    }
+  });
+
+  it("reports the coverage of the project's files, from Chromium's V8 coverage of the page", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vyntra-browser-coverage-'));
+    try {
+      const { status } = run(['coverage.test.js', '--coverage', '--coverageDirectory', dir]);
+      expect(status).toBe(0);
+      const lcov = fs.readFileSync(path.join(dir, 'lcov.info'), 'utf8');
+      const grade = lcov.split('end_of_record').find((record) => record.includes('src/grade.ts'));
+      // As in Node: the function no test calls is uncovered, not tree-shaken away; esbuild's module wrappers are
+      // not the file's functions or lines.
+      expect(grade.match(/^(?:FN|FNDA|DA|BRDA):.*$/gm)).toEqual([
+        'FN:3,grade',
+        'FN:13,unused',
+        'FN:17,label',
+        'FNDA:2,grade',
+        'FNDA:0,unused',
+        'FNDA:1,label',
+        'BRDA:4,0,0,1',
+        'BRDA:9,1,0,-',
+        'BRDA:17,2,0,-',
+        'DA:3,2',
+        'DA:4,2',
+        'DA:5,1',
+        'DA:7,1',
+        'DA:8,1',
+        'DA:10,0',
+        'DA:13,0',
+        'DA:14,0',
+        'DA:17,1',
+      ]);
+      // Test files are not the project's code.
+      expect(lcov).not.toContain('coverage.test.js');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
     }
   });
 });

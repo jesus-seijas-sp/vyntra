@@ -951,7 +951,8 @@ test('counts clicks', async () => {
           are added to the page, images are data URLs, and failures and console output point at your files.
         </p>
         <p>
-          Not yet in browser mode: coverage, and the WebdriverIO provider.
+          <code>--coverage</code> works in Chromium, from its V8 coverage, as in Node: the same lines, functions and
+          branches. Not yet in browser mode: the WebdriverIO provider.
         </p>
 
         <h2 id="typescript">TypeScript and ES modules</h2>
@@ -1076,7 +1077,7 @@ test('counts clicks', async () => {
         </p>
         <h3>What is not supported yet?</h3>
         <p>
-          In browser mode: coverage and the WebdriverIO provider.
+          In browser mode: the WebdriverIO provider, and coverage in Firefox and WebKit.
           <a href="migrating.html#missing">Migrating</a> has the whole list.
         </p>
         <h3>My tests expect <code>NODE_ENV=test</code>.</h3>

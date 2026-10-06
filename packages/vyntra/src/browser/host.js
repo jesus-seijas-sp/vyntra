@@ -1,3 +1,6 @@
+const path = require('node:path');
+const { fileURLToPath } = require('node:url');
+const { bundleCoverage } = require('../coverage/collector');
 const { SnapshotState } = require('../snapshot/snapshot-state');
 const { readSnapshotFile } = require('../snapshot/snapshot-file');
 const { serializeError } = require('../run/serialize-error');
@@ -47,4 +50,16 @@ function saveSnapshots(result, config, mapStack) {
   return { ...rest, errors, snapshot };
 }
 
-module.exports = { pageConfig, saveSnapshots };
+// The coverage of a page, from Chromium's V8 coverage of its bundle: on the project's files, as a Node worker's.
+function pageCoverage(bundle, functions, config, testFiles) {
+  const map = JSON.parse(bundle.map);
+  const sources = map.sources.map((source) =>
+    source.startsWith('file:') ? fileURLToPath(source) : path.resolve(config.rootDir, source)
+  );
+  return bundleCoverage(bundle.code, { ...map, sources }, functions, {
+    rootDir: config.rootDir,
+    testFiles: [...testFiles, ...(config.setupFiles ?? [])],
+  });
+}
+
+module.exports = { pageConfig, saveSnapshots, pageCoverage };

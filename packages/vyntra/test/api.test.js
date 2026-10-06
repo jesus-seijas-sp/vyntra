@@ -90,11 +90,10 @@ describe('ApiClient', () => {
       response.setHeader('content-type', request.url === '/text' ? 'text/plain' : 'application/json');
       request.pipe(response);
     });
-    const port = await freePort();
     await new Promise((resolve) => {
-      server.listen(port, resolve);
+      server.listen(0, resolve);
     });
-    baseURL = `http://localhost:${port}`;
+    baseURL = `http://localhost:${server.address().port}`;
   });
 
   afterAll(() => {

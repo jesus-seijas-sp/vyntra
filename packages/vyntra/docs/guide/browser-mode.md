@@ -26,4 +26,4 @@ test('counts clicks', async () => {
 
 `vitest/browser` (or `@vitest/browser/context`) gives `page` (`getByRole`, `getByText`, `getByLabelText`, `getByPlaceholder`, `getByAltText`, `getByTitle`, `getByTestId`, `viewport`, `screenshot`) and `userEvent` (`click`, `dblClick`, `fill`, `type`, `clear`, `hover`, `selectOptions`, `keyboard`, `tab`), whose actions Playwright performs. `expect.element()` retries for a second, and jest-dom's matchers are there (`toBeVisible`, `toHaveTextContent`, `toHaveValue`...). `vi.mock` works with a factory (async, with `importOriginal`) or without one. Snapshots work as in Node: `toMatchSnapshot` and `toMatchInlineSnapshot`, with `-u`, elements printed as Vitest prints them. Stylesheets are added to the page, images are data URLs, and failures and console output point at your files.
 
-Not yet in browser mode: coverage, and the WebdriverIO provider.
+`--coverage` works in Chromium, from its V8 coverage, as in Node: the same lines, functions and branches. Not yet in browser mode: the WebdriverIO provider.

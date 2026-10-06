@@ -42,8 +42,10 @@ describe('coverage of files no test loads', () => {
 describe('coverage of compiled files', () => {
   it('counts the lines of the source, not of the compiled code', () => {
     // The fixture's compiler drops blank and comment lines: the throw on line 10 is line 3 of what ran.
-    const { rows } = coverageOf(null, 'sourcemaps', ['cart.test.ts', '-t', 'adds']);
+    const { rows, lcov } = coverageOf(null, 'sourcemaps', ['cart.test.ts', '-t', 'adds']);
     expect(rows['cart.ts']).toEqual(['75.00', '0.00', '100.00', '75.00', '10']);
+    // The compiled module, a function over the whole script, is not one of the file's functions.
+    expect(lcov.match(/^FN:.*$/gm)).toEqual(['FN:5,total', 'FN:12,(anonymous)']);
   });
 });
 

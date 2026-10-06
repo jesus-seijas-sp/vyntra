@@ -88,6 +88,7 @@ class BrowserRunner {
     this.stopped = false;
     this.pages = new Map();
     this.contexts = new Set();
+    this.coverage = [];
   }
 
   async serve() {
@@ -128,6 +129,11 @@ class BrowserRunner {
     this.contexts.add(context);
     try {
       const page = await context.newPage();
+      // V8's, as in Node: Chromium's alone gives it.
+      const coverage = this.config.coverage && page.coverage;
+      if (coverage) {
+        await coverage.startJSCoverage({ resetOnNavigation: false });
+      }
       const reported = Promise.withResolvers();
       await page.exposeFunction('__vyntraReport', (result) => reported.resolve(result));
       await page.exposeFunction('__vyntraCommand', commandsFor(page, { rootDir, file }));
@@ -145,6 +151,12 @@ class BrowserRunner {
       }
       // eslint-disable-next-line global-require -- vyntra's internals, by path
       const host = require(coreFiles(rootDir).host);
+      if (coverage) {
+        const ran = (await coverage.stopJSCoverage()).find((entry) => entry.url === url);
+        if (ran) {
+          this.coverage.push(host.pageCoverage(bundle, ran.functions, this.config, this.files));
+        }
+      }
       const mapped = {
         ...result,
         path: file,
@@ -187,6 +199,7 @@ class BrowserRunner {
   async run(jobs) {
     this.options = browserOptions(this.config);
     this.queue = jobs.map((job) => job.path);
+    this.files = [...this.queue];
     await this.serve();
     this.browser = await playwrightOf(this.config.rootDir)[this.options.name].launch({
       headless: this.options.headless,
@@ -207,7 +220,11 @@ class BrowserRunner {
       await this.browser.close().catch(() => {});
       this.server.close();
     }
-    return [];
+    if (this.config.coverage && this.options.name !== 'chromium') {
+      process.stderr.write(`Coverage in browser mode is Chromium's: ${this.options.name} gives none\n`);
+    }
+    // As a Node worker's: merged with theirs by the run.
+    return this.coverage.map((coverage) => ({ coverage }));
   }
 
   stop() {

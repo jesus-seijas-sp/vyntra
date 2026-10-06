@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Session } = require('node:inspector');
 const { fileURLToPath } = require('node:url');
-const { remapCoverage } = require('./remap');
+const { remapCoverage, remapBundle } = require('./remap');
 
 const RUNTIME_DIR = path.join(__dirname, '..');
 const NODE_MODULES = `${path.sep}node_modules${path.sep}`;
@@ -70,6 +70,17 @@ function addScript(files, file, functions) {
   files.set(file, coverage);
 }
 
+// Project files only: not dependencies, not vyntra, not the test files themselves.
+function projectFile(file, { rootDir, realRoot, testFiles }) {
+  return (
+    file !== null &&
+    (file.startsWith(rootDir) || file.startsWith(realRoot)) &&
+    !file.includes(NODE_MODULES) &&
+    !file.startsWith(RUNTIME_DIR) &&
+    !testFiles.has(file)
+  );
+}
+
 // V8's precise coverage of the code this thread runs: no instrumentation, V8 counts the blocks it executes.
 class CoverageCollector {
   constructor({ rootDir, testFiles = [] }) {
@@ -93,15 +104,8 @@ class CoverageCollector {
     await this.post('Profiler.startPreciseCoverage', { callCount: true, detailed: true });
   }
 
-  // Project files only: not dependencies, not vyntra, not the test files themselves.
   includes(file) {
-    return (
-      file !== null &&
-      (file.startsWith(this.rootDir) || file.startsWith(this.realRoot)) &&
-      !file.includes(NODE_MODULES) &&
-      !file.startsWith(RUNTIME_DIR) &&
-      !this.testFiles.has(file)
-    );
+    return projectFile(file, this);
   }
 
   // Takes the counts so far, which V8 then resets. Called after every test file, as the copies of the modules it
@@ -141,6 +145,15 @@ function serialize(files) {
   );
 }
 
+// The coverage of a browser page (browser mode): V8's, of the bundle it ran (code, with its source map, sources as
+// paths), on the project files the bundle was built from.
+function bundleCoverage(code, map, functions, { rootDir, testFiles = [] }) {
+  const scripts = new Map();
+  addScript(scripts, 'bundle', functions);
+  const scope = { rootDir, realRoot: realPath(rootDir), testFiles: new Set(testFiles.flatMap((file) => [file, realPath(file)])) };
+  return serialize(remapBundle(code, map, scripts.get('bundle'), (file) => projectFile(file, scope)));
+}
+
 // Merges the coverage of several threads.
 function mergeCoverage(results) {
   const files = new Map();
@@ -156,4 +169,4 @@ function mergeCoverage(results) {
   return serialize(files);
 }
 
-module.exports = { CoverageCollector, mergeCoverage, realPath };
+module.exports = { CoverageCollector, mergeCoverage, bundleCoverage, realPath };

@@ -222,6 +222,8 @@ await globalThis.__vyntraReport(await finish({ config, error }));
     write: false,
     outfile: path.join(rootDir, '__vyntra_bundle.js'),
     sourcemap: 'external',
+    // Code no test reaches is uncovered, not left out, as with vitest's unbundled modules.
+    treeShaking: !config.coverage,
     logLevel: 'silent',
     jsx: 'automatic',
     loader: {

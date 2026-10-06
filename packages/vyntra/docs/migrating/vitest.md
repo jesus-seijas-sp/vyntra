@@ -34,7 +34,7 @@ vyntra reads your `vitest.config.ts` (or a `vite.config.*` with a `test` section
 | `typecheck`, `expectTypeOf`, `assertType` | ✓ `--typecheck` checks the `*.test-d.ts` files with your `tsc` (or `vue-tsc`), each error on its test; `include`, `tsconfig`, `checker`, `ignoreSourceErrors` as in Vitest. At run time `expectTypeOf` and `assertType` do nothing |
 | `includeSource`, in-source tests (`if (import.meta.vitest)`) | ✓ The same: a source file is a test file when it has them, and a module another test imports keeps them to itself |
 | `bench`, `vitest bench`, `benchmark` options | ✓ `vyntra bench` runs the `*.bench.*` files: `bench(name, fn, { time, iterations, warmupTime, warmupIterations, setup, teardown })`, tables of hz, percentiles and margin of error, `--outputJson` and `--compare` |
-| Browser mode (`browser.enabled`), `vitest/browser` | ✓ With `@vyntra/web`, on Playwright: each test file is bundled with your esbuild and runs in a page; `page`, `userEvent`, locators, `expect.element`, jest-dom's matchers, `vi.mock`, snapshots. Not yet: coverage, WebdriverIO. See [Browser mode](../guide/browser-mode.md) |
+| Browser mode (`browser.enabled`), `vitest/browser` | ✓ With `@vyntra/web`, on Playwright: each test file is bundled with your esbuild and runs in a page; `page`, `userEvent`, locators, `expect.element`, jest-dom's matchers, `vi.mock`, snapshots, coverage (Chromium). Not yet: WebdriverIO. See [Browser mode](../guide/browser-mode.md) |
 
 ## Differences with Vitest
 
