@@ -121,7 +121,7 @@ module.exports = {
       retry: 1,
       testTimeout: 60_000,
       dependsOn: ['api'],
-      use: { baseURL: 'http://localhost:4000', browser: 'chromium' },
+      use: { baseURL: 'http://localhost:4000', browserName: 'chromium' },
     },
   ],
 };
@@ -285,10 +285,19 @@ stays failed for the worker. A run without `projects` keeps today's scheduling.
 
 - Fixtures: worker-scoped `browser`, test-scoped `context` and `page`. Locators and web-first
   assertions come from Playwright; vyntra's `expect` delegates to them for locators.
-- Browsers: `chromium`, `firefox`, `webkit` through `use.browser`.
+- Browsers: `chromium`, `firefox`, `webkit` through `use.browserName`.
 - On failure: a screenshot, the page's accessibility tree, the console and the network log, in the
   failure page; a Playwright trace with `use.trace: 'on-failure'`.
 - Defaults that suit end-to-end tests: `pool: 'forks'`, low concurrency, `retry: 1`, longer timeouts.
+
+As built: the browser option is `use.browserName`, Playwright's name, since every `use` value is
+also a fixture and `use.browser` would replace the `browser` fixture. The web-first assertions are
+vyntra's own, over Playwright's locator API: Playwright's `expect` lives in `@playwright/test`, its
+runner, which `@vyntra/web` does not load. They poll every 100 ms for up to 5 seconds. Traces default
+to `on-failure` (recorded for every test, kept for failures) and screenshots to `only-on-failure`.
+Fixtures learn that a test failed through `testInfo.failed`, set before they tear down, and keep files
+in `.vyntra/artifacts/<test>/attempt-<n>/` with `testInfo.attach()`. An engine is loaded by every
+worker of its project and fills in only the options the project leaves unset.
 
 ## AI layer (milestone 4)
 

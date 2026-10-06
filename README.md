@@ -9,10 +9,13 @@ This repository holds vyntra and the packages that grow around it. To use vyntra
 
 | Package | npm | What it is |
 | --- | --- | --- |
-| [`packages/vyntra`](./packages/vyntra) | [`vyntra`](https://www.npmjs.com/package/vyntra) | The runner: Jest/Vitest compatible API, mocks, snapshots, coverage, no dependencies |
+| [`packages/vyntra`](./packages/vyntra) | [`vyntra`](https://www.npmjs.com/package/vyntra) | The runner: Jest/Vitest compatible API, mocks, snapshots, coverage, projects, API testing, no dependencies |
+| [`packages/web`](./packages/web) | `@vyntra/web` | End-to-end web tests on Playwright: browser and page fixtures, web-first assertions, failure pages with a screenshot and a trace |
+
+[`examples/todo-app`](./examples/todo-app) is a small app tested by one config: unit, API and end-to-end tests.
 
 The runner is growing into one framework for unit, API and end-to-end tests with AI-assisted steps; the
-engines for those will be packages of their own here (`@vyntra/web`, `@vyntra/ai`, `@vyntra/mcp`). The
+engines for those are packages of their own here (`@vyntra/web`, and next `@vyntra/ai`, `@vyntra/mcp`). The
 plan is in [docs/design/unified-testing.md](./docs/design/unified-testing.md).
 
 ## Development

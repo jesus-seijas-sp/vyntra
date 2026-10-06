@@ -13,7 +13,13 @@ const compat = new FlatCompat({
 
 module.exports = [
   {
-    ignores: ['**/node_modules/**/*', '**/coverage/**/*', 'docs/**/*', 'packages/*/test/fixtures/**/*'],
+    ignores: [
+      '**/node_modules/**/*',
+      '**/coverage/**/*',
+      'docs/**/*',
+      'packages/*/test/fixtures/**/*',
+      '**/.vyntra/**/*',
+    ],
   },
   ...compat.extends('prettier'),
   {
@@ -824,7 +830,7 @@ module.exports = [
     },
   },
   {
-    files: ['packages/*/test/**/*.js'],
+    files: ['packages/*/test/**/*.js', 'examples/**/*.test.{js,mjs}', 'examples/**/*.e2e.js'],
     languageOptions: {
       globals: Object.fromEntries(
         ['describe', 'it', 'test', 'expect', 'vi', 'jest', 'beforeAll', 'afterAll', 'beforeEach', 'afterEach'].map(
@@ -836,6 +842,27 @@ module.exports = [
   {
     files: ['**/*.mjs'],
     languageOptions: { sourceType: 'module' },
+  },
+  {
+    // The examples are apps: a page script, a server that logs, tests with the runner's globals.
+    files: ['examples/**/*.{js,mjs}'],
+    languageOptions: {
+      globals: Object.fromEntries(
+        ['describe', 'it', 'test', 'expect', 'vi', 'beforeAll', 'afterAll', 'beforeEach', 'afterEach'].map((name) => [
+          name,
+          'readonly',
+        ])
+      ),
+    },
+    rules: {
+      'no-console': 'off',
+      'no-restricted-syntax': 'off',
+      'no-use-before-define': ['error', { functions: false }],
+    },
+  },
+  {
+    files: ['examples/*/public/**/*.mjs'],
+    languageOptions: { globals: { ...globals.browser } },
   },
   eslintPluginPrettierRecommended,
 ];

@@ -61,6 +61,7 @@
           <li><a href="#split-files">Splitting long files</a></li>
           <li><a href="#projects">Projects</a></li>
           <li><a href="#api-tests">API tests</a></li>
+          <li><a href="#e2e">End-to-end tests</a></li>
           <li><a href="#typescript">TypeScript and ES modules</a></li>
           <li><a href="#imports">What files can import</a></li>
           <li><a href="#speed">Why it is fast</a></li>
@@ -767,6 +768,37 @@ test('creates a user', async ({ api }) => {
           shows them, the last one first, with the server's last lines: what was sent, what came back, and what the
           server said about it. Authorization headers and cookies are hidden there. API tests run in the
           <code>node</code> environment, as fast as unit tests.
+        </p>
+
+        <h2 id="e2e">End-to-end tests</h2>
+        <p>
+          A project with <code>engine: 'web'</code> runs its tests in a browser, with
+          <a href="https://www.npmjs.com/package/@vyntra/web"><code>@vyntra/web</code></a> on Playwright. Tests
+          destructure <code>page</code> (or <code>context</code>, <code>browser</code>) and check it with assertions
+          that retry until the page agrees:
+        </p>
+        <pre><code class="language-sh">npm install --save-dev @vyntra/web playwright
+npx playwright install chromium</code></pre>
+        <pre><code class="language-js">// vyntra.config.js
+{ name: 'e2e', include: ['e2e/**/*.e2e.ts'], engine: 'web', dependsOn: ['api'] }
+
+// e2e/todos.e2e.ts
+test('adds a todo', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('textbox', { name: 'New todo' }).fill('Buy milk');
+  await page.getByRole('button', { name: 'Add' }).click();
+  await expect(page.getByRole('listitem')).toHaveText('Buy milk');
+});</code></pre>
+        <p>
+          Each test gets a fresh context and page; the browser is set up once per worker. The project's
+          <code>use</code> sets <code>baseURL</code>, <code>browserName</code>, <code>viewport</code>,
+          <code>trace</code> and <code>screenshot</code>. A web project runs in child processes on half the cores,
+          retries a failing test once, and gives tests 30 seconds, unless it says otherwise.
+        </p>
+        <p>
+          When a test fails, its page in the <code>markdown</code> report shows a screenshot, the page's URL and
+          accessibility tree, its console and network, and the Playwright trace with the command that opens it, for
+          every attempt: what a person, or a coding agent, needs to see what went wrong without running it again.
         </p>
 
         <h2 id="typescript">TypeScript and ES modules</h2>

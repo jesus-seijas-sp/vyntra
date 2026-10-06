@@ -1,0 +1,39 @@
+{
+  "name": "@vyntra/web",
+  "version": "0.0.0",
+  "description": "End-to-end web testing for vyntra, on Playwright: browser, context and page fixtures, web-first assertions, and failure pages with a screenshot, the accessibility tree, the console, the network and a trace.",
+  "license": "MIT",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node ../vyntra/bin/vyntra.js"
+  },
+  "peerDependencies": {
+    "playwright": ">=1.49.0",
+    "vyntra": "workspace:^"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jesus-seijas-sp/vyntra.git",
+    "directory": "packages/web"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "vyntra": {
+    "exclude": [
+      "**/node_modules/**",
+      "test/fixtures/**"
+    ]
+  },
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "vyntra": "workspace:*"
+  }
+}

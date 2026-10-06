@@ -128,7 +128,8 @@
               <tr><td><code>skip(note?)</code>, <code>skip(condition, note?)</code></td><td>Stops the test and marks it as skipped</td></tr>
               <tr><td><code>signal</code></td><td>An <code>AbortSignal</code> aborted when the test ends</td></tr>
               <tr><td><code>onTestFinished(fn)</code>, <code>onTestFailed(fn)</code></td><td>As the globals</td></tr>
-              <tr><td>fixtures</td><td>The values of the fixtures of <code>test.extend</code> the test destructures, the values of the config's <code>use</code>, and the built-in <code>server</code> (<code>{ url, name, reused }</code>)</td></tr>
+              <tr><td>fixtures</td><td>The values of the fixtures of <code>test.extend</code> the test destructures, the values of the config's <code>use</code>, the built-in <code>api</code> and <code>server</code> (<code>{ url, name, reused }</code>), and an engine's (<code>page</code>, <code>context</code>, <code>browser</code>)</td></tr>
+              <tr><td><code>testInfo</code></td><td>For fixtures that keep evidence: <code>failed</code> (set before fixtures tear down), <code>attempt</code>, <code>outputPath(...parts)</code> (the attempt's folder in <code>.vyntra/artifacts</code>), <code>attach(name, { path | body, contentType })</code> (shown on the failure page)</td></tr>
             </tbody>
           </table>
         </div>
@@ -425,6 +426,7 @@
               <tr><td><code>exclude</code></td><td><code>node_modules</code>, <code>.git</code>, <code>dist</code>, <code>coverage</code></td><td>Globs of the folders and files left out</td></tr>
               <tr><td><code>excludePatterns</code></td><td><code>[]</code></td><td>Regular expressions of paths left out (Jest's <code>testPathIgnorePatterns</code>)</td></tr>
               <tr><td><code>roots</code></td><td><code>['.']</code></td><td>Folders to look for tests in</td></tr>
+              <tr><td><code>engine</code></td><td><code>undefined</code></td><td>The kind of tests of the project: <code>'web'</code> runs them in a browser with <code>@vyntra/web</code> (see <a href="guide.html#e2e">End-to-end tests</a>)</td></tr>
               <tr><td><code>projects</code></td><td><code>undefined</code></td><td>Parts of the suite with options of their own: <code>{ name, include, dependsOn, globalSetup, globalTeardown, ... }</code> (see <a href="guide.html#projects">Projects</a>)</td></tr>
               <tr><td><code>globalSetup</code>, <code>globalTeardown</code></td><td><code>undefined</code></td><td>Files run once in the main process, before and after the test files (see <a href="guide.html#global-setup">Global setup</a>)</td></tr>
               <tr><td><code>server</code></td><td><code>undefined</code></td><td>A command started before the tests and stopped after: <code>{ command, url | port, timeout, reuseExisting, env, cwd }</code> (see <a href="guide.html#server">A server for the tests</a>)</td></tr>

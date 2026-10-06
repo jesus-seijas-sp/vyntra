@@ -1,0 +1,14 @@
+{
+  "name": "vyntra-example-todo-app",
+  "private": true,
+  "description": "A small todo app tested by one vyntra config: unit, API and end-to-end tests.",
+  "scripts": {
+    "start": "node server.js",
+    "test": "vyntra"
+  },
+  "devDependencies": {
+    "@vyntra/web": "workspace:*",
+    "playwright": "1.63.0",
+    "vyntra": "workspace:*"
+  }
+}
