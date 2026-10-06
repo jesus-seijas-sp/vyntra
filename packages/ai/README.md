@@ -271,6 +271,7 @@ In `use.ai`:
 | `mode` | `record` (`replay` under `CI`) | See above; `--ai` wins over it |
 | `cacheDir` | `vyntra.ai-cache` | Where recordings go, from the project root |
 | `budget` | `{ calls: 200, tokens: 2_000_000 }` | What one run may spend over all its workers. Past it, AI steps fail and the run ends with exit code 3 |
+| `diffs` | `true` | After each action, the agent gets what changed on the page (a unified diff), or the whole page when most of it changed; `false` (or `VYNTRA_AI_DIFFS=0`) sends the whole page every time. On a 200-row page it cut an act's tokens by 44% |
 | `maxSteps` | `25` | Model turns `agent.act` may take for one goal |
 | `actionTimeout` | `5000` | How long one action waits for its target (ms) |
 | `judge` | the acting model | The model for judgments (`assert`, `waitFor`, `extract`, `toSatisfy`): a model name on the same provider, or `{ provider, model, effort, baseURL }`. `VYNTRA_AI_JUDGE_MODEL` names one too. A cheap model can act while a strong one judges; recordings name the model that answered, and a new judge records the judgments again but not the actions |

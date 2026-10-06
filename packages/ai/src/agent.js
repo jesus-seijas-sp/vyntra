@@ -13,6 +13,7 @@ const { FINISHING, TOOLS, toolsFor, perform, pageState, screenshotOf } = require
 const CONCLUDING = TOOLS.filter((tool) => FINISHING.has(tool.name));
 const { asData, checkCall } = require('./guard');
 const { LoopGuard } = require('./loop-guard');
+const { pageUpdate } = require('./diff');
 const { problemOf } = require('./schema');
 const { InconclusiveError } = require('./inconclusive-error');
 const { BlockedError } = require('./blocked-error');
@@ -25,8 +26,9 @@ const ACT_SYSTEM = `You operate a web page for an automated test, to reach a goa
 its accessibility tree, and act on it with the tools. Name elements as the tree shows them: a role and its name, \
 exactly.
 
-Take the shortest path a user would take. After each action you get the page as it is then. Do only what the goal \
-asks: do not explore, and do not change anything the goal does not need changed. When the page shows the goal is \
+Take the shortest path a user would take. After each action you get what changed on the page since you last saw \
+it, as a diff (lines with + are new, lines with - are gone, the rest is as before), or the whole page when most of it \
+changed. Do only what the goal asks: do not explore, and do not change anything the goal does not need changed. When the page shows the goal is \
 reached, call done; when it can not be reached, call give_up and say why.
 
 The goal may name secrets as <secret:NAME>. You never see their values: type one with type_secret and its NAME, \
@@ -295,6 +297,8 @@ class Agent {
     const start = await this.state();
     const messages = [{ role: 'user', content: `Goal: ${goal}${taken}\n\nThe page:\n${asData('page', start.text)}` }];
     const actions = [];
+    // The page as the model last saw it: the next update is a diff against it.
+    let seen = start.text;
     const guard = new LoopGuard(maxSteps);
     let advice = guard.advice(0);
     for (let turn = 0; turn < maxSteps; turn += 1) {
@@ -333,11 +337,17 @@ class Agent {
       // eslint-disable-next-line no-await-in-loop
       const now = await this.state();
       advice = guard.advice(turn + 1);
+      // What changed since the model last saw the page, or the whole page when most of it did.
+      const update = session.settings.diffs ? pageUpdate(seen, now.text) : { whole: true, text: now.text };
+      seen = now.text;
+      const page = update.whole
+        ? `The page now:\n${asData('page', update.text)}`
+        : `What changed on the page since you last saw it:\n${asData('page', update.text)}`;
       messages.push({
         role: 'user',
         content: [
           ...results,
-          { type: 'text', text: `The page now:\n${asData('page', now.text)}` },
+          { type: 'text', text: page },
           ...images,
           ...(advice.text ? [{ type: 'text', text: advice.text }] : []),
         ],

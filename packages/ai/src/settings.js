@@ -155,6 +155,8 @@ function settingsOf(options = projectConfig().use.ai ?? {}, where = projectConfi
     system: limited('use.ai.system', ai.system),
     // Actions an agent may take for one goal, and how long one may wait for its target.
     maxSteps: ai.maxSteps ?? 25,
+    // After an action, what changed on the page rather than the whole page (false: the whole page every time).
+    diffs: ai.diffs ?? process.env.VYNTRA_AI_DIFFS !== '0',
     actionTimeout: ai.actionTimeout ?? 5_000,
   };
 }

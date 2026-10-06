@@ -47,4 +47,6 @@ The agent drags, answers native dialogs its actions open, and acts inside iframe
 
 Vision: the agent can ask for a screenshot and click a point of it, and `assert`, `waitFor` and `extract` take `vision: true | 'only'`; `use.ai.vision` (or `VYNTRA_AI_VISION_MODEL`) sends the calls that carry a screenshot to a model that reads images.
 
+After each action the agent gets a diff of the page against what it last saw, not the whole page again (`use.ai.diffs: false` to turn it off).
+
 On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.

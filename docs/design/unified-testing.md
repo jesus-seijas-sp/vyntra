@@ -413,6 +413,12 @@ whose messages carry an image goes to use.ai.vision (VYNTRA_AI_VISION_MODEL) whe
 provider sends images as image_url data parts; the trace keeps their size, not their bytes. Recordings are keyed by
 the tree plus the vision mode, not the pixels. No screenshot after a secret was typed.
 
+Screen diffs (src/diff.js): after each action the agent gets a unified diff (two lines of context, an LCS over the
+lines of address, title and tree) against the page it last saw, or the whole page when more than half the lines
+changed or the lines are too many to compare (4M cells). Measured live on a 200-row page: 74.5k tokens without, 42.0k
+with, the same 4 calls; on the benchmark's small pages, no difference. use.ai.diffs: false (VYNTRA_AI_DIFFS=0) turns
+them off.
+
 Exit check, done: in a copy of the example app with a bug planted in the shared `summary()` (it
 counted finished todos as left, breaking two end-to-end tests and no unit test), an agent given only
 the project's path and the report's location found and fixed the line from the failure pages, in 7
