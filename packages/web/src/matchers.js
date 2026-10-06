@@ -1,4 +1,5 @@
 const { setTimeout: sleep } = require('node:timers/promises');
+const { verified } = require('vyntra/engine');
 
 // Web-first assertions: they retry until the page agrees or the time runs out (`{ timeout }`, 5 seconds by default),
 // so a test waits for the app instead of for a fixed time. They take a Playwright locator, or a page for
@@ -61,6 +62,10 @@ function webMatcher(name, { target = 'locator', probe, expected: describeExpecte
     );
     const { pass, actual, timeout } = await retry(this, () => probe(received, ...args), options);
     const wanted = describeExpected ? describeExpected(...args) : null;
+    // A check of the page that held: what an AI step did before it is confirmed (see @vyntra/ai).
+    if (pass !== this.isNot) {
+      verified();
+    }
     return {
       pass,
       message: () =>

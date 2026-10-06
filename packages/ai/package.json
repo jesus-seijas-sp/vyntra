@@ -1,0 +1,47 @@
+{
+  "name": "@vyntra/ai",
+  "version": "0.0.0",
+  "description": "AI steps for vyntra: an agent that drives a page toward a goal and judges claims about it, and expect(value).toSatisfy(claim), all through a replay cache committed to the repository, so CI makes no model calls.",
+  "license": "MIT",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node ../vyntra/bin/vyntra.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0"
+  },
+  "peerDependencies": {
+    "playwright": ">=1.49.0",
+    "vyntra": "workspace:^"
+  },
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jesus-seijas-sp/vyntra.git",
+    "directory": "packages/ai"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "vyntra": {
+    "exclude": [
+      "**/node_modules/**",
+      "test/fixtures/**"
+    ]
+  },
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "vyntra": "workspace:*"
+  }
+}

@@ -16,7 +16,7 @@ This repository holds vyntra and the packages that grow around it. To use vyntra
 [`examples/todo-app`](./examples/todo-app) is a small app tested by one config: unit, API and end-to-end tests.
 
 The runner is growing into one framework for unit, API and end-to-end tests with AI-assisted steps; the
-engines for those are packages of their own here (`@vyntra/web`, `@vyntra/mcp`, and next `@vyntra/ai`). The
+engines for those are packages of their own here (`@vyntra/web`, `@vyntra/ai`, `@vyntra/mcp`). The
 plan is in [docs/design/unified-testing.md](./docs/design/unified-testing.md).
 
 ## Development

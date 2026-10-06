@@ -11,7 +11,7 @@ const { realTimers } = require('../timers');
 const { parseCli } = require('./args');
 const { loadConfig } = require('./config');
 const { parseShard, selectShard } = require('./select-shard');
-const { EXIT, brokeSetup } = require('./exit-codes');
+const { EXIT, brokeSetup, brokeEnvironment } = require('./exit-codes');
 const { readReport, owedAfter, rerunOf, writeReport } = require('./last-run');
 const { reporterNames, unknownReporters, createReporters, clearOutputs } = require('./reporters');
 const { explicitWorkers } = require('./schedule');
@@ -149,6 +149,8 @@ async function runOnce(argv, outcome = {}) {
     return EXIT.setup;
   }
   const startedAt = new Date().toISOString();
+  // The run, for what its workers share outside the project (the AI budget): they inherit the environment.
+  process.env.VYNTRA_RUN_ID = `${process.pid}-${Date.now()}`;
   const previous = readReport(config);
   if (config.mode === 'bench') {
     resolved.projects.forEach((project) => Object.assign(project.config, { include: config.include, mode: 'bench' }));
@@ -208,7 +210,7 @@ async function runOnce(argv, outcome = {}) {
       timings.record(result.path, work, result.tests.length, Math.max(0, work - testTime) / (result.shards ?? 1));
     }
     reporter.onFileResult(result);
-    if (result.errors.some((error) => error.phase === 'environment')) {
+    if (brokeEnvironment(result)) {
       environmentFiles += 1;
     } else if (brokeSetup(result)) {
       brokenFiles += 1;

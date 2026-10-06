@@ -1,0 +1,20 @@
+---
+"vyntra": minor
+"@vyntra/ai": minor
+---
+
+`@vyntra/ai`, the AI engine: `expect(value).toSatisfy(claim)` in any project with `engine: 'ai'`, and an `agent` fixture with `act(goal)`, `assert(claim)` and `extract(what, schema)` on the page of `@vyntra/web` (`engine: ['web', 'ai']`). Results go through a replay cache committed to the repository (`vyntra.ai-cache/`, one file per test), keyed by the step, its input, the model and the prompts: CI replays with no credentials and no model calls, and a replayed `act` whose action no longer finds its target hands over to the model. `--ai replay|record|live|off`, a per-run budget of calls and tokens over all workers, Claude through the Anthropic SDK with server-side fallbacks, OpenRouter and any OpenAI-compatible host (`VYNTRA_AI_PROVIDER` and `VYNTRA_AI_MODEL` choose them from the environment), and providers of the project's own. In the core: a project may name several engines, `vyntra/engine` gives engines the running test, the replay cache and `EnvironmentError`, and a test that fails with an error of the environment ends the run with exit code 3.
+
+An `act` is recorded only when a later check in the test passes, together with what it changed on the page; a replay checks the page ends the same way and hands over to the model (or fails, under `--ai replay`) when it does not, and a failed test drops the recordings it can no longer vouch for.
+
+Secrets: `secret()` handles for passwords and keys, typed by the runner through a `type_secret` action the model calls by name; their values are hidden from prompts, recordings, failure pages, errors, console output and attachments, and an attempt that typed one keeps no screenshot or trace. `agent.act` takes `params` for the `{name}`s in its goal.
+
+Rules for the agent: the page reaches the model as data it can not break out of, every tool call is checked against its schema before it runs, and navigation goes only to http and https addresses.
+
+Loop guards: an act refuses an action already taken on the same page, tells the model to change approach after 3 failed actions in a row, and asks for a verdict after 5 and on its last turn.
+
+Recordings are keyed by the page's route: path and query without the origin and the fragment, with ids, tokens and timestamps read as placeholders.
+
+Judgments can be inconclusive when the value or the page does not settle the claim, failing the test as such; extract checks its answer against the schema (one repair call) and fails as inconclusive when the page does not show the value, instead of returning a placeholder.
+
+On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.

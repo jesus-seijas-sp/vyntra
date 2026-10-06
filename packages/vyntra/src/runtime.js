@@ -23,7 +23,8 @@ const {
 const globalSnapshot = require('./global-snapshot');
 const { loadPlugins } = require('./plugins');
 const { teardownScope } = require('./run/fixtures');
-const { loadEngine } = require('./engines');
+const { enginesOf } = require('./engines');
+const { redact } = require('./secrets');
 const { installImportMetaEnv } = require('./import-meta-env');
 const { installImportMetaVitest } = require('./in-source');
 const { isCustom, setupEnvironment, baseEnvironment } = require('./custom-environment');
@@ -44,7 +45,7 @@ function captureConsole(silent) {
       if (!file) {
         original(...args);
       } else if (silent !== true) {
-        const text = type === 'dir' ? util.inspect(args[0], args[1]) : util.format(...args);
+        const text = redact(type === 'dir' ? util.inspect(args[0], args[1]) : util.format(...args));
         file.console.push({ type, test: test?.fullName, text });
       }
     };
@@ -178,16 +179,19 @@ function speedUpLoading(config) {
   return cache;
 }
 
-// The project's engine (engine: 'web'): its matchers join expect, its fixtures the built-in ones.
+// The project's engines (engine: 'web', or ['web', 'ai']): their matchers join expect, their fixtures the built-in
+// ones.
 function loadProjectEngine(config) {
-  if (!config.engine) {
+  const engines = enginesOf(config);
+  if (engines.length === 0) {
     return;
   }
-  const engine = loadEngine(config.engine, config.rootDir);
-  state.engineFixtures = engine.fixtures ?? null;
-  if (engine.matchers) {
-    expect.extend(engine.matchers);
-  }
+  state.engineFixtures = Object.assign({}, ...engines.map(({ engine }) => engine.fixtures ?? {}));
+  engines.forEach(({ engine }) => {
+    if (engine.matchers) {
+      expect.extend(engine.matchers);
+    }
+  });
 }
 
 // The result of a file whose custom environment did not set up: its tests did not run.

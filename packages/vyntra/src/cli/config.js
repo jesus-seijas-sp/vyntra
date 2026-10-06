@@ -480,6 +480,10 @@ async function loadConfig(cliOptions) {
   Object.entries(config.env ?? {}).forEach(([name, value]) => {
     process.env[name] = String(value);
   });
+  // --ai <mode>: read by @vyntra/ai in every worker, over the projects' use.ai.mode.
+  if (config.aiMode) {
+    process.env.VYNTRA_AI_MODE = config.aiMode;
+  }
   return config;
 }
 

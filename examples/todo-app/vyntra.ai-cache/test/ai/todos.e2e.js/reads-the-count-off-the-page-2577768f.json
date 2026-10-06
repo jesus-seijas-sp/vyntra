@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "entries": {
+    "95c5ab9b4301a665c6a6465f": {
+      "kind": "extract",
+      "text": "how many todos are left to do",
+      "model": "deepseek/deepseek-v4-flash",
+      "shown": true,
+      "value": 2
+    },
+    "a27812773f1ae5889f3aa25e": {
+      "kind": "act",
+      "text": "add the todos \"Walk the dog\" and \"Water the plants\"",
+      "model": "deepseek/deepseek-v4-flash",
+      "summary": "Added \"Walk the dog\" and \"Water the plants\" to the Todos list. The list now shows both items.",
+      "actions": [
+        {
+          "name": "fill",
+          "input": {
+            "target": {
+              "role": "textbox",
+              "name": "New todo"
+            },
+            "value": "Walk the dog"
+          }
+        },
+        {
+          "name": "click",
+          "input": {
+            "target": {
+              "role": "button",
+              "name": "Add"
+            }
+          }
+        },
+        {
+          "name": "fill",
+          "input": {
+            "target": {
+              "role": "textbox",
+              "name": "New todo"
+            },
+            "value": "Water the plants"
+          }
+        },
+        {
+          "name": "click",
+          "input": {
+            "target": {
+              "role": "button",
+              "name": "Add"
+            }
+          }
+        }
+      ],
+      "effect": {
+        "route": "/?list=:id",
+        "appeared": [
+          "status: 2 of 2 left",
+          "checkbox \"Walk the dog\"",
+          "text: Walk the dog",
+          "button \"Delete Walk the dog\": Delete",
+          "checkbox \"Water the plants\"",
+          "text: Water the plants",
+          "button \"Delete Water the plants\": Delete"
+        ],
+        "disappeared": [
+          "status: Nothing to do"
+        ]
+      }
+    }
+  }
+}

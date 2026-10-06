@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "entries": {
+    "b07a50707a8fb39fc4e3f3aa": {
+      "kind": "act",
+      "text": "add a todo called \"Buy milk\", then mark it as done",
+      "model": "deepseek/deepseek-v4-flash",
+      "summary": "Added a todo called \"Buy milk\" and checked it as done. The todo list shows 0 of 1 left, meaning the task is completed.",
+      "actions": [
+        {
+          "name": "fill",
+          "input": {
+            "target": {
+              "role": "textbox",
+              "name": "New todo",
+              "placeholder": "What needs doing?"
+            },
+            "value": "Buy milk"
+          }
+        },
+        {
+          "name": "click",
+          "input": {
+            "target": {
+              "role": "button",
+              "name": "Add"
+            }
+          }
+        },
+        {
+          "name": "set_checked",
+          "input": {
+            "target": {
+              "role": "checkbox",
+              "name": "Buy milk"
+            },
+            "checked": true
+          }
+        }
+      ],
+      "effect": {
+        "route": "/?list=:id",
+        "appeared": [
+          "status: 0 of 1 left",
+          "checkbox \"Buy milk\" [checked]",
+          "text: Buy milk",
+          "button \"Delete Buy milk\": Delete"
+        ],
+        "disappeared": [
+          "status: Nothing to do"
+        ]
+      }
+    },
+    "f4dce1130bed5499cc175300": {
+      "kind": "assert",
+      "text": "the list has one todo, \"Buy milk\", and it is marked as done",
+      "model": "deepseek/deepseek-v4-flash",
+      "verdict": "holds",
+      "reasoning": "The input shows a list with exactly one item, 'Buy milk', and the checkbox for it is checked, with the status indicating 0 of 1 left, confirming it is marked as done."
+    }
+  }
+}

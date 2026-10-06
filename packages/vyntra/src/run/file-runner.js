@@ -8,6 +8,7 @@ const { realTimers } = require('../timers');
 const { FixtureSet } = require('./fixtures');
 const { builtins } = require('../fixtures');
 const { slugOf } = require('./test-key');
+const { redact } = require('../secrets');
 
 const MAX_EXCHANGES = 10;
 
@@ -81,7 +82,12 @@ class FileRunner {
         return path.join(dir(), ...parts);
       },
       attach: (name, { path: file, body, contentType = 'text/plain' } = {}) => {
-        test.attachments.push({ name, path: file, body: body === undefined ? undefined : String(body), contentType });
+        test.attachments.push({
+          name,
+          path: file,
+          body: body === undefined ? undefined : redact(String(body)),
+          contentType,
+        });
       },
     };
   }

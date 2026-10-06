@@ -2,6 +2,8 @@
 // what explains it on its failure page: a screenshot, the page's accessibility tree, its console and network, and
 // a Playwright trace.
 
+const { currentTest, redact } = require('vyntra/engine');
+
 const KEPT_LINES = 100;
 const BROWSERS = ['chromium', 'firefox', 'webkit'];
 const TRACE_MODES = ['off', 'on', 'on-failure', 'retain-on-failure'];
@@ -38,6 +40,10 @@ function lineLog() {
   };
 }
 
+// Whether a secret was typed into the page in this attempt (@vyntra/ai's type_secret or fillSecret): the app may show
+// it anywhere, so no screenshot or trace of the attempt is kept, and the text evidence has secret values hidden.
+const tainted = () => currentTest()?.tainted ?? false;
+
 // Saves what a failed test's page shows, each step on its own: a page that crashed still gets the rest.
 async function saveEvidence(page, testInfo, { screenshot, console: consoleLog, network }) {
   const attempt = async (fn) => {
@@ -47,7 +53,9 @@ async function saveEvidence(page, testInfo, { screenshot, console: consoleLog, n
       // The page may be gone (closed, crashed): what can be saved is.
     }
   };
-  if (screenshot !== 'off') {
+  if (screenshot !== 'off' && tainted()) {
+    testInfo.attach('screenshot', { body: 'Not kept: a secret was typed into the page in this attempt' });
+  } else if (screenshot !== 'off') {
     await attempt(async () => {
       const file = testInfo.outputPath('screenshot.png');
       await page.screenshot({ path: file, fullPage: true, timeout: 5_000 });
@@ -55,17 +63,17 @@ async function saveEvidence(page, testInfo, { screenshot, console: consoleLog, n
     });
   }
   await attempt(async () => {
-    testInfo.attach('page', { body: page.url(), contentType: 'text/uri-list' });
+    testInfo.attach('page', { body: redact(page.url()), contentType: 'text/uri-list' });
   });
   await attempt(async () => {
     const tree = await page.locator('body').ariaSnapshot({ timeout: 5_000 });
-    testInfo.attach('accessibility tree', { body: tree, contentType: 'text/yaml' });
+    testInfo.attach('accessibility tree', { body: redact(tree), contentType: 'text/yaml' });
   });
   if (consoleLog.size > 0) {
-    testInfo.attach('console', { body: consoleLog.text() });
+    testInfo.attach('console', { body: redact(consoleLog.text()) });
   }
   if (network.size > 0) {
-    testInfo.attach('network', { body: network.text() });
+    testInfo.attach('network', { body: redact(network.text()) });
   }
 }
 
@@ -92,7 +100,11 @@ const fixtures = {
       await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
     }
     await use(context);
-    if (tracing && (trace === 'on' || testInfo.failed)) {
+    if (tracing && tainted()) {
+      // A trace records what was typed: not kept once a secret was.
+      await context.tracing.stop();
+      testInfo.attach('trace', { body: 'Not kept: a secret was typed into the page in this attempt' });
+    } else if (tracing && (trace === 'on' || testInfo.failed)) {
       const file = testInfo.outputPath('trace.zip');
       await context.tracing.stop({ path: file });
       testInfo.attach('trace', { path: file, contentType: 'application/zip' });

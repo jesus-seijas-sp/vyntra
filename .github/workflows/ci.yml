@@ -24,7 +24,12 @@ jobs:
       # The web engine's tests and the example's end-to-end tests drive Chromium.
       - run: pnpm --filter @vyntra/web exec playwright install --with-deps chromium
       - run: pnpm lint
+      # The example's AI tests replay what was recorded with this provider and model (CI is set: no model calls, no
+      # keys).
       - run: pnpm test
+        env:
+          VYNTRA_AI_PROVIDER: openrouter
+          VYNTRA_AI_MODEL: deepseek/deepseek-v4-flash
 
   # Is this change slower? The synthetic suite run with the base vyntra and this one, alternately on the same
   # machine: on a pull request against its base, on a push against the commit before.

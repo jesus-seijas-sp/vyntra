@@ -16,4 +16,10 @@ const SETUP_PHASES = new Set(['collect', 'policy', 'setup']);
 
 const brokeSetup = (result) => result.errors.some((error) => SETUP_PHASES.has(error.phase));
 
-module.exports = { EXIT, brokeSetup };
+// A file that met a problem outside the project: in its own setup (a server that did not start), or in a test (a model
+// provider that failed, an AI budget used up).
+const brokeEnvironment = (result) =>
+  result.errors.some((error) => error.phase === 'environment') ||
+  result.tests.some((test) => test.errors?.some((error) => error.phase === 'environment'));
+
+module.exports = { EXIT, brokeSetup, brokeEnvironment };

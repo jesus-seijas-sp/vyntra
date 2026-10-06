@@ -42,6 +42,7 @@ const OPTIONS = {
   ci: { type: 'boolean' },
   watch: { type: 'boolean' },
   watchAll: { type: 'boolean' },
+  ai: { type: 'string' },
   // Accepted for compatibility, nothing to do.
   run: { type: 'boolean' },
 };
@@ -77,6 +78,7 @@ Options:
       --last-failed              Run only the tests that failed, until they pass (also --lastFailed)
       --outputDir <dir>          Where the run's report goes (default: .vyntra)
       --ci                       Do not write new snapshots
+      --ai <mode>                AI steps (@vyntra/ai): replay, record, live or off
   -h, --help                     Show this help
 `;
 
@@ -113,6 +115,7 @@ function parseCli(argv) {
     ci: values.ci,
     isolate: values['no-isolate'] ? false : values.isolate,
     colors: values['no-color'] ? false : values.color,
+    aiMode: values.ai,
   };
   const given = Object.fromEntries(Object.entries(options).filter(([, value]) => value !== undefined));
   // "jest ." means every file: a pattern that matches everything is no filter.

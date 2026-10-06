@@ -6,3 +6,6 @@ packages/*/test/fixtures/**/node_modules/.cache/
 .DS_Store
 
 .vyntra/
+
+# Local secrets (API keys)
+.env

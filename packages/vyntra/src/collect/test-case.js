@@ -35,6 +35,12 @@ class TestCase {
     // Files and text fixtures attach for the failure page (a screenshot, a trace), and whether the attempt failed,
     // known before the fixtures tear down so they can save what they hold.
     this.attachments = [];
+    // Checks of the app that passed (a web-first assertion, agent.assert), counted for engines: an AI step's recording
+    // is kept only when a later check confirmed what it did.
+    this.verifications = 0;
+    // Whether a secret was typed into the page: from then on no screenshot or trace of the attempt is kept, as the app
+    // may show the value anywhere.
+    this.tainted = false;
     this.failing = false;
     this.attempt = (this.attempt ?? -1) + 1;
     // A benchmark's statistics, when the test is one.

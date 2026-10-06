@@ -3,7 +3,8 @@ const path = require('node:path');
 
 // An engine adds a kind of test to a project (engine: 'web'): its fixtures, its matchers, and the defaults that suit
 // it. It is a package of its own (@vyntra/web), installed by the projects that use it, so the core stays small.
-const packageOf = (name) => (name.startsWith('@') || name.includes('/') ? name : `@vyntra/${name}`);
+const packageOf = (name) =>
+  name.startsWith('@') || name.includes('/') || path.isAbsolute(name) ? name : `@vyntra/${name}`;
 
 const loaded = new Map();
 
@@ -31,14 +32,22 @@ function loadEngine(name, rootDir) {
   return loaded.get(id);
 }
 
-// A config with the engine's defaults under it: those the user did not set (`explicit`, the keys they gave).
+// The engines of a project: engine: 'web', or several (engine: ['web', 'ai']), each loaded once.
+const enginesOf = (config) =>
+  [config.engine ?? []].flat().map((name) => ({ name, engine: loadEngine(name, config.rootDir) }));
+
+// A config with the engines' defaults under it: those the user did not set (`explicit`, the keys they gave). With
+// several engines, a later one's default wins over an earlier one's (engine: ['web', 'ai']: the AI engine's longer
+// timeouts).
 function withEngineDefaults(config, explicit) {
-  if (!config.engine) {
+  const engines = enginesOf(config);
+  if (engines.length === 0) {
     return config;
   }
-  const { defaults = {} } = loadEngine(config.engine, config.rootDir);
-  const filled = Object.fromEntries(Object.entries(defaults).filter(([key]) => !explicit.has(key)));
-  return { ...config, ...filled, use: { ...defaults.use, ...config.use } };
+  return engines.reduce((filledConfig, { engine: { defaults = {} } }) => {
+    const filled = Object.fromEntries(Object.entries(defaults).filter(([key]) => !explicit.has(key)));
+    return { ...filledConfig, ...filled, use: { ...filledConfig.use, ...defaults.use, ...config.use } };
+  }, config);
 }
 
-module.exports = { loadEngine, withEngineDefaults };
+module.exports = { loadEngine, enginesOf, withEngineDefaults };
