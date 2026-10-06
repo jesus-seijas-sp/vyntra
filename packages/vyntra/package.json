@@ -1,0 +1,58 @@
+{
+  "name": "vyntra",
+  "version": "0.6.0",
+  "description": "A very fast, zero-dependency test runner with a Jest/Vitest compatible API",
+  "homepage": "https://github.com/jesus-seijas-sp/vyntra#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jesus-seijas-sp/vyntra.git",
+    "directory": "packages/vyntra"
+  },
+  "bugs": {
+    "url": "https://github.com/jesus-seijas-sp/vyntra/issues"
+  },
+  "main": "./src/index.js",
+  "type": "commonjs",
+  "bin": {
+    "vyntra": "./bin/vyntra.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./src/index.mjs",
+      "require": "./src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin",
+    "src",
+    "bench/compare.js"
+  ],
+  "scripts": {
+    "test": "node bin/vyntra.js"
+  },
+  "keywords": [
+    "test",
+    "testing",
+    "runner",
+    "jest",
+    "vitest",
+    "expect",
+    "fast"
+  ],
+  "author": "Jesús Seijas <jseijas@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "vyntra": {
+    "exclude": [
+      "**/node_modules/**",
+      "**/.git/**",
+      "test/fixtures/**"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -13,7 +13,7 @@ const compat = new FlatCompat({
 
 module.exports = [
   {
-    ignores: ['**/node_modules/**/*', '**/coverage/**/*', 'docs/**/*', 'test/fixtures/**/*'],
+    ignores: ['**/node_modules/**/*', '**/coverage/**/*', 'docs/**/*', 'packages/*/test/fixtures/**/*'],
   },
   ...compat.extends('prettier'),
   {
@@ -824,7 +824,7 @@ module.exports = [
     },
   },
   {
-    files: ['test/**/*.js'],
+    files: ['packages/*/test/**/*.js'],
     languageOptions: {
       globals: Object.fromEntries(
         ['describe', 'it', 'test', 'expect', 'vi', 'jest', 'beforeAll', 'afterAll', 'beforeEach', 'afterEach'].map(

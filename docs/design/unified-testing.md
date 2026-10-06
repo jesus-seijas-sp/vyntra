@@ -68,16 +68,15 @@ core. The replay cache also lives in the core, because it is plain storage keyed
 ```
 vyntra/
 ├── packages/
-│   ├── vyntra/        npm: vyntra (today's src/, bin/, test/)
+│   ├── vyntra/        npm: vyntra (today's src/, bin/, test/, and bench/, whose compare.js is published)
 │   ├── web/           npm: @vyntra/web
 │   ├── ai/            npm: @vyntra/ai
 │   └── mcp/           npm: @vyntra/mcp
 ├── examples/
 │   └── app/           one small app tested at all three levels; the e2e and AI suites run against it
-├── bench/             the benchmarks, run against packages/vyntra
 ├── docs/              the site, plus docs/design/
 ├── pnpm-workspace.yaml
-└── package.json       private; workspace scripts (test, lint, bench, release)
+└── package.json       private; workspace scripts (test, lint, changeset, version-packages, release)
 ```
 
 The packages are versioned independently and released with Changesets. The engines declare the core

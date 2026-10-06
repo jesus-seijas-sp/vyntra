@@ -1,52 +1,23 @@
 {
-  "name": "vyntra",
-  "version": "0.6.0",
-  "description": "A very fast, zero-dependency test runner with a Jest/Vitest compatible API",
-  "homepage": "https://github.com/jesus-seijas-sp/vyntra#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/jesus-seijas-sp/vyntra.git"
-  },
-  "bugs": {
-    "url": "https://github.com/jesus-seijas-sp/vyntra/issues"
-  },
-  "main": "./src/index.js",
-  "type": "commonjs",
-  "bin": {
-    "vyntra": "./bin/vyntra.js"
-  },
-  "exports": {
-    ".": {
-      "import": "./src/index.mjs",
-      "require": "./src/index.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "bin",
-    "src",
-    "bench/compare.js"
-  ],
+  "name": "vyntra-monorepo",
+  "private": true,
+  "description": "vyntra and its packages: a fast, zero-dependency test runner with a Jest/Vitest compatible API",
   "scripts": {
-    "test": "node bin/vyntra.js",
+    "test": "pnpm -r test",
     "lint": "eslint .",
-    "lintfix": "eslint --fix ."
+    "lintfix": "eslint --fix .",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
-  "keywords": [
-    "test",
-    "testing",
-    "runner",
-    "jest",
-    "vitest",
-    "expect",
-    "fast"
-  ],
   "author": "Jesús Seijas <jseijas@gmail.com>",
   "license": "MIT",
   "engines": {
     "node": ">=22"
   },
+  "packageManager": "pnpm@10.33.4",
   "devDependencies": {
+    "@changesets/cli": "^3.0.3",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.39.2",
     "eslint": "^9.39.2",
@@ -54,15 +25,5 @@
     "eslint-plugin-prettier": "^5.5.5",
     "globals": "^17.0.0",
     "prettier": "^3.8.0"
-  },
-  "vyntra": {
-    "exclude": [
-      "**/node_modules/**",
-      "**/.git/**",
-      "test/fixtures/**"
-    ]
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }
