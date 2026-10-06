@@ -363,6 +363,12 @@ the stdio transport itself, dual-era (stateless 2026-07-28 requests with `server
 `read_failure` (with the screenshot as an image), `guide` and `try_locator`, which parses the locator
 into a chain of Playwright locator calls instead of evaluating it.
 
+Exit check, done: in a copy of the example app with a bug planted in the shared `summary()` (it
+counted finished todos as left, breaking two end-to-end tests and no unit test), an agent given only
+the project's path and the report's location found and fixed the line from the failure pages, in 7
+tool calls, and left the tests alone. What it hit on the way: Node.js 20 failed with an error that did
+not say why, so vyntra and vyntra-mcp now say they need Node.js 22 before loading anything.
+
 ## Milestones
 
 | # | Milestone | Done when |

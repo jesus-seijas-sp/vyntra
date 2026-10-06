@@ -13,6 +13,7 @@ describe('cleanTitle', () => {
 describe('summary', () => {
   it('counts what is left', () => {
     expect(summary([{ done: true }, { done: false }])).toBe('1 of 2 left');
+    expect(summary([{ done: false }, { done: false }])).toBe('2 of 2 left');
     expect(summary([])).toBe('Nothing to do');
   });
 });
