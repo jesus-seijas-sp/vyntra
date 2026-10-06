@@ -54,6 +54,8 @@ failed attempts.
 - Use the project's style: look at the tests around it first.
 - Fixtures: destructure what the test needs, `test('...', async ({ api, page }) => ...)`. `api` is an HTTP client
   (`npx vyntra guide api-tests`), `page` a browser page in an `engine: 'web'` project (`npx vyntra guide e2e`).
+- Before writing an end-to-end test, look at the app with the vyntra MCP server if it is registered: `open_session`,
+  then `act` and `locate`, which gives the locator to write.
 - End-to-end tests: find elements by role and name (`page.getByRole('button', { name: 'Save' })`), and assert
   with the retrying matchers (`await expect(locator).toHaveText('Saved')`): never wait for a fixed time.
 

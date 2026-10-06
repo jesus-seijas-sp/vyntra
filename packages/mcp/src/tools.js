@@ -3,6 +3,8 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 const Module = require('node:module');
 const { parseLocator, buildLocator } = require('./locator');
+const { Sessions } = require('./sessions');
+const { createLiveTools } = require('./live-tools');
 
 // The tools of vyntra's MCP server, for coding agents working on a project's tests: run them, see what failed and
 // why (the failure pages), read the documentation, and try a locator on a page before writing an end-to-end test.
@@ -86,7 +88,7 @@ function failuresOf(rootDir) {
       return {
         ...item,
         error: item.error?.split('\n').find((line) => line.trim()) ?? '',
-        page: page ? path.join('.vyntra', page) : null,
+        page: page ? `.vyntra/${page}` : null,
       };
     }),
   };
@@ -104,7 +106,8 @@ function describeFailures(found) {
     .join('\n');
 }
 
-function createTools({ rootDir }) {
+function createTools({ rootDir, maxSessions = 4 }) {
+  const sessions = new Sessions({ rootDir, max: maxSessions });
   const root = (args) => path.resolve(rootDir, args.root ?? '.');
   let browser = null;
 
@@ -305,10 +308,11 @@ function createTools({ rootDir }) {
   };
 
   const close = async () => {
+    await sessions.closeAll();
     await browser?.close();
   };
 
-  return { tools: [runTests, listFailures, readFailure, guide, tryLocator], close };
+  return { tools: [runTests, listFailures, readFailure, guide, tryLocator, ...createLiveTools(sessions)], close };
 }
 
 module.exports = { createTools };

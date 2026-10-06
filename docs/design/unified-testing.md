@@ -382,7 +382,10 @@ existing `AGENTS.md` (`--dir` writes one copy elsewhere). `@vyntra/mcp` has no d
 the stdio transport itself, dual-era (stateless 2026-07-28 requests with `server/discover`, and the
 `initialize` handshake of 2025-11-25 and earlier). Its tools are `run_tests`, `list_failures`,
 `read_failure` (with the screenshot as an image), `guide` and `try_locator`, which parses the locator
-into a chain of Playwright locator calls instead of evaluating it.
+into a chain of Playwright locator calls instead of evaluating it. Live sessions (open_session, observe, act, locate,
+screenshot, close_session): `vyntra/tooling` gives the server a project's config and servers (`loadProject`) and the
+core's `TestServer`; servers are shared by the sessions that need the same one and stopped with the last; each
+session is a browser context on the project's baseURL in one shared browser, at most `--max-sessions` (4).
 
 Exit check, done: in a copy of the example app with a bug planted in the shared `summary()` (it
 counted finished todos as left, breaking two end-to-end tests and no unit test), an agent given only

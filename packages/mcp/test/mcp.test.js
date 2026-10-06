@@ -6,10 +6,10 @@ const { spawn } = require('node:child_process');
 const BIN = path.join(__dirname, '..', 'bin', 'vyntra-mcp.js');
 
 // The server on a copy of a fixture, and a client that sends a request and waits for its answer.
-function connect(fixture = 'failing') {
+function connect(fixture = 'failing', env = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'vyntra-mcp-'));
   fs.cpSync(path.join(__dirname, 'fixtures', fixture), root, { recursive: true });
-  const child = spawn(process.execPath, [BIN, '--root', root], { env: { ...process.env, CI: '' } });
+  const child = spawn(process.execPath, [BIN, '--root', root], { env: { ...process.env, CI: '', ...env } });
   const waiting = new Map();
   let buffer = '';
   child.stdout.on('data', (chunk) => {
@@ -63,6 +63,12 @@ describe('protocol', () => {
       'read_failure',
       'guide',
       'try_locator',
+      'open_session',
+      'observe',
+      'act',
+      'locate',
+      'screenshot',
+      'close_session',
     ]);
     close();
   });
@@ -144,4 +150,68 @@ describe('tools', () => {
     });
     close();
   }, 30000);
+});
+
+describe('live sessions', () => {
+  const port = 41_000 + Math.floor(Math.random() * 1_000);
+  const textOf = (result) =>
+    result.content
+      .filter((part) => part.type === 'text')
+      .map((part) => part.text)
+      .join('\n');
+  const up = () =>
+    fetch(`http://localhost:${port}/`).then(
+      () => true,
+      () => false
+    );
+
+  it('opens the app as the tests see it, acts on it, and finds the locator to write', async () => {
+    const { call, close } = connect('app', { APP_PORT: String(port) });
+    try {
+      const opened = await call('open_session');
+      expect(opened.structuredContent).toMatchObject({ session: 's1', baseURL: `http://localhost:${port}` });
+      expect(textOf(opened)).toContain('textbox "New todo"');
+      await call('act', { action: 'fill', target: { label: 'New todo' }, value: 'Buy milk' });
+      const added = await call('act', { action: 'click', target: { role: 'button', name: 'Add' } });
+      expect(textOf(added)).toContain('listitem: Buy milk');
+      const found = await call('locate', { target: { role: 'listitem' } });
+      expect(found.structuredContent).toEqual({ count: 1, code: "page.getByRole('listitem')" });
+      const chain = await call('locate', { target: "getByRole('button', { name: 'Add' })" });
+      expect(chain.structuredContent.code).toBe("page.getByRole('button', { name: 'Add' })");
+      const none = await call('locate', { target: { role: 'link' } });
+      expect(textOf(none)).toContain('Nothing matches');
+      const shot = await call('screenshot');
+      expect(shot.content[0]).toMatchObject({ type: 'image', mimeType: 'image/png' });
+      const refused = await call('act', { action: 'goto', value: 'file:///etc/passwd' });
+      expect([refused.isError, textOf(refused)]).toEqual([
+        true,
+        'Navigation goes only to http and https addresses, not file:',
+      ]);
+      expect(await up()).toBe(true);
+      await call('close_session');
+      expect(await up()).toBe(false);
+    } finally {
+      close();
+    }
+  });
+
+  it('keeps sessions apart, shares the server, and asks which session when several are open', async () => {
+    const { call, close } = connect('app', { APP_PORT: String(port + 1) });
+    try {
+      await call('open_session');
+      await call('open_session', { url: '/?second' });
+      const which = await call('observe');
+      expect([which.isError, textOf(which)]).toEqual([true, 'Say which session. Open: s1, s2']);
+      await call('act', { session: 's1', action: 'fill', target: { label: 'New todo' }, value: 'Only in s1' });
+      await call('act', { session: 's1', action: 'click', target: { role: 'button', name: 'Add' } });
+      expect(textOf(await call('observe', { session: 's1' }))).toContain('listitem: Only in s1');
+      expect(textOf(await call('observe', { session: 's2' }))).not.toContain('Only in s1');
+      await call('close_session', { session: 's1' });
+      // s2 still uses the server.
+      expect(textOf(await call('observe', { session: 's2' }))).toContain('Page: http://localhost');
+      await call('close_session', { session: 's2' });
+    } finally {
+      close();
+    }
+  });
 });

@@ -748,7 +748,8 @@ module.exports = {
           projects</code> prints one. <code>npx vyntra init --agents</code> writes a skill
           (<code>.agents/skills/vyntra/SKILL.md</code>, linked from <code>.claude/skills/vyntra</code> for Claude Code, and
           named in <code>AGENTS.md</code> when there is one) that tells an agent how to run the tests, read a failure page,
-          fix what failed and write AI steps; <code>@vyntra/mcp</code> gives MCP clients tools for the same.
+          fix what failed and write AI steps; <code>@vyntra/mcp</code> gives MCP clients tools for the same, and live sessions: an agent opens the app as
+          the tests see it, acts on it, and asks which locator to write.
         </p>
 
         <h3 id="last-failed">Rerunning failures</h3>

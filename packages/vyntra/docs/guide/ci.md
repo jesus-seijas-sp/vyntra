@@ -19,7 +19,7 @@ A run clears the reports of the one before, except with `--last-failed`, which u
 ## Coding agents
 
 The documentation ships in the package, as Markdown in `node_modules/vyntra/docs`, so an agent reads the version it runs, offline: `npx vyntra guide` lists the topics, `npx vyntra guide
-          projects` prints one. `npx vyntra init --agents` writes a skill (`.agents/skills/vyntra/SKILL.md`, linked from `.claude/skills/vyntra` for Claude Code, and named in `AGENTS.md` when there is one) that tells an agent how to run the tests, read a failure page, fix what failed and write AI steps; `@vyntra/mcp` gives MCP clients tools for the same.
+          projects` prints one. `npx vyntra init --agents` writes a skill (`.agents/skills/vyntra/SKILL.md`, linked from `.claude/skills/vyntra` for Claude Code, and named in `AGENTS.md` when there is one) that tells an agent how to run the tests, read a failure page, fix what failed and write AI steps; `@vyntra/mcp` gives MCP clients tools for the same, and live sessions: an agent opens the app as the tests see it, acts on it, and asks which locator to write.
 
 ## Rerunning failures
 
