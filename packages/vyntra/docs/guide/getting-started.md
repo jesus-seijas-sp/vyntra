@@ -50,3 +50,7 @@ Finally, point your `test` script at it:
   }
 }
 ```
+
+## Setting a project up
+
+`npx vyntra init` sets a project up for every kind of test at once. It asks which kinds besides unit tests (API, end-to-end, AI steps), how the app starts and where it answers, and which model the AI steps use; then it writes `vyntra.config.js` with a project per kind, an example test of each, the skill for coding agents, the vyntra MCP server in `.mcp.json`, `.vyntra/` in `.gitignore` and a test script, and prints what to install. With `--yes` it asks nothing and takes `--kinds`, `--command`, `--url`, `--provider` and `--model`; it replaces nothing without `--force`.

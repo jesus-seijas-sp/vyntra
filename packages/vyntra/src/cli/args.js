@@ -57,6 +57,7 @@ const USAGE = `Usage: vyntra [options] [path patterns...]
        vyntra watch [options]     Run the tests, then what each change touches (also --watch)
        vyntra bench [options]     Run the benchmarks (*.bench.*); --outputJson <file>, --compare <file>
        vyntra guide [topic]       Print the documentation (no topic: the list of topics)
+       vyntra init                Set the project up: config, example tests, skill, MCP server (asks first)
        vyntra init --agents       Write the skill coding agents use to run and fix tests here
        vyntra explore '<goal>'    An agent explores the app and reports what it finds (@vyntra/ai)
 

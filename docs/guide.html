@@ -119,6 +119,17 @@ describe('sum', () => {
   }
 }</code></pre>
 
+        <h3 id="init">Setting a project up</h3>
+        <p>
+          <code>npx vyntra init</code> sets a project up for every kind of test at once. It asks which kinds besides unit
+          tests (API, end-to-end, AI steps), how the app starts and where it answers, and which model the AI steps use;
+          then it writes <code>vyntra.config.js</code> with a project per kind, an example test of each, the skill for coding
+          agents, the vyntra MCP server in <code>.mcp.json</code>, <code>.vyntra/</code> in <code>.gitignore</code> and a
+          test script, and prints what to install. With <code>--yes</code> it asks nothing and takes <code>--kinds</code>,
+          <code>--command</code>, <code>--url</code>, <code>--provider</code> and <code>--model</code>; it replaces nothing
+          without <code>--force</code>.
+        </p>
+
         <h2 id="running">Running tests</h2>
         <p>
           With no arguments, vyntra runs every test file of the project. Arguments filter the files by their path, as in

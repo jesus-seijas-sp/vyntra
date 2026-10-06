@@ -395,6 +395,12 @@ expected, observed, steps), each saved with a screenshot. Budgets: 8 steps (1 to
 failed steps in a row with nothing found. Exit 1 on an issue, 2 or 3 when every step was blocked by the setup or the
 environment.
 
+`vyntra init` (src/cli/init.js) asks (or takes --yes and flags) which kinds of tests besides unit ones, the app's
+command and URL, and the AI provider and model; it writes vyntra.config.js (a project per kind, the server, use.baseURL
+and use.ai), an example test per kind, the skill (init --agents), .mcp.json (merged), .vyntra/ in .gitignore and a
+test script when the project has none, and prints the install command for the lockfile's package manager. Answers are
+read line by line, so they can be piped in (--ask).
+
 Exit check, done: in a copy of the example app with a bug planted in the shared `summary()` (it
 counted finished todos as left, breaking two end-to-end tests and no unit test), an agent given only
 the project's path and the report's location found and fixed the line from the failure pages, in 7

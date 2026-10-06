@@ -41,4 +41,6 @@ Tags on `describe` and `test` (`{ tags: ['slow'] }`), with `--tag` and `--exclud
 
 `vyntra explore '<goal>'`: an agent explores the app with no test file and reports what it finds, issues and warnings with severity, repro steps and screenshots, in `.vyntra/explore.md`; exit 1 on an issue.
 
+`vyntra init` sets a project up for every kind of test: it asks (or takes flags with `--yes`), then writes the config, example tests, the skill, `.mcp.json`, `.gitignore` and a test script, and prints what to install.
+
 On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.

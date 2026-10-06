@@ -21,6 +21,7 @@ const { resolveProjects, assignFiles } = require('./projects');
 const { ProjectRun } = require('./run-projects');
 const { guide, init } = require('./guide');
 const { explore } = require('./explore');
+const { wizard } = require('./init');
 const { watch } = require('./watch');
 const { runTypecheck, typeTestFiles, typeError } = require('./typecheck');
 const {
@@ -345,8 +346,9 @@ async function main(argv = process.argv.slice(2)) {
   if (argv[0] === 'guide') {
     return guide(argv.slice(1));
   }
+  // vyntra init --agents writes the skill alone; vyntra init sets the whole project up.
   if (argv[0] === 'init') {
-    return init(argv.slice(1));
+    return argv.includes('--agents') ? init(argv.slice(1)) : wizard(argv.slice(1));
   }
   if (argv[0] === 'explore') {
     return explore(argv.slice(1));
