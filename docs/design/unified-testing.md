@@ -387,7 +387,7 @@ can be built in parallel once 2 is in.
 
 | Risk | Mitigation |
 | --- | --- |
-| The unit path gets slower or heavier | Engines load only when a project names them; a benchmark gate in CI fails a change that slows the unit run by more than 2% |
+| The unit path gets slower or heavier | Engines load only when a project names them; a benchmark gate in CI fails a change that slows the unit run by more than 2% beyond the noise (`bench/gate.js`: a synthetic suite, base and change alternately on one machine, Mann-Whitney and paired Wilcoxon tests). Shared runners vary 2-8% from run to run: in practice it fails a 5-7% slowdown and reports, without failing, a smaller one |
 | End-to-end testing is a large field | Build on Playwright rather than replace it; start with Chromium and add browsers later |
 | AI steps are slow, costly and nondeterministic | The replay cache, `replay` mode in CI, budgets, and `toSatisfy` restricted to claims a person can check |
 | The replay cache goes stale silently | A replayed `act` re-verifies with the step's assertion; a hit on a changed input is a miss by construction |

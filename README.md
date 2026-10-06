@@ -27,6 +27,14 @@ pnpm test        # every package's tests
 pnpm lint
 ```
 
+A change must not make vyntra slower. CI runs the benchmark gate on every pull request and push: a synthetic suite
+of 200 files and 3000 tests, run with the base and with the change alternately on the same machine, which fails when
+the change is slower by more than 2% beyond the machine's noise. Run it yourself against any git ref:
+
+```sh
+node packages/vyntra/bench/gate.js --base origin/main
+```
+
 A change that should be released comes with a changeset: run `pnpm changeset`, pick the packages and
 the kind of change, and commit the file it writes. To release, `pnpm version-packages` turns the pending
 changesets into version bumps and changelog entries, and `pnpm release` publishes the packages whose new

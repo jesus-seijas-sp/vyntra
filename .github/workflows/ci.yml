@@ -25,3 +25,20 @@ jobs:
       - run: pnpm --filter @vyntra/web exec playwright install --with-deps chromium
       - run: pnpm lint
       - run: pnpm test
+
+  # Is this change slower? The synthetic suite run with the base vyntra and this one, alternately on the same
+  # machine: on a pull request against its base, on a push against the commit before.
+  bench:
+    name: Benchmark gate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event.before != '0000000000000000000000000000000000000000'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Compare with the base
+        run: node packages/vyntra/bench/gate.js --base ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+
