@@ -127,6 +127,9 @@ asynchronous transformers and Vite `resolveId`/`load` hooks, source maps in stac
 
 Positional arguments filter the test files by path, as in Jest.
 
+`vyntra guide [topic]` prints the documentation, which ships in the package (`node_modules/vyntra/docs`), and
+`vyntra init --agents` writes a skill that tells coding agents how to run and fix the tests.
+
 Reporters `junit` (`.vyntra/junit.xml`), `markdown` (`.vyntra/summary.md` and a page per failure, for people and
 coding agents) and `github` (annotations and the job summary, on by itself under GitHub Actions) write the run next to
 what is printed.

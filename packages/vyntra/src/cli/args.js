@@ -41,6 +41,8 @@ const OPTIONS = {
 };
 
 const USAGE = `Usage: vyntra [options] [path patterns...]
+       vyntra guide [topic]       Print the documentation (no topic: the list of topics)
+       vyntra init --agents       Write the skill coding agents use to run and fix tests here
 
 Options:
   -t, --testNamePattern <regex>  Run only the tests whose full name matches

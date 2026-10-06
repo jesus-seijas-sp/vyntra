@@ -4,13 +4,14 @@
   "description": "vyntra and its packages: a fast, zero-dependency test runner with a Jest/Vitest compatible API",
   "scripts": {
     "test": "pnpm -r test",
-    "lint": "eslint .",
+    "lint": "eslint . && node packages/vyntra/scripts/build-docs.js --check",
     "lintfix": "eslint --fix .",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "changeset publish"
+    "release": "changeset publish",
+    "build-docs": "pnpm --filter vyntra build-docs"
   },
-  "author": "Jesús Seijas <jseijas@gmail.com>",
+  "author": "Jes\u00fas Seijas <jseijas@gmail.com>",
   "license": "MIT",
   "engines": {
     "node": ">=22"

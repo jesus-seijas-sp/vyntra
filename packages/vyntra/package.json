@@ -26,10 +26,13 @@
   "files": [
     "bin",
     "src",
-    "bench/compare.js"
+    "bench/compare.js",
+    "docs",
+    "agents"
   ],
   "scripts": {
-    "test": "node bin/vyntra.js"
+    "test": "node bin/vyntra.js",
+    "build-docs": "node scripts/build-docs.js"
   },
   "keywords": [
     "test",
@@ -40,7 +43,7 @@
     "expect",
     "fast"
   ],
-  "author": "Jesús Seijas <jseijas@gmail.com>",
+  "author": "Jes\u00fas Seijas <jseijas@gmail.com>",
   "license": "MIT",
   "engines": {
     "node": ">=22"

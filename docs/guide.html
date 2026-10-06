@@ -59,6 +59,7 @@
           <li><a href="#isolation">Workers and isolation</a></li>
           <li><a href="#between-files">Restored between files</a></li>
           <li><a href="#split-files">Splitting long files</a></li>
+          <li><a href="#ci">CI and reports</a></li>
           <li><a href="#projects">Projects</a></li>
           <li><a href="#api-tests">API tests</a></li>
           <li><a href="#e2e">End-to-end tests</a></li>
@@ -611,6 +612,13 @@ module.exports = {
           whole. It also leaves cores free, as tests that start servers of their own compete for them.
         </p>
 
+        <h2 id="ci">CI and reports</h2>
+        <p>
+          What a run leaves for CI and for coding agents: reports in files, the failures to rerun, slices of the suite
+          for parallel jobs, and exit codes that tell a broken test from a broken setup (see the
+          <a href="api.html#exit-codes">API reference</a>).
+        </p>
+
         <h3 id="reports">Reports for CI and agents</h3>
         <p>
           <code>--reporter</code> takes a list (repeat it, or separate names with commas): one of <code>default</code>,
@@ -629,6 +637,15 @@ module.exports = {
         <p>
           A run clears the reports of the one before, except with <code>--last-failed</code>, which updates them: the
           pages of tests that pass now go, the others stay.
+        </p>
+
+        <h3 id="agents">Coding agents</h3>
+        <p>
+          The documentation ships in the package, as Markdown in <code>node_modules/vyntra/docs</code>, so an agent
+          reads the version it runs, offline: <code>npx vyntra guide</code> lists the topics, <code>npx vyntra guide
+          projects</code> prints one. <code>npx vyntra init --agents</code> writes a skill
+          (<code>.claude/skills/vyntra/SKILL.md</code>) that tells an agent how to run the tests, read a failure page
+          and fix what failed; <code>@vyntra/mcp</code> gives MCP clients tools for the same.
         </p>
 
         <h3 id="last-failed">Rerunning failures</h3>

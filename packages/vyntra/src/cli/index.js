@@ -18,6 +18,7 @@ const { explicitWorkers } = require('./schedule');
 const { Timings } = require('./timings');
 const { resolveProjects, assignFiles } = require('./projects');
 const { ProjectRun } = require('./run-projects');
+const { guide, init } = require('./guide');
 
 // Caches that make loading the dependencies faster, kept in node_modules/.cache (only for projects with node_modules).
 function loadingCaches(rootDir) {
@@ -72,6 +73,13 @@ function describeRerun(selections) {
 
 async function main(argv = process.argv.slice(2)) {
   const start = realTimers.performanceNow();
+  // Commands, not test file filters: a file named "guide" is reached with ./guide.
+  if (argv[0] === 'guide') {
+    return guide(argv.slice(1));
+  }
+  if (argv[0] === 'init') {
+    return init(argv.slice(1));
+  }
   const cli = parseCli(argv);
   if (cli.help) {
     process.stdout.write(cli.usage);
