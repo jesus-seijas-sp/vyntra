@@ -23,4 +23,6 @@ Judgments can be inconclusive when the value or the page does not settle the cla
 
 An agent that gives up says why (product, environment, credentials, setup, unsupported), and the run exits 3 for the environment and 2 for credentials and setup, as for any test error with that phase.
 
+`use.ai.context` gives the app's vocabulary to every model call, judges included, and `use.ai.system` gives instructions to the acting agent only; `agent.addContext()` adds what one test knows.
+
 On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.

@@ -76,6 +76,19 @@ its response, and two reads of the tree that agree); it waits for that after eve
 the way the tree does: a role and its name, a label, a placeholder, a text. Claims should be ones a person
 could check from the value or the page.
 
+## The project's words
+
+`use.ai.context` and `use.ai.system` go to different readers. `context` answers "what does this app call
+things?" and reaches every model call, judges included: a judge that does not know "plans are called tiers"
+can not check that a tier was chosen. `system` answers "how should the agent work?" and reaches only the
+agent that acts: an instruction such as "a step is done once the form closes" must not lower a judge's bar.
+
+A test adds what only it knows with `agent.addContext('The seeded workspace is "Acme Trial".')`, for its
+later steps (in a `beforeEach` for a whole group). Keep instructions out of it, as it reaches the judges.
+
+Recordings are keyed by the context too: steps run with other vocabulary record again. Instructions are not
+part of the key.
+
 ## Values that change every run
 
 Test data that differs from run to run (a timestamped email, a fresh company name) goes in as `unique()`, so
@@ -194,6 +207,8 @@ In `use.ai`:
 | `budget` | `{ calls: 200, tokens: 2_000_000 }` | What one run may spend over all its workers. Past it, AI steps fail and the run ends with exit code 3 |
 | `maxSteps` | `25` | Model turns `agent.act` may take for one goal |
 | `actionTimeout` | `5000` | How long one action waits for its target (ms) |
+| `context` | | What the app calls things (screens, menus, terms), read by every model call, judges included. At most 16 KiB |
+| `system` | | Instructions for the agent that acts (verify a confirmation before finishing, close unasked-for notices). Judges never read them. At most 16 KiB |
 | `provider` | `'anthropic'` | `'openrouter'`, `'openai'` (with `baseURL` for other hosts of its API), or the path of a module exporting a provider |
 
 `provider` and `model` can also come from the environment, `VYNTRA_AI_PROVIDER` and `VYNTRA_AI_MODEL`, so a

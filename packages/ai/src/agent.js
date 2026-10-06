@@ -99,6 +99,9 @@ class Agent {
 
   #settings;
 
+  // Vocabulary the test added to the project's (addContext), for every later step.
+  #context = [];
+
   // The unique() values of the test's steps, by name.
   #uniques = new Uniques();
 
@@ -146,7 +149,17 @@ class Agent {
   }
 
   session() {
-    return new AiSession(this.#settings);
+    return new AiSession(this.#settings, undefined, { context: this.#context });
+  }
+
+  // Adds what only this test knows to the app's vocabulary, for its later steps: the name of seeded data, a feature
+  // flag that changes a label. Every model call reads it, judges included, so keep instructions out of it.
+  addContext(text) {
+    if (typeof text !== 'string' || text.trim() === '') {
+      throw new TypeError('addContext takes text');
+    }
+    this.#context.push(text);
+    return this;
   }
 
   // The page as pageState reads it, with this test's unique() values as placeholders in what keys and recordings use
@@ -252,7 +265,11 @@ class Agent {
     for (let turn = 0; turn < maxSteps; turn += 1) {
       const tools = advice.concludeOnly ? CONCLUDING : toolsFor(secrets);
       // eslint-disable-next-line no-await-in-loop -- each turn answers the page the last one left
-      const completion = await session.call({ system: ACT_SYSTEM, messages, tools });
+      const completion = await session.call({
+        system: session.systemFor(ACT_SYSTEM, { acting: true }),
+        messages,
+        tools,
+      });
       messages.push(completion.message);
       // eslint-disable-next-line no-await-in-loop
       const { results, finish } = await this.run(completion.toolCalls, actions, {
@@ -482,7 +499,11 @@ class Agent {
     const turns = [...messages];
     for (let attempt = 0; attempt < 2; attempt += 1) {
       // eslint-disable-next-line no-await-in-loop -- the second call answers the first one's problem
-      const completion = await session.call({ system: EXTRACT_SYSTEM, messages: turns, schema: shape });
+      const completion = await session.call({
+        system: session.systemFor(EXTRACT_SYSTEM),
+        messages: turns,
+        schema: shape,
+      });
       turns.push(completion.message);
       const problem = problemWith(completion.json);
       if (!problem) {

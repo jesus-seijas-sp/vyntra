@@ -80,6 +80,19 @@ function modelOf(ai) {
   return model;
 }
 
+const MAX_TEXT = 16_384;
+
+// A text option, at most 16 KiB: it goes with every model call.
+function limited(option, text) {
+  if (text === undefined || text === null || text === '') {
+    return '';
+  }
+  if (typeof text !== 'string' || Buffer.byteLength(text) > MAX_TEXT) {
+    throw new Error(`${option} is text of at most ${MAX_TEXT} bytes`);
+  }
+  return text;
+}
+
 // The options of the AI steps, from the project's use.ai, the environment and the run: --ai <mode> wins over
 // use.ai.mode; without either, CI replays what was recorded and a developer's machine records what is missing.
 function settingsOf(options = projectConfig().use.ai ?? {}) {
@@ -106,6 +119,9 @@ function settingsOf(options = projectConfig().use.ai ?? {}) {
     budget: { calls: 200, tokens: 2_000_000, ...ai.budget },
     usageFile: path.join(outputDir, 'ai-usage.jsonl'),
     // Actions an agent may take for one goal, and how long one may wait for its target.
+    // The app's vocabulary for every model call, and instructions for the acting agent only.
+    context: limited('use.ai.context', ai.context),
+    system: limited('use.ai.system', ai.system),
     maxSteps: ai.maxSteps ?? 25,
     actionTimeout: ai.actionTimeout ?? 5_000,
   };

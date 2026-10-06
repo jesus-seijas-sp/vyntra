@@ -37,7 +37,8 @@ function summaryOf({ verdict, reasoning }) {
 
 // An answer that is not a verdict gets one more chance, told what was wrong with it.
 async function ask(session, messages, claim) {
-  const first = await session.call({ system: SYSTEM, messages, schema: VERDICT });
+  const system = session.systemFor(SYSTEM);
+  const first = await session.call({ system, messages, schema: VERDICT });
   if (isVerdict(first.json)) {
     return { completion: first, turns: [...messages, first.message] };
   }
@@ -49,7 +50,7 @@ async function ask(session, messages, claim) {
       content: 'That is not a verdict: answer with reasoning and a verdict of holds, fails or inconclusive.',
     },
   ];
-  const second = await session.call({ system: SYSTEM, messages: repair, schema: VERDICT });
+  const second = await session.call({ system, messages: repair, schema: VERDICT });
   if (!isVerdict(second.json)) {
     throw new Error(`The model's verdict on "${claim}" is not one: ${second.text.slice(0, 500)}`);
   }

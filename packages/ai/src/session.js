@@ -37,11 +37,14 @@ function describeTurn({ role, content }) {
 // of them. A step is made once and its result reused until its input changes; the key of a result is a hash of the
 // step, its input, the model and the prompts.
 class AiSession {
-  constructor(settings = settingsOf(), test = currentTest()) {
+  // context: what the test adds to the project's vocabulary (agent.addContext).
+  constructor(settings = settingsOf(), test = currentTest(), { context = [] } = {}) {
     if (!test) {
       throw new Error('AI steps run inside a test');
     }
     this.settings = settings;
+    // What the app calls things, read by every model call; secret values hidden, as everything sent.
+    this.context = redact([settings.context, ...context].filter(Boolean).join('\n\n'));
     this.test = test;
     this.cache = ReplayCache.forTest(settings.cacheDir, settings.rootDir, test.file, test.titlePath);
     this.budget = new Budget(settings.budget, settings.usageFile);
@@ -61,8 +64,32 @@ class AiSession {
   keyOf({ kind, text, input }) {
     const { model, provider } = this.settings;
     // No model set: the provider's own default (OpenRouter's), which the key can not know.
-    const identity = JSON.stringify([PROMPT_VERSION, provider.name, model ?? 'default', kind, text, input]);
+    // A step judged or driven with other vocabulary is another step: the context counts, when there is one.
+    const vocabulary = this.context ? [crypto.createHash('sha256').update(this.context).digest('hex')] : [];
+    const identity = JSON.stringify([
+      PROMPT_VERSION,
+      provider.name,
+      model ?? 'default',
+      kind,
+      text,
+      input,
+      ...vocabulary,
+    ]);
     return crypto.createHash('sha256').update(identity).digest('hex').slice(0, 24);
+  }
+
+  // A system prompt with the project's words: the app's vocabulary (context) for every model call, and the project's
+  // instructions (use.ai.system) for the agent that acts only. A judge never reads them: instructions such as "a step
+  // is done once the form closes" would lower its bar.
+  systemFor(base, { acting = false } = {}) {
+    const parts = [base];
+    if (this.context) {
+      parts.push(`About the app under test, from the project (trusted):\n${this.context}`);
+    }
+    if (acting && this.settings.system) {
+      parts.push(`Instructions from the project:\n${this.settings.system}`);
+    }
+    return parts.join('\n\n');
   }
 
   // The model that answered last, or the one asked: the provider's default model is known once it answered.

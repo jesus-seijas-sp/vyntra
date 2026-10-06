@@ -346,4 +346,30 @@ describe('verdicts', () => {
     expect(rejected.status).toBe(2);
     expect(rejected.stdout).toContain('(credentials): the sign-in was rejected');
   });
+
+  it('gives the app vocabulary to every model call, and the project instructions to the acting agent only', () => {
+    const { dir, run } = project('agent');
+    const requests = path.join(dir, 'requests.jsonl');
+    const env = {
+      AI_CONTEXT: 'Todos are called tasks in the app.',
+      AI_SYSTEM: 'Check that the new task shows before you finish.',
+      FAKE_REQUESTS: requests,
+    };
+    const first = run(['context.e2e.js'], env);
+    expect([first.status, first.calls]).toEqual([0, 4]);
+    const sent = fs
+      .readFileSync(requests, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    const acting = sent.filter((request) => request.tools);
+    const judging = sent.filter((request) => !request.tools);
+    expect(acting[0].system).toContain('Todos are called tasks in the app.\n\nThe seeded list is called "Groceries".');
+    expect(acting[0].system).toContain('Instructions from the project:\nCheck that the new task shows');
+    expect(judging[0].system).toContain('The seeded list is called "Groceries".');
+    expect(judging[0].system).not.toContain('Check that the new task shows');
+    // The same words replay; other words are other steps.
+    expect(run(['context.e2e.js'], env).calls).toBe(0);
+    expect(run(['context.e2e.js'], { ...env, AI_CONTEXT: 'Todos are called chores.' }).calls).toBe(4);
+  });
 });
