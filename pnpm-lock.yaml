@@ -45,6 +45,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/vyntra
 
+  packages/mcp:
+    devDependencies:
+      playwright:
+        specifier: 1.63.0
+        version: 1.63.0
+      vyntra:
+        specifier: workspace:*
+        version: link:../vyntra
+
   packages/vyntra: {}
 
   packages/web:

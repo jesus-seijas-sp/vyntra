@@ -1,0 +1,44 @@
+{
+  "name": "@vyntra/mcp",
+  "version": "0.0.0",
+  "description": "MCP server for vyntra: coding agents run the tests, read failure pages and the docs, and try locators on pages.",
+  "license": "MIT",
+  "main": "./src/index.js",
+  "bin": {
+    "vyntra-mcp": "./bin/vyntra-mcp.js"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "scripts": {
+    "test": "node ../vyntra/bin/vyntra.js"
+  },
+  "peerDependencies": {
+    "playwright": ">=1.49.0",
+    "vyntra": "workspace:^"
+  },
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jesus-seijas-sp/vyntra.git",
+    "directory": "packages/mcp"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "vyntra": {
+    "exclude": [
+      "**/node_modules/**",
+      "test/fixtures/**"
+    ]
+  },
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "vyntra": "workspace:*"
+  }
+}
