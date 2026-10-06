@@ -1,6 +1,6 @@
 # Design: unit, API, end-to-end and AI testing in one runner
 
-Status: proposal · Author: Jesús Seijas · Last updated: 2026-10-06
+Status: proposal, decisions settled (see [Decisions](#decisions)) · Author: Jesús Seijas · Last updated: 2026-10-06
 
 ## Summary
 
@@ -8,8 +8,9 @@ vyntra today is a fast, zero-dependency runner for unit and component tests with
 compatible API. This document proposes growing it into one framework for **unit, API and end-to-end
 tests, with AI-assisted steps and assertions**, without making the unit path slower or heavier.
 
-The shape: the core stays a zero-dependency runner, and everything heavier is an **opt-in engine
-package loaded from the project** (the way happy-dom and jsdom are loaded today). Test kinds become
+The shape: the repository becomes a **pnpm monorepo**. The core stays the zero-dependency `vyntra`
+package, and everything heavier is an **opt-in package** (`@vyntra/web`, `@vyntra/ai`, `@vyntra/mcp`)
+loaded from the project only when configured, the way happy-dom and jsdom are loaded today. Test kinds become
 **projects** in one config, glued together by **fixtures**. AI results go through a **record-and-replay
 cache**, so CI runs are fast and deterministic and make no model calls unless something changed.
 
@@ -49,16 +50,39 @@ The proposal builds on parts vyntra already has:
 
 ## Architecture
 
-```
-vyntra                 core: collect, run, expect, mocks, pools, projects, fixtures,
-                       reporters, sharding, replay cache            (zero dependencies)
-├── @vyntra/web        browser engine on Playwright               (peer dependency: playwright)
-├── @vyntra/ai         model providers, agent.act / agent.assert, toSatisfy
-└── @vyntra/mcp        MCP server for coding agents              (may live in core: see open questions)
-```
+### Packages
+
+| Package | npm name | What it holds | Dependencies |
+| --- | --- | --- | --- |
+| `packages/vyntra` | `vyntra` | Collect, run, `expect`, mocks, pools, projects, fixtures, reporters, sharding, the replay cache, API testing | None |
+| `packages/web` | `@vyntra/web` | Browser engine: `browser`, `context`, `page` fixtures, failure evidence | `playwright` (peer) |
+| `packages/ai` | `@vyntra/ai` | Provider interface, the Anthropic provider, `agent.act` / `agent.assert`, `toSatisfy` | Anthropic SDK or `fetch` |
+| `packages/mcp` | `@vyntra/mcp` | MCP server for coding agents | MCP SDK, or none |
 
 API testing needs no package: Node's own `fetch` and `child_process` are enough, so it lives in the
-core.
+core. The replay cache also lives in the core, because it is plain storage keyed by hashes; only
+`@vyntra/ai` writes to it today, but other engines may.
+
+### Repository layout
+
+```
+vyntra/
+├── packages/
+│   ├── vyntra/        npm: vyntra (today's src/, bin/, test/)
+│   ├── web/           npm: @vyntra/web
+│   ├── ai/            npm: @vyntra/ai
+│   └── mcp/           npm: @vyntra/mcp
+├── examples/
+│   └── app/           one small app tested at all three levels; the e2e and AI suites run against it
+├── bench/             the benchmarks, run against packages/vyntra
+├── docs/              the site, plus docs/design/
+├── pnpm-workspace.yaml
+└── package.json       private; workspace scripts (test, lint, bench, release)
+```
+
+The packages are versioned independently and released with Changesets. The engines declare the core
+as a peer dependency with a compatible range, so a project installs one `vyntra` and the engines it
+needs. The workspace's own tests run each package's suite with the `vyntra` built in this repository.
 
 Engines are found the way environments are found today: `require` from the project's root, and only
 when a project names them. A project that never mentions `web` or `ai` never loads them.
@@ -113,9 +137,20 @@ module.exports = {
 | `server` | A process to start before the project and stop after it: `command`, `url` to poll, `timeout`, `reuseExisting`, `env` |
 | `use` | Options handed to fixtures (`baseURL`, `browser`, `viewport`, model settings) |
 | `dependsOn` | Projects that must pass before this one starts (a failed API project skips e2e) |
+| `globalSetup` / `globalTeardown` | Files run once before and after the project's test files, as in Jest and Vitest: seed a database, build the app. A value `globalSetup` returns reaches the tests through `inject()` |
 
-Projects run concurrently when their pools allow it, in `dependsOn` order otherwise. One CLI run
-reports all of them; `--project` narrows it.
+### Pools and ordering
+
+Each project has **its own worker pool**, created from its `pool` and `maxWorkers`: a worker keeps one
+environment and one engine for its whole life, which is how vyntra already keeps happy-dom and jsdom
+apart. A **global cap** (`maxWorkers` at the top level, by default the number of cores minus one) bounds
+the workers of all projects together, so running unit and e2e projects at once does not oversubscribe
+the machine; within the cap, workers go to projects in proportion to their remaining work.
+
+A run orders projects by `dependsOn`, and runs those with no pending dependency concurrently. For each
+project: `globalSetup`, start its `server`, run its files, stop the server, `globalTeardown`. A project
+whose dependency failed is reported as skipped, with the reason. One CLI run reports all projects;
+`--project` narrows it.
 
 ## Fixtures
 
@@ -248,8 +283,10 @@ the input it depended on changes.
 - **`act`:** records the actions taken. The next run replays them with no model call; if a replayed
   action can no longer find its target, the agent takes over and records again.
 - **`assert` / `toSatisfy`:** records the verdict and the model's reasoning.
-- **Storage:** a directory meant to be committed (`vyntra.ai-cache/` by default), so CI replays what
-  developers recorded.
+- **Storage:** a directory committed to the repository, `vyntra.ai-cache/` at the project root by
+  default (`use.ai.cacheDir` moves it). CI replays what developers recorded, with no credentials and no
+  model calls, and a diff in the directory shows a reviewer when an AI verdict changed. One file per
+  test, entries sorted, so merges stay small.
 - **Modes**, through `--ai <mode>` or `use.ai.mode`:
   - `replay`: cached results only; a cache miss fails the step. The CI default.
   - `record`: replay what is cached and call the model for the rest. The local default.
@@ -258,8 +295,19 @@ the input it depended on changes.
 
 ### Providers and budget
 
-Bring your own provider: Anthropic, OpenAI-compatible endpoints, or a local model, configured once in
-`use.ai`. A per-run budget (calls and tokens) stops the run with exit code 3 instead of running up a
+The first provider is **Anthropic** (Claude), the default when `use.ai.provider` is not set. Providers
+implement one small interface, so others plug in without changes to the core:
+
+```ts
+interface Provider {
+  name: string;
+  // One model turn: messages in, a message (text or tool calls) out, with token usage.
+  complete(request: { model: string; system?: string; messages: Message[]; tools?: Tool[] }): Promise<Completion>;
+}
+```
+
+An OpenAI-compatible provider (OpenAI, most hosts, Ollama and other local models) is the next one.
+Credentials come from the environment (`ANTHROPIC_API_KEY`), never from the config file. A per-run budget (calls and tokens) stops the run with exit code 3 instead of running up a
 bill. Failure pages include each AI step's recent turns.
 
 ## Coding-agent support (milestone 5)
@@ -268,20 +316,22 @@ bill. Failure pages include each AI step's recent turns.
   `node_modules/vyntra/docs`.
 - `vyntra guide [topic]` prints a topic. `vyntra init --agents` installs a `SKILL.md` for Claude Code
   and other agents.
-- An MCP server (`vyntra mcp`) with tools to run tests (all, a file, a project, `--last-failed`), list
+- An MCP server, `@vyntra/mcp` (run as `npx vyntra-mcp`, registered in `.mcp.json`), with tools to run tests (all, a file, a project, `--last-failed`), list
   failures and read a failure page; for e2e, to open a page and try a locator.
 
 ## Milestones
 
 | # | Milestone | Done when |
 | --- | --- | --- |
+| 0 | The monorepo: `packages/vyntra` with today's code, the workspace, CI per package, Changesets; register the `@vyntra` npm organization | `vyntra` publishes from `packages/vyntra` unchanged for users; the full test suite and the benchmarks pass from the workspace |
 | 1 | Shared foundation: sharding, exit codes, `--last-failed`, flaky status, `junit`/`markdown`/`github` reporters | A real project's CI runs sharded with JUnit output; the unit benchmark is unchanged |
 | 2 | Projects, worker-scoped fixtures, `use`, API testing with `server` | One config runs unit and API tests; a failing API test's page shows the request and response |
 | 3 | `@vyntra/web` on Playwright | The example app's e2e suite passes; failures carry a screenshot and a trace |
 | 4 | `@vyntra/ai` with the replay cache | A second run of an AI test makes no model calls; CI runs in `replay` mode with no credentials |
 | 5 | Docs in the package, `guide`, skill, MCP server | An agent fixes a failing test from the failure page without other help |
 
-Milestones 1 and 2 stand on their own; 3 and 4 can be built in parallel once 2 is in.
+Milestone 0 comes first and changes nothing for users. Milestones 1 and 2 stand on their own; 3 and 4
+can be built in parallel once 2 is in.
 
 ## Risks
 
@@ -293,13 +343,22 @@ Milestones 1 and 2 stand on their own; 3 and 4 can be built in parallel once 2 i
 | The replay cache goes stale silently | A replayed `act` re-verifies with the step's assertion; a hit on a changed input is a miss by construction |
 | Overlap with Playwright Test and TesterArmy's e2e | The difference is one runner for every kind of test, Jest/Vitest compatibility and speed; interoperate rather than compete (Playwright locators, compatible APIs) |
 
+## Decisions
+
+| # | Question | Decision | Why |
+| --- | --- | --- | --- |
+| 1 | One package or several? | A pnpm monorepo: `vyntra` (core) and the `@vyntra/web`, `@vyntra/ai`, `@vyntra/mcp` packages | The core keeps no dependencies; Playwright and model SDKs are installed only by those who use them; the same layout as xufa |
+| 2 | Where does the MCP server live? | Its own package, `@vyntra/mcp` | With a monorepo it costs little, and the core stays about running tests |
+| 3 | Where is the AI cache stored? | In the repository, `vyntra.ai-cache/` (movable with `use.ai.cacheDir`) | CI replays with no credentials and no model calls; reviewers see changed verdicts |
+| 4 | Which model provider first? | Anthropic, behind a provider interface | One provider done well; OpenAI-compatible and local models plug in next |
+| 5 | Shared pool or one per project? | One per project, under a global worker cap | A worker keeps one environment and engine for life; the cap keeps the machine from being oversubscribed |
+| 6 | How do projects order and set up? | `dependsOn` plus per-project `globalSetup` / `globalTeardown` | Ordering and one-off setup are different needs; both are familiar from Jest and Vitest |
+
 ## Open questions
 
-1. Should the MCP server live in the core (no dependencies, Node's own HTTP and stdio) or in its own
-   package?
-2. Should the AI cache live in the repository (deterministic CI, larger diffs) or in CI's cache
-   (smaller repo, misses on a fresh runner)?
-3. Default provider and model for `@vyntra/ai`, and whether `toSatisfy` should be in core with a pluggable
-   judge.
-4. Should projects be able to share one worker pool, or should each have its own?
-5. Is `dependsOn` enough for ordering, or do end-to-end projects need a global setup and teardown as well?
+1. Is the `@vyntra` scope free on npm? `vyntra` itself is published (0.6.0) and no `@vyntra/*`
+   package exists yet, but whether the `vyntra` organization can be created has to be checked on
+   npmjs.com. It has to be registered before the first `@vyntra/*` package is published (milestone 3
+   at the latest; milestone 0 publishes only `vyntra`).
+2. Which Playwright versions does `@vyntra/web` support: the latest only, or a range?
+3. Does `toSatisfy` need a non-AI fallback (a rule, a regex) for teams that never enable a model?
