@@ -9,6 +9,7 @@ const { releaseMocks } = require('../mock');
 const { timers, realTimers } = require('../timers');
 const { FileRunner } = require('./file-runner');
 const { serializeError } = require('./serialize-error');
+const { testKey } = require('./test-key');
 
 const now = realTimers.performanceNow;
 
@@ -74,6 +75,16 @@ function saveSnapshots(file, results, shard) {
   }
 }
 
+// The tests this run wants of the file: those -t matches, and under --last-failed those the last run left failing.
+function selection(path, config) {
+  const pattern = config.testNamePattern ? new RegExp(config.testNamePattern, 'i') : null;
+  const owed = config.rerun?.[path] ? new Set(config.rerun[path]) : null;
+  if (!pattern && !owed) {
+    return null;
+  }
+  return (test) => (!pattern || pattern.test(test.fullName)) && (!owed || owed.has(testKey(test.titlePath)));
+}
+
 // A shard of a split file ({ index, count }) runs one test of every count, the ones whose index is shard.index
 // modulo count: the tests of a file usually go from quick to slow, so interleaving them shares the time out evenly.
 async function runFile(path, config, shard = null) {
@@ -91,8 +102,7 @@ async function runFile(path, config, shard = null) {
   }
   const runner = new FileRunner(file, config);
   if (file.errors.length === 0) {
-    const pattern = config.testNamePattern ? new RegExp(config.testNamePattern, 'i') : null;
-    file.root.interpretModes(file.hasOnly, pattern);
+    file.root.interpretModes(file.hasOnly, selection(path, config));
     if (shard) {
       file.root.retainTests((test) => test.index % shard.count === shard.index);
     }

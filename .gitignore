@@ -4,3 +4,5 @@ packages/*/test/fixtures/**/node_modules/.cache/
 /coverage/
 *.log
 .DS_Store
+
+.vyntra/

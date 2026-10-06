@@ -117,9 +117,14 @@ asynchronous transformers and Vite `resolveId`/`load` hooks, source maps in stac
     --coverageDirectory <dir>  Where coverage reports go (default: coverage; vitest's --coverage.reportsDirectory too)
     --ci                       Do not write new snapshots
     --shard <index>/<total>    Run one slice of the test files, for CI jobs in parallel (e.g. --shard 2/4)
+    --last-failed              Run only the tests that failed, until they pass (also --lastFailed)
+    --outputDir <dir>          Where the run's report goes (default: .vyntra)
 ```
 
 Positional arguments filter the test files by path, as in Jest.
+
+Every run writes `.vyntra/report.json` (add it to `.gitignore`), which `--last-failed` reads: a failure is rerun
+until its test passes, even when a filtered run left it out.
 
 Exit codes: `0` passed, `1` a test failed, `2` the setup is broken (config, no test files, a file that does not
 load, `.only` with `allowOnly: false`), `4` an error of vyntra itself, `130` interrupted.

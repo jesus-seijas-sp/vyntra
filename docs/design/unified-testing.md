@@ -216,6 +216,11 @@ file is 1, as the usual cause is the test (`process.exit`, running out of memory
 Every run writes `.vyntra/report.json`. `--last-failed` runs only what that report says did not pass,
 and keeps owing a test that a filter left out. Same loop locally and in CI.
 
+The report's `owed` list is carried from run to run: a failed test, or a whole file that did not load,
+stays owed until it runs again and passes. It is dropped when its file or test no longer exists, or when
+the code skips it (`.skip`), which would otherwise keep it owed forever; tests left out by a filter are
+marked `filtered` in the results to tell the two apart.
+
 ### Flaky status
 
 A test that fails and then passes on retry is reported as `flaky`, not `passed`, in every reporter.

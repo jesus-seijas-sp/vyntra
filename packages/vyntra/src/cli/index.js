@@ -13,6 +13,7 @@ const { loadConfig } = require('./config');
 const { discover } = require('./discover');
 const { parseShard, selectShard } = require('./select-shard');
 const { EXIT, brokeSetup } = require('./exit-codes');
+const { readReport, owedAfter, rerunOf, writeReport } = require('./last-run');
 const { JsonReporter } = require('./json-reporter');
 const { Reporter } = require('./reporter');
 const { plan } = require('./schedule');
@@ -85,6 +86,15 @@ function relaunch(argv) {
   return status ?? EXIT.failed;
 }
 
+const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+
+// "3 tests", "2 tests, 1 file": what --last-failed reruns, as the header shows it (a file that did not load runs whole).
+function describeRerun(selections) {
+  const whole = selections.filter((tests) => tests === null).length;
+  const tests = selections.reduce((sum, item) => sum + (item?.length ?? 0), 0);
+  return [tests > 0 && plural(tests, 'test'), whole > 0 && plural(whole, 'file')].filter(Boolean).join(', ');
+}
+
 async function main(argv = process.argv.slice(2)) {
   const start = realTimers.performanceNow();
   const cli = parseCli(argv);
@@ -120,7 +130,21 @@ async function main(argv = process.argv.slice(2)) {
     process.stderr.write(`${c.red(error.message)}\n`);
     return EXIT.setup;
   }
-  const discovered = discover(config, cli.patterns);
+  const startedAt = new Date().toISOString();
+  const previous = readReport(config);
+  let discovered = discover(config, cli.patterns);
+  let rerunning = null;
+  if (config.lastFailed && !previous) {
+    process.stdout.write(`${c.yellow('No report of an earlier run: running every test')}\n`);
+  } else if (config.lastFailed) {
+    config.rerun = rerunOf(previous, config.rootDir);
+    discovered = discovered.filter((file) => file in config.rerun);
+    if (discovered.length === 0) {
+      process.stdout.write(`${c.green('No failed tests to rerun')}\n`);
+      return EXIT.passed;
+    }
+    rerunning = describeRerun(discovered.map((file) => config.rerun[file]));
+  }
   const files = timings.sort(shard ? selectShard(discovered, shard, config.rootDir) : discovered);
   if (files.length === 0) {
     const where = shard ? ` in shard ${shard.index}/${shard.total} (of ${discovered.length})` : '';
@@ -133,12 +157,14 @@ async function main(argv = process.argv.slice(2)) {
   const inline = !planned || planned.jobs.length === 1;
   const { jobs, workers } = inline ? { jobs: files.map((file) => ({ path: file, shard: null })), workers: 1 } : planned;
   const ReporterClass = config.reporter === 'json' ? JsonReporter : Reporter;
-  const reporter = new ReporterClass({ ...config, pool: inline ? 'inline' : config.pool, shard });
+  const reporter = new ReporterClass({ ...config, pool: inline ? 'inline' : config.pool, shard, rerunning });
   reporter.onStart(files.length, workers);
   let failedFiles = 0;
   let brokenFiles = 0;
   let runner;
+  const results = [];
   const onFileResult = (result) => {
+    results.push(result);
     const work = result.work ?? result.duration;
     const testTime = result.tests.reduce((sum, test) => sum + test.duration, 0);
     timings.record(result.path, work, result.tests.length, Math.max(0, work - testTime) / (result.shards ?? 1));
@@ -190,13 +216,17 @@ async function main(argv = process.argv.slice(2)) {
       collected.map((item) => item.resolutions)
     );
   }
-  const passed = reporter.onFinish(realTimers.performanceNow() - start);
+  const duration = realTimers.performanceNow() - start;
+  const passed = reporter.onFinish(duration);
   const coverage = collected.map((item) => item.coverage).filter(Boolean);
   const covered = config.coverage ? reportCoverage(mergeCoverage(coverage), config) : true;
+  let exitCode = passed && covered && failedFiles === 0 ? EXIT.passed : EXIT.failed;
   if (brokenFiles > 0) {
-    return EXIT.setup;
+    exitCode = EXIT.setup;
   }
-  return passed && covered && failedFiles === 0 ? EXIT.passed : EXIT.failed;
+  const owed = owedAfter(previous?.owed ?? [], results, config.rootDir);
+  writeReport(config, { startedAt, duration, exitCode, results, owed });
+  return exitCode;
 }
 
 module.exports = { main };

@@ -250,6 +250,9 @@ class FileRunner {
     this.results.push(record);
     if (test.mode !== 'run') {
       record.status = test.mode === 'todo' ? 'todo' : 'skipped';
+      if (test.filtered) {
+        record.filtered = true;
+      }
       return record;
     }
     if (test.failError) {

@@ -65,7 +65,8 @@ class Suite {
   }
 
   // Applies .only and the test name pattern: what is left out is marked as skipped. Mirrors vitest's rules.
-  interpretModes(hasOnly, pattern, parentIsOnly = false) {
+  // selected(test): whether a test the modes would run is wanted by this run (-t, --last-failed).
+  interpretModes(hasOnly, selected, parentIsOnly = false) {
     const isOnly = parentIsOnly || this.mode === 'only';
     this.children.forEach((child) => {
       const included = isOnly || child.mode === 'only';
@@ -76,13 +77,14 @@ class Suite {
         child.mode = 'run';
       }
       if (child.type === 'test') {
-        if (pattern && child.mode === 'run' && !pattern.test(child.fullName)) {
+        if (selected && child.mode === 'run' && !selected(child)) {
           child.mode = 'skip';
+          child.filtered = true;
         }
       } else if (child.mode === 'skip' || child.mode === 'todo') {
         child.skipAll();
       } else {
-        child.interpretModes(hasOnly, pattern, included && hasOnly);
+        child.interpretModes(hasOnly, selected, included && hasOnly);
       }
     });
   }

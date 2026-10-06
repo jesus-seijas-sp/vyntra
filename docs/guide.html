@@ -579,6 +579,22 @@ module.exports = {
           whole. It also leaves cores free, as tests that start servers of their own compete for them.
         </p>
 
+        <h3 id="last-failed">Rerunning failures</h3>
+        <p>
+          Every run writes <code>.vyntra/report.json</code>: every file and test with its result, and what still fails.
+          <code>--last-failed</code> runs only that: the tests that failed, and the whole of each file that did not load.
+        </p>
+        <pre><code class="language-sh">npx vyntra                  # 3 tests fail
+npx vyntra --last-failed    # runs those 3; fix them one by one
+npx vyntra --last-failed    # "No failed tests to rerun"</code></pre>
+        <p>
+          A failure is forgotten only when its test runs again and passes, or no longer exists: a run that leaves it
+          out (a path, <code>-t</code>, <code>--shard</code>, <code>--bail</code>) keeps it for the next
+          <code>--last-failed</code>. With no report yet, <code>--last-failed</code> runs every test. Add
+          <code>.vyntra/</code> to your <code>.gitignore</code>; <code>outputDir</code> moves it, and
+          <code>outputDir: false</code> writes no report.
+        </p>
+
         <h3 id="sharding">Sharding</h3>
         <p>
           To spread a suite over several CI jobs, give each one a slice with <code>--shard &lt;index&gt;/&lt;total&gt;</code>,
