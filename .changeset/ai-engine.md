@@ -43,4 +43,6 @@ Tags on `describe` and `test` (`{ tags: ['slow'] }`), with `--tag` and `--exclud
 
 `vyntra init` sets a project up for every kind of test: it asks (or takes flags with `--yes`), then writes the config, example tests, the skill, `.mcp.json`, `.gitignore` and a test script, and prints what to install.
 
+The agent drags, answers native dialogs its actions open, and acts inside iframes, whose content now follows the page's tree.
+
 On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.

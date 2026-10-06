@@ -8,13 +8,19 @@ const { routeOf } = require('./route');
 
 const MAX_TREE = 30_000;
 
+// The dialog each page opened during an agent's action and still waits on: { dialog, pending }, pending being the
+// action it interrupted, which ends once the dialog is answered.
+const dialogs = new WeakMap();
+const DIALOG_ACTIONS = new Set(['accept_dialog', 'dismiss_dialog']);
+
 const nullable = (type, description) => ({ anyOf: [{ type }, { type: 'null' }], description });
 
 const TARGET = {
   type: 'object',
   description:
     'The element, as the accessibility tree shows it. Give role and name (preferred), or label, placeholder or ' +
-    'text; set the others to null. nth picks one of several matches, from 0.',
+    'text; set the others to null. A line "- text: Write tests" is plain text, with no role: give text. nth picks ' +
+    'one of several matches, from 0.',
   properties: {
     role: nullable('string', 'An ARIA role from the tree: button, link, textbox, checkbox, combobox, listitem...'),
     name: nullable('string', 'The accessible name of the element, exactly as the tree shows it'),
@@ -22,8 +28,9 @@ const TARGET = {
     placeholder: nullable('string', 'The placeholder of a text field'),
     text: nullable('string', 'Text the element shows, exactly'),
     nth: nullable('integer', 'Which match, from 0, when several elements match'),
+    frame: nullable('string', 'The iframe the element is in, as the tree names it (Inside iframe "Coupon": Coupon)'),
   },
-  required: ['role', 'name', 'label', 'placeholder', 'text', 'nth'],
+  required: ['role', 'name', 'label', 'placeholder', 'text', 'nth', 'frame'],
   additionalProperties: false,
 };
 
@@ -56,6 +63,22 @@ const TOOLS = [
     name: 'set_checked',
     description: 'Check or uncheck a checkbox or a radio button.',
     inputSchema: object({ target: TARGET, checked: { type: 'boolean' } }),
+  },
+  {
+    name: 'drag',
+    description: 'Drag an element and drop it on another (a card onto a column).',
+    inputSchema: object({ target: TARGET, to: TARGET }),
+  },
+  {
+    name: 'accept_dialog',
+    description:
+      'Accept the dialog the page opened (OK on a confirm or an alert); a prompt takes text, null for the others.',
+    inputSchema: object({ text: nullable('string', 'What to answer a prompt dialog') }),
+  },
+  {
+    name: 'dismiss_dialog',
+    description: 'Dismiss the dialog the page opened (Cancel).',
+    inputSchema: object({}),
   },
   {
     name: 'goto',
@@ -94,18 +117,34 @@ const toolsFor = (secrets) => (secrets.size > 0 ? [...TOOLS.slice(0, -2), TYPE_S
 
 const FINISHING = new Set(['done', 'give_up']);
 
+// The document a target is in: the page, or an iframe of it by its title or name (or #n, the nth iframe from 1).
+function documentOf(page, frame) {
+  if (!frame) {
+    return page;
+  }
+  const index = /^#(d+)$/.exec(frame)?.[1];
+  const element = index
+    ? page.locator('iframe').nth(Number(index) - 1)
+    : page.locator(`iframe[title=${JSON.stringify(frame)}], iframe[name=${JSON.stringify(frame)}]`).first();
+  return element.contentFrame();
+}
+
 // The Playwright locator of a target.
 function locate(page, target) {
-  const { role, name, label, placeholder, text, nth } = target ?? {};
+  const { role: given, name, label, placeholder, nth, frame } = target ?? {};
+  // "text" is how the tree shows plain text, not an ARIA role: such an element is found by its text.
+  const role = given === 'text' ? null : given;
+  const text = target?.text ?? (given === 'text' ? name : null);
+  const root = documentOf(page, frame);
   let locator;
   if (role) {
-    locator = page.getByRole(role, name ? { name, exact: true } : {});
+    locator = root.getByRole(role, name ? { name, exact: true } : {});
   } else if (label) {
-    locator = page.getByLabel(label, { exact: true });
+    locator = root.getByLabel(label, { exact: true });
   } else if (placeholder) {
-    locator = page.getByPlaceholder(placeholder, { exact: true });
+    locator = root.getByPlaceholder(placeholder, { exact: true });
   } else if (text) {
-    locator = page.getByText(text, { exact: true });
+    locator = root.getByText(text, { exact: true });
   } else {
     throw new Error('The target names nothing: give role and name, label, placeholder or text');
   }
@@ -144,6 +183,8 @@ function run(page, { name, input }, { timeout, secrets = new Map() }) {
       return locate(page, input.target).selectOption({ label: input.option }, { timeout });
     case 'set_checked':
       return locate(page, input.target).setChecked(input.checked, { timeout });
+    case 'drag':
+      return locate(page, input.target).dragTo(locate(page, input.to), { timeout });
     case 'goto':
       return page.goto(checkUrl(input.url), { timeout: Math.max(timeout, 15_000) });
     default:
@@ -154,11 +195,33 @@ function run(page, { name, input }, { timeout, secrets = new Map() }) {
 const SETTLE_MS = 150;
 const SETTLE_LIMIT_MS = 3_000;
 
-const treeOf = (page) =>
-  page
+const MAX_FRAMES = 5;
+
+const snapshotOf = (root) =>
+  root
     .locator('body')
     .ariaSnapshot({ timeout: 5_000 })
     .catch((error) => `(no accessibility tree: ${error.message.split('\n')[0]})`);
+
+// The page's accessibility tree, and the content of its iframes after it (the page's own tree shows an iframe, not
+// what is in it), each under the name a target's frame takes.
+async function treeOf(page) {
+  const own = await snapshotOf(page);
+  const frames = page.locator('iframe');
+  const count = Math.min(await frames.count().catch(() => 0), MAX_FRAMES);
+  const inside = await Promise.all(
+    [...Array(count).keys()].map(async (i) => {
+      const element = frames.nth(i);
+      const name =
+        (await element.getAttribute('title').catch(() => null)) ??
+        (await element.getAttribute('name').catch(() => null)) ??
+        `#${i + 1}`;
+      const content = await snapshotOf(element.contentFrame());
+      return `- Inside iframe ${JSON.stringify(name)} (frame: ${JSON.stringify(name)}):\n${content.replace(/^/gm, '  ')}`;
+    })
+  );
+  return [own, ...inside].join('\n');
+}
 
 // The page's address without its origin, the same on every machine whichever port the app runs on: `shown`, with
 // the query and the hash, for the model; `keyed`, its route (see route.js), for the key of a recording: ids, tokens
@@ -215,6 +278,20 @@ async function settle(page) {
 // model and { key } for the key of a recording, plus { route, tree } for the effect of a step. It is the input of
 // every page step: a page caught halfway through an update would make a recorded result miss.
 async function pageState(page) {
+  const dialog = dialogs.get(page)?.dialog;
+  if (dialog) {
+    // The page waits for the dialog: nothing else on it can be read or done until it is answered.
+    const said = redact(
+      `A ${dialog.type()} dialog is open: ${JSON.stringify(dialog.message())}. Answer it with accept_dialog or dismiss_dialog.`
+    );
+    const address = addressOf(page);
+    return {
+      text: `Page: ${redact(address.shown)}\n\n${said}`,
+      key: `Page: ${redact(address.keyed)}\n\n${said}`,
+      route: redact(address.keyed),
+      tree: said,
+    };
+  }
   // Secret values the page shows (typed into a field that is not a password field, echoed back) never leave it.
   let tree = redact(await settle(page));
   if (tree.length > MAX_TREE) {
@@ -227,9 +304,42 @@ async function pageState(page) {
   return { text: `Page: ${shown}\n${rest}`, key: `Page: ${keyed}\n${rest}`, route: keyed, tree };
 }
 
-// Does one action and waits for the page to settle after it.
+async function answer(page, { name, input }) {
+  const open = dialogs.get(page);
+  if (!open) {
+    throw new Error('No dialog is open');
+  }
+  dialogs.delete(page);
+  await (name === 'accept_dialog' ? open.dialog.accept(input?.text ?? undefined) : open.dialog.dismiss());
+  await open.pending;
+  await settle(page);
+}
+
+// Does one action and waits for the page to settle after it. A dialog the action opens is kept open for the agent to
+// answer (Playwright would dismiss it): the page waits on it, and so does the action, which ends once it is answered.
+// The dialogs are listened for only while an agent acts, so those a test answers itself are left to the test.
 async function perform(page, action, options) {
-  await run(page, action, options);
+  if (DIALOG_ACTIONS.has(action.name)) {
+    await answer(page, action);
+    return;
+  }
+  const open = dialogs.get(page);
+  if (open) {
+    throw new Error(`A ${open.dialog.type()} dialog is open: answer it with accept_dialog or dismiss_dialog first`);
+  }
+  const opened = Promise.withResolvers();
+  const onDialog = (dialog) => opened.resolve(dialog);
+  page.on('dialog', onDialog);
+  try {
+    const running = run(page, action, options);
+    const dialog = await Promise.race([running.then(() => null), opened.promise]);
+    if (dialog) {
+      dialogs.set(page, { dialog, pending: running.catch(() => {}) });
+      return;
+    }
+  } finally {
+    page.off('dialog', onDialog);
+  }
   await settle(page);
 }
 

@@ -24,7 +24,7 @@ describe('the rules the agent is held to', () => {
   });
 
   it('runs no tool call that is not one of the tools, or does not match its schema', () => {
-    const target = { role: 'button', name: 'Add', label: null, placeholder: null, text: null, nth: null };
+    const target = { role: 'button', name: 'Add', label: null, placeholder: null, text: null, nth: null, frame: null };
     expect(() => checkCall(TOOLS, { name: 'click', input: { target } })).not.toThrow();
     expect(() => checkCall(TOOLS, { name: 'eval', input: { code: '1' } })).toThrow(
       'There is no eval tool here: use click'

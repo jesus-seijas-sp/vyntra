@@ -192,6 +192,18 @@ describe('agent', () => {
   });
 });
 
+describe('surfaces', () => {
+  it('accepts dialogs, acts inside iframes and drags, and replays them', () => {
+    const { run } = project('agent');
+    const first = run(['surfaces.e2e.js', '--reporter', 'json']);
+    expect(first.status).toBe(0);
+    // click, accept_dialog, done; fill, click, done; drag, done.
+    expect(first.calls).toBe(8);
+    const replayed = run(['surfaces.e2e.js'], { CI: '1' });
+    expect([replayed.status, replayed.calls]).toEqual([0, 0]);
+  });
+});
+
 describe('secrets', () => {
   const VALUE = 'hunter2-Correct-Horse';
   const SECRET = ['secret.e2e.js'];

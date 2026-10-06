@@ -78,12 +78,19 @@ const firstLine = (error) =>
       .replace(/\.+$/, '')
   );
 
-// An action as it is recorded: its target without the ways of naming it that were not used.
+// An action as it is recorded: its targets (target, and to for a drag) without the ways of naming them that were
+// not used.
+const named = (target) =>
+  target && typeof target === 'object'
+    ? Object.fromEntries(Object.entries(target).filter(([, value]) => value !== null))
+    : target;
 const compact = ({ name, input }) => ({
   name,
-  input: input.target
-    ? { ...input, target: Object.fromEntries(Object.entries(input.target).filter(([, value]) => value !== null)) }
-    : input,
+  input: {
+    ...input,
+    ...(input.target ? { target: named(input.target) } : {}),
+    ...(input.to ? { to: named(input.to) } : {}),
+  },
 });
 const describeAction = ({ name, input }) => `${name} ${JSON.stringify(input)}`;
 

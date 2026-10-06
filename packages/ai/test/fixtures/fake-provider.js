@@ -18,7 +18,7 @@ const reply = (content, extra = {}) => ({
   ...extra,
 });
 
-const NO_TARGET = { role: null, name: null, label: null, placeholder: null, text: null, nth: null };
+const NO_TARGET = { role: null, name: null, label: null, placeholder: null, text: null, nth: null, frame: null };
 const toolUse = (name, input) => {
   calls += 1;
   return reply([{ type: 'tool_use', id: `call-${process.pid}-${calls}`, name, input }]);
@@ -150,6 +150,29 @@ function review(messages) {
   return reply([{ type: 'text', text: JSON.stringify({ findings }) }], { json: { findings } });
 }
 
+// The surfaces a plain click can not reach: a dialog to accept, fields inside an iframe, a card to drag.
+function surfaces(messages) {
+  const goal = textOf(messages[0]);
+  const page = textOf(messages.at(-1));
+  if (page.includes('status: Draft deleted') || page.includes('status: Coupon SAVE10 applied') || page.includes('status: Moved to Done')) {
+    return toolUse('done', { summary: 'Done' });
+  }
+  if (goal.includes('delete the draft')) {
+    return page.includes('confirm dialog is open')
+      ? toolUse('accept_dialog', { text: null })
+      : toolUse('click', { target: { ...NO_TARGET, role: 'button', name: 'Delete draft' } });
+  }
+  if (goal.includes('apply the coupon')) {
+    return page.includes('textbox "Coupon": SAVE10')
+      ? toolUse('click', { target: { ...NO_TARGET, role: 'button', name: 'Apply', frame: 'Coupon' } })
+      : toolUse('fill', { target: { ...NO_TARGET, role: 'textbox', name: 'Coupon', frame: 'Coupon' }, value: 'SAVE10' });
+  }
+  return toolUse('drag', {
+    target: { ...NO_TARGET, text: 'Write tests' },
+    to: { ...NO_TARGET, role: 'region', name: 'Done' },
+  });
+}
+
 module.exports = {
   name: 'fake',
   async complete({ model, system, messages, tools, schema }) {
@@ -162,6 +185,9 @@ module.exports = {
     }
     if (tools && textOf(messages[0]).includes('Goal: reach the dashboard')) {
       return blocked(messages);
+    }
+    if (tools && /Goal: (delete the draft|apply the coupon|move the card)/.test(textOf(messages[0]))) {
+      return surfaces(messages);
     }
     if (tools && textOf(messages[0]).includes('Goal: sign up')) {
       return signUp(messages);

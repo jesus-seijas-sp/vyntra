@@ -23,7 +23,16 @@ regressions. Every scenario has two tests:
 | A canvas-only control | Nothing in the accessibility tree |
 | Infinite scroll | The item loads when the list is scrolled |
 
-## Baseline
+## Scores
+
+| Date | Model | Score | Calls | Tokens | Changed |
+| --- | --- | --- | ---: | ---: | --- |
+| 2026-10-06 | deepseek/deepseek-v4-flash | 10 of 11 | 56 | 303k | Dialogs, iframes and drag for the agent; plain text named by its text |
+| 2026-10-06 | deepseek/deepseek-v4-flash | 7 of 11 | 133 | 853k | The first run |
+
+The canvas scenario still fails: it needs the agent to see pixels.
+
+## The first run
 
 2026-10-06, `deepseek/deepseek-v4-flash` through OpenRouter, effort medium: **7 of 11**, 133 model calls, 853k
 tokens. Failed: the iframe (its content is not in the accessibility tree the agent reads), the native dialog (no tool

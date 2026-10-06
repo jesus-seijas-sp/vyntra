@@ -401,6 +401,12 @@ and use.ai), an example test per kind, the skill (init --agents), .mcp.json (mer
 test script when the project has none, and prints the install command for the lockfile's package manager. Answers are
 read line by line, so they can be piped in (--ask).
 
+Agent tools added from the benchmark: drag (target onto to); accept_dialog and dismiss_dialog, for a dialog an agent's
+action opened (the runner listens for dialogs only while the agent acts, races the action against a dialog, and keeps
+the dialog and the interrupted action until it is answered; the page reads as the open dialog meanwhile); the
+content of up to 5 iframes appended to the tree under `Inside iframe "<title>"`, with `frame` on targets (title,
+name, or #n). A target with role "text" (the tree's plain-text lines) is found by its text.
+
 Exit check, done: in a copy of the example app with a bug planted in the shared `summary()` (it
 counted finished todos as left, breaking two end-to-end tests and no unit test), an agent given only
 the project's path and the report's location found and fixed the line from the failure pages, in 7

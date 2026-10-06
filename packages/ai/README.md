@@ -42,7 +42,7 @@ test('a member upgrades to Pro', async ({ page, agent }) => {
 | API | What it does |
 | --- | --- |
 | `expect(value).toSatisfy(claim)` | A model judges a claim about the value; `.not` too. Any project with `engine: 'ai'` |
-| `agent.act(goal, { params }?)` | Drives the page to the goal: clicks, fills, presses keys, picks options, opens URLs. `{name}` in the goal takes `params.name`. Returns `{ summary, actions }` |
+| `agent.act(goal, { params }?)` | Drives the page to the goal: clicks, fills, presses keys, picks options, checks boxes, drags, opens URLs, answers native dialogs, and acts inside iframes. `{name}` in the goal takes `params.name`. Returns `{ summary, actions }` |
 | `agent.assert(claim)` | Judges a claim about the page as it is; fails the test when it does not hold |
 | `agent.waitFor(condition, { timeout, interval }?)` | Waits until a claim about the page holds (30 s and every 500 ms by default), judging the page again only when it changed |
 | `agent.extract(what, schema?)` | Reads something off the page: text, or a value of the JSON schema given, checked against it |
@@ -70,6 +70,10 @@ judgment fails the test with an `InconclusiveError` (code `ASSERTION_INCONCLUSIV
 too, rather than passing or failing on a guess. `extract` fails the same way when the page does not show what
 it asks for, instead of returning a placeholder; an answer that breaks the schema gets one more model call,
 told what was wrong, and fails the step if it still does.
+
+A native dialog (`confirm`, `alert`, `prompt`) that an agent's action opens stays open for the agent to accept or
+dismiss, where Playwright would dismiss it; dialogs the test's own code handles are left to it. An iframe's content
+follows the page's tree, and a target names the iframe it is in.
 
 The agent sees the page as its accessibility tree, read once the page stops changing (no request waiting for
 its response, and two reads of the tree that agree); it waits for that after every action, recorded or replayed, and names elements
