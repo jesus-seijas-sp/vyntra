@@ -398,6 +398,8 @@ async function loadConfig(cliOptions) {
     ...cliOptions,
     rootDir,
     configFile: configFileOf(rootDir, cliOptions.config) ?? fileConfig.configFile ?? null,
+    // The options the user set, which an engine's defaults leave alone.
+    explicitKeys: Object.keys({ ...fileConfig, ...cliOptions }),
   };
   config.setupFiles = config.setupFiles.map((file) => resolveSetupFile(file, rootDir));
   config.coverageInclude = coverageFilter(config.collectCoverageFrom, rootDir);

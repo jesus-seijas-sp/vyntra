@@ -1,5 +1,6 @@
 const { discover } = require('./discover');
 const { resolveSetupFile } = require('./config');
+const { withEngineDefaults } = require('../engines');
 
 // Options of the whole run, which a project can not set for itself.
 const RUN_OPTIONS = [
@@ -89,9 +90,10 @@ function problemsOf(projects) {
 // with no name, which the run's setup is the setup of. Throws on a config that can not run.
 function resolveProjects(config, selected = []) {
   if (!config.projects) {
+    const single = withEngineDefaults(config, new Set(config.explicitKeys ?? []));
     return {
       run: hooksOf({ rootDir: config.rootDir }),
-      projects: [{ name: null, config, dependsOn: [], ...hooksOf(config) }],
+      projects: [{ name: null, config: single, dependsOn: [], ...hooksOf(config) }],
     };
   }
   if (!Array.isArray(config.projects) || config.projects.length === 0) {
@@ -102,9 +104,10 @@ function resolveProjects(config, selected = []) {
       throw new Error(`Project ${index + 1} is not an object: a project is { name, include, ... }`);
     }
     const name = project.name ?? `project-${index + 1}`;
+    const explicit = new Set([...(config.explicitKeys ?? []), ...Object.keys(project)]);
     return {
       name,
-      config: projectConfig(config, { ...project, name }, index),
+      config: withEngineDefaults(projectConfig(config, { ...project, name }, index), explicit),
       dependsOn: list(project.dependsOn),
       ...hooksOf({ ...project, rootDir: config.rootDir }),
     };

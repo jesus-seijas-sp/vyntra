@@ -117,3 +117,16 @@ describe('globalSetup from vitest', () => {
     expect(config.globalSetup).toEqual([path.join(ROOT, 'setup.ts')]);
   });
 });
+
+describe('engines', () => {
+  it('says which package to install for an engine that is not there', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vyntra-engine-'));
+    fs.writeFileSync(path.join(dir, 'vyntra.config.js'), "module.exports = { engine: 'nope' };\n");
+    fs.writeFileSync(path.join(dir, 'a.test.js'), "test('a', () => {});\n");
+    const { status, stderr } = spawnSync(process.execPath, [BIN, '--root', dir, '--no-color'], { encoding: 'utf8' });
+    expect(stderr).toContain(
+      'The "nope" engine is the @vyntra/nope package: install it (npm install --save-dev @vyntra/nope)'
+    );
+    expect(status).toBe(2);
+  });
+});

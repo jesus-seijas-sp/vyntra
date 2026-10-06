@@ -21,6 +21,8 @@ const {
 const globalSnapshot = require('./global-snapshot');
 const { loadPlugins } = require('./plugins');
 const { teardownScope } = require('./run/fixtures');
+const { loadEngine } = require('./engines');
+const { expect } = require('./expect');
 const { serializeError } = require('./run/serialize-error');
 
 const CONSOLE_METHODS = ['log', 'info', 'warn', 'error', 'debug', 'trace', 'dir'];
@@ -171,6 +173,18 @@ function speedUpLoading(config) {
   return cache;
 }
 
+// The project's engine (engine: 'web'): its matchers join expect, its fixtures the built-in ones.
+function loadProjectEngine(config) {
+  if (!config.engine) {
+    return;
+  }
+  const engine = loadEngine(config.engine, config.rootDir);
+  state.engineFixtures = engine.fixtures ?? null;
+  if (engine.matchers) {
+    expect.extend(engine.matchers);
+  }
+}
+
 // Prepares this thread to run test files: { run(path), finish() }, finish giving what the thread collected over the
 // run (coverage, new module resolutions).
 async function createRuntime(config) {
@@ -184,6 +198,7 @@ async function createRuntime(config) {
   shimProcessKill();
   shimWorkerStdio();
   await loadPlugins(config);
+  loadProjectEngine(config);
   const pristine = globalSnapshot.snapshot();
   const pristineEnv = globalSnapshot.snapshotEnv();
   globalSnapshot.keepGlobalsRemovable();

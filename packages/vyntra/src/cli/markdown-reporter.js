@@ -1,7 +1,7 @@
-const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { codeFrame, userFrames } = require('../utils/stack');
+const { slugOf } = require('../run/test-key');
 const { stripAnsi, relative, describeError, oneLine, locate, outcomesOf, countsOf } = require('./outcomes');
 
 const MAX_FRAMES = 6;
@@ -15,17 +15,8 @@ function fenced(text, language = 'text') {
 
 const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// failures/<slug>.md: readable, unique (the hash), and the same for the same test in every run.
-function pageName({ file, test }) {
-  const key = test ? `${file} > ${test.path.join(' > ')}` : file;
-  const readable = key
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 80);
-  const hash = crypto.createHash('sha1').update(key).digest('hex').slice(0, 8);
-  return `${readable}-${hash}.md`;
-}
+// failures/<slug>.md: the same name for the same test in every run.
+const pageName = ({ file, test }) => `${slugOf(file, test ? test.path : null)}.md`;
 
 function counts(results, duration) {
   const totals = countsOf(results);
@@ -113,6 +104,31 @@ function exchangesSection(exchanges) {
   });
 }
 
+const LANGUAGES = { 'text/yaml': 'yaml', 'application/json': 'json' };
+
+// What fixtures attached to a failed attempt: images shown, files linked (a trace, with the command that opens it),
+// text in blocks. Paths are written from the failures/ folder the page is in.
+function attachmentsSection(attachments, failuresDir, rootDir) {
+  return attachments.flatMap(({ name, path: file, body, contentType }) => {
+    const heading = `### ${name[0].toUpperCase()}${name.slice(1)}`;
+    if (file) {
+      const link = path.relative(failuresDir, file).split(path.sep).join('/');
+      if (contentType.startsWith('image/')) {
+        return ['', heading, '', `![${name}](${link})`];
+      }
+      // The command runs from the project's root.
+      const fromRoot = path.relative(rootDir, file).split(path.sep).join('/');
+      const open =
+        contentType === 'application/zip' && name === 'trace' ? `npx playwright show-trace ${fromRoot}` : null;
+      return ['', heading, '', `[${path.basename(file)}](${link})`, ...(open ? ['', fenced(open, 'sh')] : [])];
+    }
+    if (contentType === 'text/uri-list') {
+      return ['', heading, '', `<${body}>`];
+    }
+    return ['', heading, '', fenced(stripAnsi(body ?? ''), LANGUAGES[contentType] ?? 'text')];
+  });
+}
+
 // .vyntra/summary.md and a page per failed or flaky test in .vyntra/failures/: the error and its source line, every
 // attempt, the test's console output and the command that reruns it. Written for people and for coding agents.
 class MarkdownReporter {
@@ -150,16 +166,27 @@ class MarkdownReporter {
         ...outcome.errors.map((error) => errorSection(error, outcome.path, this.config.rootDir))
       );
     }
+    const failuresDir = path.join(this.dir, 'failures');
+    if (test?.attachments) {
+      lines.push(
+        '',
+        '## What the test left',
+        ...attachmentsSection(test.attachments, failuresDir, this.config.rootDir)
+      );
+    }
     if (test?.exchanges) {
       lines.push('', '## HTTP', ...exchangesSection(test.exchanges));
     }
-    outcome.attempts.forEach(({ errors, exchanges }, i) => {
+    outcome.attempts.forEach(({ errors, exchanges, attachments }, i) => {
       lines.push(
         '',
         `## Attempt ${i + 1} (failed)`,
         '',
         ...errors.map((error) => errorSection(error, outcome.path, this.config.rootDir))
       );
+      if (attachments) {
+        lines.push(...attachmentsSection(attachments, failuresDir, this.config.rootDir));
+      }
       if (exchanges) {
         lines.push(...exchangesSection(exchanges));
       }

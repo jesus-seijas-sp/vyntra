@@ -1,6 +1,6 @@
 const os = require('node:os');
 const { serializeError } = require('../run/serialize-error');
-const { plan } = require('./schedule');
+const { plan, explicitWorkers: workersOf } = require('./schedule');
 const { ShardMerger } = require('./shard-merger');
 const { WorkerPool } = require('./worker-pool');
 const { InlineRunner } = require('./inline-runner');
@@ -260,7 +260,8 @@ class ProjectRun {
     const { single } = this;
     const own = config.maxWorkers;
     const pool = !single && config.pool === 'inline' ? 'threads' : config.pool;
-    const limited = { ...config, pool, maxWorkers: Math.min(share, typeof own === 'number' ? own : share) };
+    const ownWorkers = own === undefined ? share : workersOf(own, os.availableParallelism());
+    const limited = { ...config, pool, maxWorkers: Math.max(1, Math.min(share, ownWorkers)) };
     const planned = single ? this.singlePlan() : plan(files, this.timings, limited);
     // One job (a file run whole) runs in the main thread: no worker to start. A single long file split in parts does
     // get workers. In the main thread, split files would only run one part after the other: they run whole.

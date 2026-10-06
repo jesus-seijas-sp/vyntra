@@ -1,3 +1,5 @@
+const fs = require('node:fs');
+const path = require('node:path');
 /* eslint-disable no-await-in-loop -- hooks and tests run one after the other, in order, by definition */
 const state = require('../state');
 const { expect } = require('../expect');
@@ -5,11 +7,22 @@ const { clearAllMocks, resetAllMocks, restoreAllMocks } = require('../mock');
 const { realTimers } = require('../timers');
 const { FixtureSet } = require('./fixtures');
 const { builtins } = require('../fixtures');
+const { slugOf } = require('./test-key');
 
 const MAX_EXCHANGES = 10;
 
-// The last HTTP exchanges of an attempt, for its failure page.
-const exchangesOf = (test) => (test.exchanges?.length > 0 ? { exchanges: test.exchanges.slice(-MAX_EXCHANGES) } : {});
+// What an attempt leaves for its failure page: its last HTTP exchanges, and what fixtures attached.
+const extrasOf = (test) => ({
+  ...(test.exchanges?.length > 0 ? { exchanges: test.exchanges.slice(-MAX_EXCHANGES) } : {}),
+  ...(test.attachments?.length > 0 ? { attachments: [...test.attachments] } : {}),
+});
+
+// Where an attempt's files go: .vyntra/artifacts/<test>/attempt-<n>.
+function artifactsDir(config, file, test) {
+  const relative = path.relative(config.rootDir, file).split(path.sep).join('/');
+  const base = path.resolve(config.rootDir, config.outputDir || '.vyntra', 'artifacts');
+  return path.join(base, slugOf(relative, test.titlePath), `attempt-${test.attempt + 1}`);
+}
 const { invoke } = require('./invoke');
 const { serializeError } = require('./serialize-error');
 const { SkipError } = require('./skip-error');
@@ -52,6 +65,27 @@ class FileRunner {
   }
 
   // The vitest test context; also what a Jest done callback carries.
+  // What fixtures need to save evidence of a failure: whether the attempt failed (set before they tear down), where
+  // its files go, and attach() for the failure page.
+  testInfo(test) {
+    const dir = () => artifactsDir(this.config, this.file.path, test);
+    return {
+      get failed() {
+        return test.failing;
+      },
+      get attempt() {
+        return test.attempt;
+      },
+      outputPath: (...parts) => {
+        fs.mkdirSync(dir(), { recursive: true });
+        return path.join(dir(), ...parts);
+      },
+      attach: (name, { path: file, body, contentType = 'text/plain' } = {}) => {
+        test.attachments.push({ name, path: file, body: body === undefined ? undefined : String(body), contentType });
+      },
+    };
+  }
+
   createContext(test, record) {
     return {
       task: {
@@ -76,6 +110,7 @@ class FileRunner {
       onTestFailed: (fn) => test.onFailed.push(fn),
       signal: test.abort.signal,
       annotate: () => Promise.resolve(),
+      testInfo: this.testInfo(test),
     };
   }
 
@@ -120,7 +155,8 @@ class FileRunner {
     if (!test.fixtures && !implicit) {
       return null;
     }
-    return new FixtureSet(test.fixtures, context, { use: use ?? {}, builtins });
+    const all = state.engineFixtures ? { ...builtins, ...state.engineFixtures } : builtins;
+    return new FixtureSet(test.fixtures, context, { use: use ?? {}, builtins: all });
   }
 
   // The body of one attempt: beforeEach hooks, fixtures, the test and the assertion checks.
@@ -217,6 +253,7 @@ class FileRunner {
     const afterEach = suites.map((suite) => () => this.runHooks(this.afterHooks(suite.hooks.afterEach), context));
     errors.push(...(await FileRunner.runAll(afterEach)));
     errors.push(...(await FileRunner.runAll(cleanups.reverse())));
+    test.failing = errors.length > 0;
     if (fixtures) {
       errors.push(...(await fixtures.teardown()));
     }
@@ -252,7 +289,7 @@ class FileRunner {
       }
       if (attempt < retries) {
         // The failures a retry hides: a flaky test is reported with them.
-        (record.attempts ??= []).push({ errors: outcome.errors.map(serializeError), ...exchangesOf(test) });
+        (record.attempts ??= []).push({ errors: outcome.errors.map(serializeError), ...extrasOf(test) });
       }
       record.retries = attempt + 1;
     }
@@ -290,7 +327,7 @@ class FileRunner {
       record.status = errors.length > 0 ? 'passed' : 'failed';
       record.errors = errors.length > 0 ? [] : [serializeError(new Error('Expect test to fail'))];
     } else if (errors.length > 0) {
-      Object.assign(record, { status: 'failed', errors: errors.map(serializeError), ...exchangesOf(test) });
+      Object.assign(record, { status: 'failed', errors: errors.map(serializeError), ...extrasOf(test) });
     } else if (record.retries > 0) {
       record.status = 'flaky';
     }

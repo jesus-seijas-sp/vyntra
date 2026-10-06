@@ -32,6 +32,11 @@ class TestCase {
     this.snapshotCounts = new Map();
     // The HTTP requests of the api fixture, and their responses: shown when the test fails.
     this.exchanges = [];
+    // Files and text fixtures attach for the failure page (a screenshot, a trace), and whether the attempt failed,
+    // known before the fixtures tear down so they can save what they hold.
+    this.attachments = [];
+    this.failing = false;
+    this.attempt = (this.attempt ?? -1) + 1;
   }
 
   // Names from the outermost describe to the test.

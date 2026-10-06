@@ -12,7 +12,7 @@ const FILES = { junit: JunitReporter, markdown: MarkdownReporter, github: Github
 const ALIASES = { 'github-actions': 'github', 'jest-junit': 'junit' };
 
 // What the reporters of a run write, which a new run clears first (--last-failed keeps them: it adds to that run).
-const OUTPUTS = ['junit.xml', 'summary.md', 'failures'];
+const OUTPUTS = ['junit.xml', 'summary.md', 'failures', 'artifacts'];
 
 // The reporters asked for: a list, or names separated by commas. None asked for: the default one, and GitHub's under
 // GitHub Actions, as vitest does.
