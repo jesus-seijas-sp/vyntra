@@ -27,6 +27,7 @@ const OPTIONS = {
   coverageDirectory: { type: 'string' },
   'coverage.reportsDirectory': { type: 'string' },
   splitFiles: { type: 'boolean' },
+  shard: { type: 'string' },
   ci: { type: 'boolean' },
   watch: { type: 'boolean' },
   // Accepted for compatibility, nothing to do.
@@ -53,6 +54,7 @@ Options:
       --coverage                 Report the coverage of the project files (V8)
       --coverageDirectory <dir>  Where coverage reports go (default: coverage; vitest's --coverage.reportsDirectory too)
       --splitFiles               Run long files in parts on several workers (their tests must be independent)
+      --shard <index>/<total>    Run one slice of the test files, for CI jobs in parallel (e.g. --shard 2/4)
       --ci                       Do not write new snapshots
   -h, --help                     Show this help
 `;
@@ -79,6 +81,7 @@ function parseCli(argv) {
     coverage: values.coverage,
     coverageDirectory: values.coverageDirectory ?? values['coverage.reportsDirectory'],
     splitFiles: values.splitFiles,
+    shard: values.shard,
     ci: values.ci,
     isolate: values['no-isolate'] ? false : values.isolate,
     colors: values['no-color'] ? false : values.color,

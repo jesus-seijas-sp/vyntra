@@ -11,6 +11,7 @@ const { realTimers } = require('../timers');
 const { parseCli } = require('./args');
 const { loadConfig } = require('./config');
 const { discover } = require('./discover');
+const { parseShard, selectShard } = require('./select-shard');
 const { JsonReporter } = require('./json-reporter');
 const { Reporter } = require('./reporter');
 const { plan } = require('./schedule');
@@ -102,9 +103,18 @@ async function main(argv = process.argv.slice(2)) {
   config.colors ??= detectColors();
   setColors(config.colors);
   const timings = new Timings(config.rootDir);
-  const files = timings.sort(discover(config, cli.patterns));
+  let shard = null;
+  try {
+    shard = config.shard ? parseShard(config.shard) : null;
+  } catch (error) {
+    process.stderr.write(`${c.red(error.message)}\n`);
+    return 1;
+  }
+  const discovered = discover(config, cli.patterns);
+  const files = timings.sort(shard ? selectShard(discovered, shard, config.rootDir) : discovered);
   if (files.length === 0) {
-    process.stdout.write(`${c.yellow('No test files found')}\n`);
+    const where = shard ? ` in shard ${shard.index}/${shard.total} (of ${discovered.length})` : '';
+    process.stdout.write(`${c.yellow(`No test files found${where}`)}\n`);
     return config.passWithNoTests ? 0 : 1;
   }
   // One job (a file run whole) runs in the main thread: no worker to start. A single long file split in parts does
@@ -113,7 +123,7 @@ async function main(argv = process.argv.slice(2)) {
   const inline = !planned || planned.jobs.length === 1;
   const { jobs, workers } = inline ? { jobs: files.map((file) => ({ path: file, shard: null })), workers: 1 } : planned;
   const ReporterClass = config.reporter === 'json' ? JsonReporter : Reporter;
-  const reporter = new ReporterClass({ ...config, pool: inline ? 'inline' : config.pool });
+  const reporter = new ReporterClass({ ...config, pool: inline ? 'inline' : config.pool, shard });
   reporter.onStart(files.length, workers);
   let failedFiles = 0;
   let runner;

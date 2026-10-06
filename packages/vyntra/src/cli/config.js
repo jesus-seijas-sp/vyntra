@@ -50,6 +50,8 @@ const DEFAULTS = {
   // Jest's collectCoverageFrom: globs of the files to report, "!" excluding.
   collectCoverageFrom: undefined,
   coverageThreshold: undefined,
+  // One slice of the test files: '<index>/<total>' (or { index, total }), for CI jobs in parallel.
+  shard: undefined,
   // Files whose tests do not depend on each other, which can run in parts on several workers: true or globs.
   splitFiles: false,
   // 'node', 'happy-dom' or 'jsdom'; the last two come from the project, not from vyntra.

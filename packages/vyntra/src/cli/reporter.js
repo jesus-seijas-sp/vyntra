@@ -41,7 +41,8 @@ class Reporter {
 
   onStart(fileCount, workers) {
     const mode = this.config.pool === 'inline' ? 'inline' : `${workers} worker${workers === 1 ? '' : 's'}`;
-    this.write(`\n ${c.bold(c.cyan('VYNTRA'))} ${c.dim(`running ${fileCount} test files on ${mode}`)}\n`);
+    const shard = this.config.shard ? ` (shard ${this.config.shard.index}/${this.config.shard.total})` : '';
+    this.write(`\n ${c.bold(c.cyan('VYNTRA'))} ${c.dim(`running ${fileCount} test files${shard} on ${mode}`)}\n`);
   }
 
   // silent: 'passed-only' (as in vitest) keeps the output of failing tests only, and of a failing file outside them.

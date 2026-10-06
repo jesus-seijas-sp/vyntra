@@ -579,6 +579,24 @@ module.exports = {
           whole. It also leaves cores free, as tests that start servers of their own compete for them.
         </p>
 
+        <h3 id="sharding">Sharding</h3>
+        <p>
+          To spread a suite over several CI jobs, give each one a slice with <code>--shard &lt;index&gt;/&lt;total&gt;</code>,
+          spelled as in Jest and Vitest, with the index from 1:
+        </p>
+        <pre><code class="language-yaml">strategy:
+  matrix:
+    shard: [1, 2, 3, 4]
+steps:
+  - run: npx vyntra --shard ${{ matrix.shard }}/4</code></pre>
+        <p>
+          Every job works out the slices on its own, from what all of them see alike: the paths and sizes of the test
+          files. Each file goes to the slice with the fewest bytes so far, biggest files first, so slices are close in
+          size and every file runs in exactly one of them. Durations of earlier runs would balance better, but each
+          machine has its own, and jobs that disagree would skip files. A slice with no files fails, unless
+          <code>--passWithNoTests</code> is given.
+        </p>
+
         <h2 id="typescript">TypeScript and ES modules</h2>
         <p>
           vyntra loads files with Node.js, so what Node.js runs, vyntra runs: CommonJS, ES modules (<code>.mjs</code>, or
@@ -692,7 +710,7 @@ module.exports = {
         <h3>What is not supported yet?</h3>
         <p>
           Watch mode, Jest and Vitest <code>projects</code> in one run, <code>globalSetup</code>, test environments of
-          your own, Babel run without a <code>transform</code>, source maps in stack traces, type checking, sharding, and
+          your own, Babel run without a <code>transform</code>, source maps in stack traces, type checking, and
           coverage of the files no test loads. <a href="migrating.html#missing">Migrating</a> has the whole list.
         </p>
         <h3>My tests expect <code>NODE_ENV=test</code>.</h3>

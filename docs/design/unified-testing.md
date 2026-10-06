@@ -190,8 +190,10 @@ These are useful for unit tests today and needed by every later milestone.
 ### Sharding
 
 `--shard <index>/<total>` runs one deterministic slice of the suite, the same on every machine.
-Files are distributed by recorded duration (vyntra already knows them) rather than by count, so
-shards finish close together; with no timings, by path. Jest and Vitest spell it the same way, so CI
+Files are distributed by size (largest first, each to the shard with the fewest bytes so far, ties by
+path) rather than by count, so shards finish close together. Recorded durations would balance better,
+but every CI machine has its own (or none), and jobs that computed different partitions would run some
+files twice and others never; size and path are the same on every checkout. Jest and Vitest spell it the same way, so CI
 configs move over unchanged. An empty shard fails unless `--passWithNoTests` is given.
 
 ### Exit codes

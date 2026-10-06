@@ -94,7 +94,7 @@ run it without `--experimental-vm-modules`), and stack traces of compiled files 
 Not available yet: watch mode, Jest and Vitest `projects` in one run, `globalSetup`/`globalTeardown`, custom test
 environments (a Jest `testEnvironment` module) and `testEnvironmentOptions`, Babel without a `transform`,
 asynchronous transformers and Vite `resolveId`/`load` hooks, source maps in stack traces, named imports from JSON,
-`import.meta.env`, type checking, sharding, coverage of files no test loads.
+`import.meta.env`, type checking, coverage of files no test loads.
 
 ## CLI
 
@@ -116,6 +116,7 @@ asynchronous transformers and Vite `resolveId`/`load` hooks, source maps in stac
     --coverage                 Report the coverage of the project files (V8)
     --coverageDirectory <dir>  Where coverage reports go (default: coverage; vitest's --coverage.reportsDirectory too)
     --ci                       Do not write new snapshots
+    --shard <index>/<total>    Run one slice of the test files, for CI jobs in parallel (e.g. --shard 2/4)
 ```
 
 Positional arguments filter the test files by path, as in Jest.
