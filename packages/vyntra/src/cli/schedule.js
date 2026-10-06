@@ -75,15 +75,14 @@ function plan(files, timings, config) {
   const total = infos.reduce((sum, info) => sum + info.cost, 0);
   // Test files often start servers of their own: when splitting, at most half the cores, which they leave free.
   const splitting = infos.some((info) => info.split);
-  const cap = splitting ? Math.max(2, Math.floor(cores / 2)) : cores - 1;
+  // Workers asked for explicitly are what the run plans for, splitting included, whatever the machine.
+  const explicit = config.maxWorkers !== undefined ? explicitWorkers(config.maxWorkers, cores) : null;
+  const cap = explicit ?? (splitting ? Math.max(2, Math.floor(cores / 2)) : cores - 1);
   const target = Math.max(MIN_PART_MS, ...infos.map((info) => info.floor), total / cap);
   const jobs = infos.flatMap((info) => jobsOf(info, target)).sort((a, b) => b.cost - a.cost);
   const work = jobs.reduce((sum, job) => sum + job.cost, 0);
   const longest = Math.max(1, ...jobs.map((job) => job.cost));
-  const workers =
-    config.maxWorkers !== undefined
-      ? explicitWorkers(config.maxWorkers, cores)
-      : Math.min(cap, Math.ceil(work / longest));
+  const workers = explicit ?? Math.min(cap, Math.ceil(work / longest));
   return { jobs, workers: Math.max(1, Math.min(workers, jobs.length)) };
 }
 

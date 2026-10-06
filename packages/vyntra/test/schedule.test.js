@@ -36,7 +36,13 @@ describe('plan', () => {
   });
 
   it('splits the long files the configuration allows, down to the longest file that can not be split', () => {
-    const { jobs, workers } = plan(list, timingsOf(files), { rootDir: root, splitFiles: ['long.test.js'] });
+    // An explicit worker count: by default plan() sizes the pool from the machine's cores, and a small CI
+    // runner would leave too few workers to split the file across.
+    const { jobs, workers } = plan(list, timingsOf(files), {
+      rootDir: root,
+      splitFiles: ['long.test.js'],
+      maxWorkers: 8,
+    });
     const parts = jobs.filter((job) => job.path === file('long.test.js'));
     // The medium file (4 s) can not be split: parts of the long one must not take longer.
     expect(parts.length).toBe(4);
@@ -96,7 +102,8 @@ describe('split files', () => {
       JSON.stringify({ files: { [testFile]: { duration: 30000, tests: 6, setup: 0 } } })
     );
     try {
-      const report = runFixture(dir);
+      // Enough workers to split across, whatever the machine's cores.
+      const report = runFixture(dir, ['-w', '8']);
       expect(report.files).toHaveLength(1);
       const [result] = report.files;
       expect(result.shards).toBeGreaterThan(1);
