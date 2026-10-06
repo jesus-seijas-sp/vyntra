@@ -39,7 +39,8 @@ const DEFAULTS = {
   allowOnly: true,
   passWithNoTests: false,
   bail: 0,
-  reporter: 'default',
+  // Names, or one string with commas: default, verbose or json to print the run; junit, markdown, github to write it.
+  reporter: undefined,
   clearMocks: false,
   resetMocks: false,
   restoreMocks: false,

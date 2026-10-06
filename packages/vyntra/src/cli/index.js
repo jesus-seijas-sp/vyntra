@@ -14,8 +14,7 @@ const { discover } = require('./discover');
 const { parseShard, selectShard } = require('./select-shard');
 const { EXIT, brokeSetup } = require('./exit-codes');
 const { readReport, owedAfter, rerunOf, writeReport } = require('./last-run');
-const { JsonReporter } = require('./json-reporter');
-const { Reporter } = require('./reporter');
+const { reporterNames, unknownReporters, createReporters, clearOutputs } = require('./reporters');
 const { plan } = require('./schedule');
 const { ShardMerger } = require('./shard-merger');
 const { Timings } = require('./timings');
@@ -130,6 +129,14 @@ async function main(argv = process.argv.slice(2)) {
     process.stderr.write(`${c.red(error.message)}\n`);
     return EXIT.setup;
   }
+  const reporters = reporterNames(config.reporter);
+  const unknown = unknownReporters(reporters);
+  if (unknown.length > 0) {
+    process.stderr.write(
+      `${c.red(`Unknown reporter: ${unknown.join(', ')}`)} (default, verbose, json, junit, markdown, github)\n`
+    );
+    return EXIT.setup;
+  }
   const startedAt = new Date().toISOString();
   const previous = readReport(config);
   let discovered = discover(config, cli.patterns);
@@ -156,8 +163,10 @@ async function main(argv = process.argv.slice(2)) {
   const planned = config.pool === 'inline' ? null : plan(files, timings, config);
   const inline = !planned || planned.jobs.length === 1;
   const { jobs, workers } = inline ? { jobs: files.map((file) => ({ path: file, shard: null })), workers: 1 } : planned;
-  const ReporterClass = config.reporter === 'json' ? JsonReporter : Reporter;
-  const reporter = new ReporterClass({ ...config, pool: inline ? 'inline' : config.pool, shard, rerunning });
+  const reporter = createReporters(reporters, { ...config, pool: inline ? 'inline' : config.pool, shard, rerunning });
+  if (!config.lastFailed) {
+    clearOutputs(config);
+  }
   reporter.onStart(files.length, workers);
   let failedFiles = 0;
   let brokenFiles = 0;

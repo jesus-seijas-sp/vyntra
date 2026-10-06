@@ -6,7 +6,7 @@ const BIN = path.join(__dirname, '..', 'bin', 'vyntra.js');
 const run = (...args) =>
   spawnSync(process.execPath, [BIN, '--root', path.join(__dirname, 'fixtures', 'flaky'), '--no-color', ...args], {
     encoding: 'utf8',
-    env: { ...process.env, CI: '' },
+    env: { ...process.env, CI: '', GITHUB_ACTIONS: '' },
   });
 
 describe('flaky tests', () => {

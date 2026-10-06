@@ -235,7 +235,14 @@ The summary counts them separately, and `--fail-on-flaky` makes them fail the ru
   the error and its source line, every attempt, the test's console output, the DOM at failure (unit and
   e2e) or the request and response (API), and links to artifacts. Written for people and for coding
   agents.
-- `github`: annotations on the failing lines and a job summary, when `GITHUB_ACTIONS` is set.
+- `github`: annotations on the failing lines and a job summary, when `GITHUB_ACTIONS` is set. With no
+  reporter configured it is added there by itself, as vitest does.
+
+Milestone 1 writes the pages with the error, its source line, every attempt, the console output and a
+rerun command. The DOM at failure, the request and response, and artifact links are added by the
+milestones that capture them (the DOM with fixtures, the request and response with API testing).
+A flaky test is a passing `testcase` in `junit.xml`, with its failed attempts as Surefire's
+`flakyFailure` elements, which tools that do not know them ignore.
 
 ### Output directory
 

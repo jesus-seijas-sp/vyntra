@@ -153,7 +153,7 @@ npx vyntra -u                   # update the snapshots that changed</code></pre>
         </div>
         <p>
           <code>--verbose</code> lists every test; <code>--reporter json</code> prints the whole run as one JSON document,
-          for tools.
+          for tools. Other reporters write the run next to it: see <a href="#reports">Reports for CI and agents</a>.
         </p>
 
         <h3 id="flags">Common flags</h3>
@@ -582,6 +582,26 @@ module.exports = {
           vyntra splits a file only when it is one of the long ones and when splitting pays: a part repeats the file's
           setup (its <code>beforeAll</code>, the servers it starts), so files that spend most of their time in setup stay
           whole. It also leaves cores free, as tests that start servers of their own compete for them.
+        </p>
+
+        <h3 id="reports">Reports for CI and agents</h3>
+        <p>
+          <code>--reporter</code> takes a list (repeat it, or separate names with commas): one of <code>default</code>,
+          <code>verbose</code> or <code>json</code> prints the run, and these write it, in <code>.vyntra/</code>:
+        </p>
+        <ul>
+          <li><code>junit</code>: <code>junit.xml</code>, which most CI systems read. A flaky test passes, with its failed
+            attempts as <code>flakyFailure</code> elements.</li>
+          <li><code>markdown</code>: <code>summary.md</code>, and a page per failed or flaky test in
+            <code>failures/</code> with the error, its source line, every attempt, the test's console output and the
+            command that reruns it. Written for people, and for coding agents fixing the failures.</li>
+          <li><code>github</code>: under GitHub Actions, an annotation on the line of each failure and the run's summary
+            on the job's page. With no reporter configured, it is on there by itself, as in vitest.</li>
+        </ul>
+        <pre><code class="language-sh">npx vyntra --reporter default,junit,markdown</code></pre>
+        <p>
+          A run clears the reports of the one before, except with <code>--last-failed</code>, which updates them: the
+          pages of tests that pass now go, the others stay.
         </p>
 
         <h3 id="last-failed">Rerunning failures</h3>

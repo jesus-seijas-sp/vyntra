@@ -348,7 +348,7 @@
               <tr><td><code>--pool &lt;threads|forks|inline&gt;</code></td><td>Worker threads (default), child processes, or the main thread</td></tr>
               <tr><td><code>--no-isolate</code></td><td>Shares project modules between the files of a worker</td></tr>
               <tr><td><code>--testTimeout &lt;ms&gt;</code></td><td>The timeout of tests (5000)</td></tr>
-              <tr><td><code>--reporter &lt;default|verbose|json&gt;</code></td><td>What is printed; <code>--verbose</code> for every test</td></tr>
+              <tr><td><code>--reporter &lt;name&gt;</code></td><td>What is printed (<code>default</code>, <code>verbose</code>, <code>json</code>) and written (<code>junit</code>, <code>markdown</code>, <code>github</code>); repeat it or use commas (see <a href="guide.html#reports">Reports</a>). <code>--verbose</code> for every test</td></tr>
               <tr><td><code>--retry &lt;n&gt;</code></td><td>Retries failing tests</td></tr>
               <tr><td><code>--bail &lt;n&gt;</code></td><td>Stops after <code>n</code> failed files</td></tr>
               <tr><td><code>--silent</code></td><td>Hides what the tests write to the console</td></tr>
@@ -426,7 +426,7 @@
               <tr><td><code>transform</code></td><td>on</td><td><code>false</code> loads files as they are, without compiling JSX or TypeScript-only syntax. A Jest config's <code>transform</code> (your transformers) is read from the Jest config</td></tr>
               <tr><td><code>plugins</code></td><td><code>[]</code></td><td>Vite plugins whose synchronous <code>transform</code> hooks rewrite your source</td></tr>
               <tr><td><code>compileCache</code></td><td><code>false</code></td><td>Keeps V8's compiled code on disk, in <code>node_modules/.cache/vyntra</code></td></tr>
-              <tr><td><code>reporter</code></td><td><code>'default'</code></td><td><code>'default'</code>, <code>'verbose'</code> or <code>'json'</code></td></tr>
+              <tr><td><code>reporter</code></td><td><code>'default'</code></td><td>A name or a list: <code>'default'</code>, <code>'verbose'</code> or <code>'json'</code> to print the run, and <code>'junit'</code>, <code>'markdown'</code>, <code>'github'</code> to write it (<code>'github'</code> is added under GitHub Actions when none is set)</td></tr>
               <tr><td><code>coverage</code></td><td><code>false</code></td><td>Collects coverage (Jest's <code>collectCoverage</code>)</td></tr>
               <tr><td><code>collectCoverageFrom</code></td><td>every loaded file</td><td>Globs of the files to report, <code>!</code> to leave out</td></tr>
               <tr><td><code>coverageDirectory</code></td><td><code>'coverage'</code></td><td>Where <code>lcov.info</code> goes</td></tr>

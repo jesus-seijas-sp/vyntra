@@ -74,7 +74,10 @@ describe('--shard', () => {
     const bin = path.join(__dirname, '..', 'bin', 'vyntra.js');
     const root = path.join(__dirname, 'fixtures', 'shard');
     const run = (...args) =>
-      spawnSync(process.execPath, [bin, '--root', root, '--no-color', ...args], { encoding: 'utf8' });
+      spawnSync(process.execPath, [bin, '--root', root, '--no-color', ...args], {
+        encoding: 'utf8',
+        env: { ...process.env, GITHUB_ACTIONS: '' },
+      });
     const empty = run('--shard', '6/6');
     expect(empty.status).toBe(2);
     expect(empty.stdout).toContain('No test files found in shard 6/6 (of 5)');

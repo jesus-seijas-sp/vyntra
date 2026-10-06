@@ -13,7 +13,7 @@ function runFixture(name, args = []) {
   const { stdout, stderr } = spawnSync(
     process.execPath,
     [BIN, '--root', root, '--reporter', 'json', '--no-color', ...args],
-    { encoding: 'utf8', env: { ...process.env, CI: '' } }
+    { encoding: 'utf8', env: { ...process.env, CI: '', GITHUB_ACTIONS: '' } }
   );
   const line = stdout.split('\n').find((text) => text.startsWith('{"success"'));
   if (!line) {

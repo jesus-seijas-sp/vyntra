@@ -12,7 +12,7 @@ function project() {
   const run = (args = [], env = {}) => {
     const { status, stdout } = spawnSync(process.execPath, [BIN, '--root', dir, '--no-color', ...args], {
       encoding: 'utf8',
-      env: { ...process.env, CI: '', FIX: '', ...env },
+      env: { ...process.env, CI: '', GITHUB_ACTIONS: '', FIX: '', ...env },
     });
     const report = JSON.parse(fs.readFileSync(path.join(dir, '.vyntra', 'report.json'), 'utf8'));
     const owed = report.owed.map(({ file, test }) => (test ? `${file}: ${test.join(' > ')}` : file)).sort();
@@ -70,7 +70,7 @@ describe('--last-failed', () => {
     const { dir } = project();
     const { stdout } = spawnSync(process.execPath, [BIN, '--root', dir, '--no-color', '--last-failed'], {
       encoding: 'utf8',
-      env: { ...process.env, CI: '', FIX: '1' },
+      env: { ...process.env, CI: '', GITHUB_ACTIONS: '', FIX: '1' },
     });
     expect(stdout).toContain('No report of an earlier run: running every test');
     expect(stdout).toContain('running 3 test files');
@@ -79,7 +79,7 @@ describe('--last-failed', () => {
   it('writes no report with outputDir: false', () => {
     const { dir } = project();
     fs.writeFileSync(path.join(dir, 'vyntra.config.js'), 'module.exports = { outputDir: false };\n');
-    spawnSync(process.execPath, [BIN, '--root', dir], { env: { ...process.env, CI: '' } });
+    spawnSync(process.execPath, [BIN, '--root', dir], { env: { ...process.env, CI: '', GITHUB_ACTIONS: '' } });
     expect(fs.existsSync(path.join(dir, '.vyntra'))).toBe(false);
   });
 });

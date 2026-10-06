@@ -12,7 +12,7 @@ const OPTIONS = {
   runInBand: { type: 'boolean', short: 'i' },
   maxWorkers: { type: 'string', short: 'w' },
   testTimeout: { type: 'string' },
-  reporter: { type: 'string' },
+  reporter: { type: 'string', multiple: true },
   verbose: { type: 'boolean' },
   bail: { type: 'string' },
   retry: { type: 'string' },
@@ -50,7 +50,7 @@ Options:
       --pool <threads|forks|inline>  Worker threads (default), child processes like Jest, or the main thread
       --no-isolate               Share project modules between files (faster, less isolated)
       --testTimeout <ms>         Default timeout of tests (default: 5000)
-      --reporter <default|verbose>
+      --reporter <name>          default, verbose or json; and junit, markdown, github (repeat it, or use commas)
       --retry <n>                Retry failing tests
       --bail <n>                 Stop after n failed files
       --silent                   Do not print console output of tests
@@ -80,7 +80,7 @@ function parseCli(argv) {
     pool: values.runInBand ? 'inline' : values.pool,
     maxWorkers: values.maxWorkers,
     testTimeout: toNumber(values.testTimeout),
-    reporter: values.verbose ? 'verbose' : values.reporter,
+    reporter: values.verbose ? ['verbose', ...(values.reporter ?? [])] : values.reporter,
     bail: toNumber(values.bail),
     retry: toNumber(values.retry),
     allowOnly: values.allowOnly,

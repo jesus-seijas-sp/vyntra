@@ -6,7 +6,7 @@ const fixture = (name) => path.join(__dirname, 'fixtures', 'exit-codes', name);
 const run = (name, ...args) =>
   spawnSync(process.execPath, [BIN, '--root', fixture(name), '--no-color', ...args], {
     encoding: 'utf8',
-    env: { ...process.env, CI: '' },
+    env: { ...process.env, CI: '', GITHUB_ACTIONS: '' },
   });
 
 describe('exit codes', () => {
@@ -47,7 +47,7 @@ describe('exit codes', () => {
     'is 130 when interrupted (%s)',
     async (pool) => {
       const child = spawn(process.execPath, [BIN, '--root', fixture('slow'), '--no-color', '--pool', pool, '-w', '2'], {
-        env: { ...process.env, CI: '' },
+        env: { ...process.env, CI: '', GITHUB_ACTIONS: '' },
       });
       let output = '';
       child.stdout.on('data', (chunk) => {

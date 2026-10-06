@@ -107,7 +107,7 @@ asynchronous transformers and Vite `resolveId`/`load` hooks, source maps in stac
     --pool <threads|forks|inline>  Worker threads (default), child processes like Jest, or the main thread
     --no-isolate               Share project modules between files (faster, less isolated)
     --testTimeout <ms>         Default timeout of tests (default: 5000)
-    --reporter <default|verbose|json>
+    --reporter <name>          default, verbose or json; and junit, markdown, github (repeat it, or use commas)
     --retry <n>                Retry failing tests (one that passes on a retry is reported as flaky)
     --fail-on-flaky            Fail the run when a test passed only on a retry
     --bail <n>                 Stop after n failed files
@@ -123,6 +123,10 @@ asynchronous transformers and Vite `resolveId`/`load` hooks, source maps in stac
 ```
 
 Positional arguments filter the test files by path, as in Jest.
+
+Reporters `junit` (`.vyntra/junit.xml`), `markdown` (`.vyntra/summary.md` and a page per failure, for people and
+coding agents) and `github` (annotations and the job summary, on by itself under GitHub Actions) write the run next to
+what is printed.
 
 Every run writes `.vyntra/report.json` (add it to `.gitignore`), which `--last-failed` reads: a failure is rerun
 until its test passes, even when a filtered run left it out.

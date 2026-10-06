@@ -134,6 +134,12 @@ function fromVitestConfig(vite, rootDir) {
   if (alias.length > 0) {
     config.alias = alias;
   }
+  if (test.reporters) {
+    // vitest's names, as strings or [name, options]; vyntra's own options say where the files go.
+    const known = ['default', 'verbose', 'json', 'junit', 'github-actions'];
+    const names = [test.reporters].flat().map((reporter) => [reporter].flat()[0]);
+    config.reporter = names.filter((name) => known.includes(name));
+  }
   coverageOf(test.coverage ?? {}, config);
   const compilerOptions = compilerOptionsOf(vite);
   if (compilerOptions) {
