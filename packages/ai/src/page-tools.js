@@ -69,8 +69,15 @@ const TOOLS = [
   },
   {
     name: 'give_up',
-    description: 'The goal can not be reached on this page: say why.',
-    inputSchema: object({ reason: { type: 'string' } }),
+    description:
+      'The goal can not be reached: say why, and what stands in the way. product: the app does not do it, or does it ' +
+      'wrong. environment: the app or a service it needs is down or erroring (a 5xx page, no connection). ' +
+      'credentials: a sign-in was rejected, or there is no account to use. setup: data or a prerequisite the test ' +
+      'should have prepared is not there. unsupported: the page needs an interaction these tools can not do.',
+    inputSchema: object({
+      reason: { type: 'string' },
+      category: { type: 'string', enum: ['product', 'environment', 'credentials', 'setup', 'unsupported'] },
+    }),
   },
 ];
 

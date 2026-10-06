@@ -16,9 +16,10 @@ function serializeError(error) {
     message: redact(String(error.message)),
     stack: typeof error.stack === 'string' ? redact(mapStack(error.stack)) : '',
   };
-  // An error of the environment the test needs (a model provider), not of the test: exit code 3.
-  if (error.phase === 'environment') {
-    result.phase = 'environment';
+  // An error of the environment the test needs (a model provider): exit code 3; or of its setup (seed data that is
+  // not there): exit code 2. Not an error of the test.
+  if (error.phase === 'environment' || error.phase === 'setup') {
+    result.phase = error.phase;
   }
   if (error.code !== undefined) {
     result.code = String(error.code);

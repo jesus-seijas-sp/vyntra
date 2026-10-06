@@ -52,6 +52,18 @@ wait on an idle page costs one call. Its judgments are recorded like `assert`'s;
 no recording is not judged at all (the states a page passes through differ from run to run), and the wait goes
 on until a page recorded as holding appears. A `waitFor` that holds counts as a check for the `act` before it.
 
+When an `act` can not reach its goal, the agent gives up and says why, and the test fails with a
+`BlockedError` whose code names the reason. The run's exit code follows it, so CI can tell a broken product
+from a broken setup:
+
+| Reason | Code | Exit |
+| --- | --- | ---: |
+| The app does not do it, or does it wrong | `AGENT_BLOCKED_PRODUCT` | 1 |
+| An interaction the agent's tools can not do | `AGENT_BLOCKED_UNSUPPORTED` | 1 |
+| A sign-in was rejected, or there is no account | `AGENT_BLOCKED_CREDENTIALS` | 2 |
+| Data or a prerequisite the test should have prepared is missing | `AGENT_BLOCKED_SETUP` | 2 |
+| The app or a service it needs is down or erroring | `AGENT_BLOCKED_ENVIRONMENT` | 3 |
+
 A judgment has three outcomes: the claim holds, it fails, or it is **inconclusive**, when the value or the
 page does not show enough to decide (another screen, data still loading, a value not there). An inconclusive
 judgment fails the test with an `InconclusiveError` (code `ASSERTION_INCONCLUSIVE`), for `.not.toSatisfy`

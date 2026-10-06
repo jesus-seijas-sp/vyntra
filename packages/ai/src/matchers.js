@@ -2,7 +2,7 @@ const { inspect } = require('node:util');
 const { redact } = require('vyntra/engine');
 const { AiSession } = require('./session');
 const { judge } = require('./judge');
-const { InconclusiveError } = require('./errors');
+const { InconclusiveError } = require('./inconclusive-error');
 
 // A value as the model reads it: text as it is, anything else as it would print.
 // Secret values in it are hidden.

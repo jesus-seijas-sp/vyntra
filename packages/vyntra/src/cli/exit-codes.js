@@ -14,7 +14,11 @@ const EXIT = {
 // that threw is one too).
 const SETUP_PHASES = new Set(['collect', 'policy', 'setup']);
 
-const brokeSetup = (result) => result.errors.some((error) => SETUP_PHASES.has(error.phase));
+// A test can report one too: a prerequisite outside the product that is not there (seed data, an account that can not
+// sign in), as an AI step's agent concludes.
+const brokeSetup = (result) =>
+  result.errors.some((error) => SETUP_PHASES.has(error.phase)) ||
+  result.tests.some((test) => test.errors?.some((error) => error.phase === 'setup'));
 
 // A file that met a problem outside the project: in its own setup (a server that did not start), or in a test (a model
 // provider that failed, an AI budget used up).

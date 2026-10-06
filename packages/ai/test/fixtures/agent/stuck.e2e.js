@@ -2,6 +2,6 @@
 test('a model going round in circles is stopped', async ({ page, agent }) => {
   await page.setContent('<title>Stuck</title><button>Nothing</button>');
   await expect(agent.act('make something happen')).rejects.toThrow(
-    'The agent could not reach "make something happen": the button does nothing'
+    'The agent could not reach "make something happen" (product): the button does nothing'
   );
 });

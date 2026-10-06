@@ -333,4 +333,17 @@ describe('verdicts', () => {
     const replayed = run(['unique.e2e.js'], { ...env, CI: '1' });
     expect([replayed.status, replayed.calls]).toEqual([0, 0]);
   });
+
+  it('says why an agent gave up, and the run exits for the environment (3) or the setup (2)', () => {
+    const { run } = project('agent');
+    const down = run(['blocked.e2e.js', '-t', 'is down', '--reporter', 'json']);
+    expect(down.status).toBe(3);
+    expect(down.stdout).toContain(
+      'The agent could not reach \\"reach the dashboard\\" (environment): the app answers 502'
+    );
+    expect(down.stdout).toContain('"code":"AGENT_BLOCKED_ENVIRONMENT"');
+    const rejected = run(['blocked.e2e.js', '-t', 'is rejected']);
+    expect(rejected.status).toBe(2);
+    expect(rejected.stdout).toContain('(credentials): the sign-in was rejected');
+  });
 });

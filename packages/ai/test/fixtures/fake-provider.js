@@ -70,7 +70,7 @@ function signIn(messages) {
 function breakRules(messages) {
   const history = JSON.stringify(messages);
   if (history.includes('Navigation goes only to http and https')) {
-    return toolUse('give_up', { reason: 'the runner refused both requests' });
+    return toolUse('give_up', { reason: 'the runner refused both requests', category: 'unsupported' });
   }
   if (history.includes('was not run')) {
     return toolUse('goto', { url: 'file:///etc/passwd' });
@@ -81,7 +81,7 @@ function breakRules(messages) {
 // Stuck: clicks the same button that does nothing, until only done and give_up are offered.
 function stuck(tools) {
   if (!tools.some((tool) => tool.name === 'click')) {
-    return toolUse('give_up', { reason: 'the button does nothing' });
+    return toolUse('give_up', { reason: 'the button does nothing', category: 'product' });
   }
   return toolUse('click', { target: { ...NO_TARGET, role: 'button', name: 'Nothing' } });
 }
@@ -114,6 +114,15 @@ function signUp(messages) {
   return toolUse('fill', { target: { ...NO_TARGET, role: 'textbox', name: 'Email' }, value: email });
 }
 
+// Gives up on reaching the dashboard, for what the page shows: a server error, or a rejected sign-in.
+function blocked(messages) {
+  const page = textOf(messages.at(-1));
+  if (page.includes('502')) {
+    return toolUse('give_up', { reason: 'the app answers 502 Bad Gateway', category: 'environment' });
+  }
+  return toolUse('give_up', { reason: 'the sign-in was rejected', category: 'credentials' });
+}
+
 module.exports = {
   name: 'fake',
   async complete({ system, messages, tools, schema }) {
@@ -123,6 +132,9 @@ module.exports = {
     // Everything the model was sent, for the tests to look for secret values in.
     if (process.env.FAKE_REQUESTS) {
       fs.appendFileSync(process.env.FAKE_REQUESTS, `${JSON.stringify({ system, messages, tools })}\n`);
+    }
+    if (tools && textOf(messages[0]).includes('Goal: reach the dashboard')) {
+      return blocked(messages);
     }
     if (tools && textOf(messages[0]).includes('Goal: sign up')) {
       return signUp(messages);

@@ -21,4 +21,6 @@ Judgments can be inconclusive when the value or the page does not settle the cla
 
 `unique()` params for values that change every run: the model types them as they are, recordings hold `<unique:name>`, and a replay types the value of its own run.
 
+An agent that gives up says why (product, environment, credentials, setup, unsupported), and the run exits 3 for the environment and 2 for credentials and setup, as for any test error with that phase.
+
 On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.
