@@ -2,7 +2,8 @@
 
 Code written for a bundler (Vite, webpack) imports things Node.js refuses. vyntra accepts them as Vitest and Jest do, so the tests run without changing the code:
 
-- **JSON.** `import data from './data.json'` works without `with { type: 'json' }`: the default export is the parsed file. `require('./data.json')` returns the data, as in Node.js. Named imports (`import { version } from './package.json'`) are not supported.
+- **JSON.** `import data from './data.json'` works without `with { type: 'json' }`: the default export is the parsed file. `require('./data.json')` returns the data, as in Node.js. Its top-level keys can be imported by name, as Vite allows: `import { version } from './package.json'`.
+- **`import.meta.env`.** As in Vitest, it reads `process.env` (so `vi.stubEnv` changes both), over Vite's values (`MODE` is `'test'`, `DEV` true, `PROD` false, `SSR` true but in a document environment, `BASE_URL` `'/'`) and the `VITE_` variables of the project's `.env`, `.env.local`, `.env.test` and `.env.test.local` (Vite's `envDir` and `envPrefix` change where from and which). Those stay out of `process.env`.
 - **Stylesheets** (`.css`, `.scss`, `.sass`, `.less`, `.styl`, `.pcss`) are not read. Their default export answers every class name with the name itself, as a CSS module would: `styles.button` is `'button'`.
 - **Images, fonts and media** (`.svg`, `.png`, `.jpg`, `.gif`, `.webp`, `.woff2`, `.mp4`, `.pdf`, `.txt`, `.md`...) export their path as the default, as a bundler exports their URL.
 - **`import.meta.glob`**, Vite's: `import.meta.glob('./pages/*.ts')` becomes an object with a function per matching file that imports it. `{ eager: true }` gives the modules themselves, `{ import: 'default' }` one export of each, and `{ query: '?raw' }` their text. An array of patterns takes the files of all of them; `!` exclusions are not supported yet.

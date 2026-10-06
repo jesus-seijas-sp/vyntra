@@ -95,8 +95,7 @@ run it without `--experimental-vm-modules`).
 
 Not available yet: watch mode, custom test
 environments (a Jest `testEnvironment` module) and `testEnvironmentOptions`, Babel without a `transform`,
-asynchronous transformers and Vite `resolveId`/`load` hooks, named imports from JSON,
-`import.meta.env`, type checking, coverage of files no test loads.
+asynchronous transformers and Vite `resolveId`/`load` hooks, type checking, coverage of files no test loads.
 
 ## CLI
 

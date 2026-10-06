@@ -856,8 +856,17 @@ test('adds a todo', async ({ page }) => {
           <li>
             <strong>JSON.</strong> <code>import data from './data.json'</code> works without
             <code>with { type: 'json' }</code>: the default export is the parsed file. <code>require('./data.json')</code>
-            returns the data, as in Node.js. Named imports (<code>import { version } from './package.json'</code>) are not
-            supported.
+            returns the data, as in Node.js. Its top-level keys can be imported by name, as Vite allows:
+            <code>import { version } from './package.json'</code>.
+          </li>
+          <li>
+            <strong><code>import.meta.env</code>.</strong> As in Vitest, it reads <code>process.env</code> (so
+            <code>vi.stubEnv</code> changes both), over Vite's values (<code>MODE</code> is <code>'test'</code>,
+            <code>DEV</code> true, <code>PROD</code> false, <code>SSR</code> true but in a document environment,
+            <code>BASE_URL</code> <code>'/'</code>) and the <code>VITE_</code> variables of the project's
+            <code>.env</code>, <code>.env.local</code>, <code>.env.test</code> and <code>.env.test.local</code>
+            (Vite's <code>envDir</code> and <code>envPrefix</code> change where from and which). Those stay out of
+            <code>process.env</code>.
           </li>
           <li>
             <strong>Stylesheets</strong> (<code>.css</code>, <code>.scss</code>, <code>.sass</code>, <code>.less</code>,

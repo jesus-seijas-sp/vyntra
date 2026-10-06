@@ -26,6 +26,7 @@ vyntra reads your `vitest.config.ts` (or a `vite.config.*` with a `test` section
 | `coverage.include`, `coverage.thresholds` | ✓ `collectCoverageFrom`, `coverageThreshold` |
 | `environment: 'jsdom'`, `'happy-dom'`, `environmentOptions` | ✓ With the jsdom or happy-dom your project has; a file can ask for its own with a `@vitest-environment` comment |
 | `test.alias`, `resolve.alias`, `test.env` | ✓ The same |
+| `import.meta.env`, `envDir`, `envPrefix`, named JSON imports | ✓ As Vite provides them: Vite's values and the `VITE_` variables of `.env` files, over `process.env` (see [What files can import](../guide/imports.md)) |
 | Oxc's `decorator` and esbuild's `tsconfigRaw` options | ✓ For the TypeScript transform |
 | Vite plugins | ✓ Their synchronous `transform` hooks; no `resolveId` |
 | `globalSetup` | ✓ Its `provide()` and the tests' `inject()` too |
@@ -37,6 +38,6 @@ vyntra reads your `vitest.config.ts` (or a `vite.config.*` with a `test` section
 
 - **The order of `afterEach` and `afterAll` hooks** follows the config: in reverse, as Vitest runs them, with a Vitest config or none; in the order they were declared, as Jest runs them, with a Jest config (or `hookOrder: 'list'`).
 - **Globals are always there.** A test that checks that `describe` is not a global would notice; nothing else does.
-- **Only what Node.js can not run is compiled**: JSX and TypeScript-only syntax (decorators, `enum`), with the esbuild, sucrase or TypeScript your project has. `import.meta.env` is not defined.
+- **Only what Node.js can not run is compiled**: JSX and TypeScript-only syntax (decorators, `enum`), with the esbuild, sucrase or TypeScript your project has.
 - **JSON is imported as a default export only.** `import data from './data.json'` works without `with { type: 'json' }`, as in Vitest, but the named imports Vite adds (`import { version } from './package.json'`) do not.
 - **`NODE_ENV` is left as it is.** Vitest sets it to `test` when it is not set; vyntra does not (see [the differences with Jest](jest.md)).

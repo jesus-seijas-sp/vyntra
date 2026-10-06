@@ -104,8 +104,31 @@ function isJson(file) {
   return path.extname(file).toLowerCase() === '.json' && !file.includes(`${path.sep}node_modules${path.sep}`);
 }
 
+const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
+const RESERVED = new Set(
+  (
+    'break case catch class const continue debugger default delete do else enum export extends false finally for ' +
+    'function if import in instanceof new null return super switch this throw true try typeof var void while with ' +
+    'yield let static implements interface package private protected public await arguments eval'
+  ).split(' ')
+);
+
+// The data as the default export, and each top-level key that can be a name as a named one, as Vite does:
+// import { version } from './package.json'.
 function jsonSource(file) {
-  return `export default ${fs.readFileSync(file, 'utf8')};\n`;
+  const text = fs.readFileSync(file, 'utf8');
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return `export default ${text};\n`;
+  }
+  const names =
+    data && typeof data === 'object' && !Array.isArray(data)
+      ? Object.keys(data).filter((key) => IDENTIFIER.test(key) && !RESERVED.has(key))
+      : [];
+  const named = names.length > 0 ? `export const { ${names.join(', ')} } = data;\n` : '';
+  return `const data = ${text.trim()};\nexport default data;\n${named}`;
 }
 
 let compiledDir = null;

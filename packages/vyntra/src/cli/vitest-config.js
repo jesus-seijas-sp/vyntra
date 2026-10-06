@@ -131,6 +131,13 @@ function fromVitestConfig(vite, rootDir) {
   if (test.env) {
     config.env = test.env;
   }
+  // Where Vite reads .env files from, and which of their variables reach import.meta.env.
+  if (vite.envDir !== undefined) {
+    config.envDir = path.resolve(root, vite.envDir);
+  }
+  if (vite.envPrefix !== undefined) {
+    config.envPrefix = vite.envPrefix;
+  }
   // vitest adds test.alias to Vite's resolve.alias, its own coming first.
   const alias = [...aliasesOf(test.alias, root), ...aliasesOf(vite.resolve?.alias, root)];
   if (alias.length > 0) {

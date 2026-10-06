@@ -36,7 +36,11 @@ function hooksOf(config) {
 // A project takes the top level's options, unless inherit: false (the projects of a Jest config, and of a vitest
 // config without extends: true), which starts from vyntra's defaults. root: the folder its relative paths are from.
 function projectConfig(base, project, index) {
-  const parent = project.inherit === false ? { ...DEFAULTS, configFile: base.configFile, colors: base.colors } : base;
+  // The .env values of import.meta.env are the whole run's.
+  const parent =
+    project.inherit === false
+      ? { ...DEFAULTS, configFile: base.configFile, colors: base.colors, importMetaEnv: base.importMetaEnv }
+      : base;
   const inherited = Object.fromEntries(
     Object.entries(parent).filter(([key]) => !RUN_OPTIONS.includes(key) && !OWN_OPTIONS.includes(key))
   );

@@ -5,6 +5,7 @@ const { fileURLToPath, pathToFileURL } = require('node:url');
 const { globToRegExp } = require('./glob');
 const { VITEST_CONFIG_FILES, isVitestConfig, fromVitestConfig } = require('./vitest-config');
 const { expandProjects } = require('./foreign-projects');
+const { loadEnvFiles } = require('../import-meta-env');
 
 const DEFAULTS = {
   roots: ['.'],
@@ -432,6 +433,8 @@ async function loadConfig(cliOptions) {
   config.transformPlugins = [config.plugins ?? []]
     .flat(Infinity)
     .some((plugin) => typeof plugin?.transform === 'function');
+  // import.meta.env's VITE_ variables from the .env files, read once for every worker.
+  config.importMetaEnv = loadEnvFiles(path.resolve(rootDir, config.envDir ?? '.'), config.envPrefix ?? 'VITE_');
   // vitest's test.env: the variables the tests see, set before any worker starts so they all inherit them.
   Object.entries(config.env ?? {}).forEach(([name, value]) => {
     process.env[name] = String(value);

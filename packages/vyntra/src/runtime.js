@@ -22,6 +22,7 @@ const globalSnapshot = require('./global-snapshot');
 const { loadPlugins } = require('./plugins');
 const { teardownScope } = require('./run/fixtures');
 const { loadEngine } = require('./engines');
+const { installImportMetaEnv } = require('./import-meta-env');
 const { expect } = require('./expect');
 const { serializeError } = require('./run/serialize-error');
 
@@ -192,6 +193,7 @@ async function createRuntime(config) {
   setColors(config.colors);
   const resolutions = speedUpLoading(config);
   installGlobals();
+  installImportMetaEnv(config.importMetaEnv);
   captureConsole(config.silent);
   catchUncaught();
   shimProcessSend();

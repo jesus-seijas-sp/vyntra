@@ -5,6 +5,7 @@ const { pathToFileURL, fileURLToPath } = require('node:url');
 const state = require('./state');
 const { isSpyable, makeSpyable, markSpyable } = require('./modules/spyable');
 const { installCjsLoader, nearestType } = require('./cjs-loader');
+const { rewriteImportMetaEnv } = require('./import-meta-env');
 const {
   configure: configureJestTransform,
   handles: jestHandles,
@@ -224,7 +225,7 @@ function hookEsm(config) {
   // From now on CommonJS sources go through these hooks too, which only Node's own loader runs.
   state.loaderHooks = true;
   const isolate = config.isolate !== false;
-  Module.registerHooks({
+  const hooks = {
     resolve(specifier, context, nextResolve) {
       if (ALIASES.has(specifier)) {
         const url = context.conditions.includes('require') ? pathToFileURL(ENTRY_CJS).href : ENTRY_ESM;
@@ -298,6 +299,24 @@ function hookEsm(config) {
       }
       // Node has no format for .tsx or .jsx and would refuse the file; the transform leaves ES modules.
       return { format: 'module', source: isSpyable(file) ? makeSpyable(source, url) : source, shortCircuit: true };
+    },
+  };
+  Module.registerHooks({
+    resolve: hooks.resolve,
+    // A project's ES modules read Vite's import.meta.env from vyntra's (see import-meta-env.js).
+    load: (url, context, nextLoad) => {
+      const loaded = hooks.load(url, context, nextLoad);
+      if (
+        !['module', 'module-typescript'].includes(loaded?.format) ||
+        !loaded.source ||
+        !url.startsWith('file:') ||
+        url.includes('/node_modules/')
+      ) {
+        return loaded;
+      }
+      const source = String(loaded.source);
+      const rewritten = rewriteImportMetaEnv(source);
+      return rewritten === source ? loaded : { ...loaded, source: rewritten };
     },
   });
 }

@@ -170,6 +170,7 @@
               <tr><td><code>coverage.include</code>, <code>coverage.thresholds</code></td><td><span class="check">✓</span> <code>collectCoverageFrom</code>, <code>coverageThreshold</code></td></tr>
               <tr><td><code>environment: 'jsdom'</code>, <code>'happy-dom'</code>, <code>environmentOptions</code></td><td><span class="check">✓</span> With the jsdom or happy-dom your project has; a file can ask for its own with a <code>@vitest-environment</code> comment</td></tr>
               <tr><td><code>test.alias</code>, <code>resolve.alias</code>, <code>test.env</code></td><td><span class="check">✓</span> The same</td></tr>
+              <tr><td><code>import.meta.env</code>, <code>envDir</code>, <code>envPrefix</code>, named JSON imports</td><td><span class="check">✓</span> As Vite provides them: Vite's values and the <code>VITE_</code> variables of <code>.env</code> files, over <code>process.env</code> (see <a href="guide.html#imports">What files can import</a>)</td></tr>
               <tr><td>Oxc's <code>decorator</code> and esbuild's <code>tsconfigRaw</code> options</td><td><span class="check">✓</span> For the TypeScript transform</td></tr>
               <tr><td>Vite plugins</td><td><span class="check">✓</span> Their synchronous <code>transform</code> hooks; no <code>resolveId</code></td></tr>
               <tr><td><code>globalSetup</code></td><td><span class="check">✓</span> Its <code>provide()</code> and the tests' <code>inject()</code> too</td></tr>
@@ -193,8 +194,7 @@
           </li>
           <li>
             <strong>Only what Node.js can not run is compiled</strong>: JSX and TypeScript-only syntax (decorators,
-            <code>enum</code>), with the esbuild, sucrase or TypeScript your project has. <code>import.meta.env</code> is not
-            defined.
+            <code>enum</code>), with the esbuild, sucrase or TypeScript your project has.
           </li>
           <li>
             <strong>JSON is imported as a default export only.</strong> <code>import data from './data.json'</code> works
@@ -213,7 +213,6 @@
           <li><strong>Test environments of your own</strong> (a Jest <code>testEnvironment</code> module), and <code>testEnvironmentOptions</code>.</li>
           <li><strong>Babel run implicitly</strong>, as Jest does when it finds a Babel config: name <code>babel-jest</code> in <code>transform</code>.</li>
           <li><strong>Asynchronous transformers</strong> (a Jest transformer with only <code>processAsync</code>), and Vite plugins' <code>resolveId</code> and <code>load</code> hooks.</li>
-          <li><strong>Named imports from JSON</strong> and <code>import.meta.env</code>, which Vite provides.</li>
           <li><strong>Type checking</strong> (Vitest's <code>typecheck</code>), browser mode, <code>bench</code>, and in-source tests.</li>
           <li><strong>The coverage of files no test loads.</strong></li>
         </ul>
