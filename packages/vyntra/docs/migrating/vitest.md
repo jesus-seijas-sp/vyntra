@@ -31,7 +31,8 @@ vyntra reads your `vitest.config.ts` (or a `vite.config.*` with a `test` section
 | Vite plugins | ✓ Their `transform`, `resolveId` and `load` hooks, async ones too, on every project file; virtual modules work. Plugins with only synchronous transforms run in the worker; the others on a helper thread the module hooks wait for |
 | `globalSetup` | ✓ Its `provide()` and the tests' `inject()` too |
 | `test.projects`, `vitest.workspace` | ✓ Each project from its own folder: folders (with their own config or none), config files, or projects written inline, which take the root config's options with `extends: true`. Named by `test.name`, or their `package.json`. See [Projects](../guide/projects.md) |
-| Browser mode, `typecheck`, `bench`, in-source tests | ✗ Not supported |
+| `typecheck`, `expectTypeOf`, `assertType` | ✓ `--typecheck` checks the `*.test-d.ts` files with your `tsc` (or `vue-tsc`), each error on its test; `include`, `tsconfig`, `checker`, `ignoreSourceErrors` as in Vitest. At run time `expectTypeOf` and `assertType` do nothing |
+| Browser mode, `bench`, in-source tests | ✗ Not supported |
 
 ## Differences with Vitest
 

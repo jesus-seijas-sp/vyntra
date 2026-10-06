@@ -87,7 +87,7 @@ function compilerOptionsOf(vite) {
 
 // What vyntra does not do, said once rather than silently ignored.
 function warnUnsupported(test) {
-  const unsupported = [test.browser?.enabled && 'browser mode', test.typecheck?.enabled && 'typecheck'].filter(Boolean);
+  const unsupported = [test.browser?.enabled && 'browser mode'].filter(Boolean);
   if (unsupported.length > 0) {
     process.emitWarning(`vyntra does not run vitest's ${unsupported.join(', ')}; the rest of the config is used`);
   }
@@ -115,6 +115,9 @@ function fromVitestConfig(vite, rootDir) {
   // Expanded into vyntra projects once the config is read (see foreign-projects.js).
   if (test.projects || test.workspace) {
     config.foreignProjects = { kind: 'vitest', entries: test.projects ?? test.workspace };
+  }
+  if (test.typecheck) {
+    config.typecheck = test.typecheck;
   }
   if (test.mockReset !== undefined) {
     config.resetMocks = test.mockReset;

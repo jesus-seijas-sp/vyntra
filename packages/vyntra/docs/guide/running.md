@@ -44,6 +44,10 @@ AssertionError: expect(received).toEqual(expected)
 - A Vitest environment, `{ name, setup(global, options) }`, gets the global object the tests run in, and its options from `environmentOptions[name]`.
 - A Jest environment class gets `testEnvironmentOptions` and the test file's path as Jest gives them. Jest runs the tests in its `this.global`; vyntra runs them in the worker's global, over the node or jsdom environment the class extends, and copies in what the class adds to its global.
 
+## Type tests
+
+`vyntra --typecheck` (or Vitest's `typecheck.enabled`) checks the types of the `*.test-d.ts` files instead of running them, with your project's `tsc`, as Vitest does: a type error fails the test whose call it is in, one outside every test fails the file, and one in a file the tests reach fails the run unless `typecheck.ignoreSourceErrors`. The other tests run as usual; `--typecheck.only` runs none of them. `expectTypeOf` and `assertType` are there for the checker, and do nothing at run time. `typecheck.include`, `tsconfig` and `checker` (`'vue-tsc'`) are read as Vitest reads them.
+
 ## Watch mode
 
 `vyntra --watch` (or `vyntra watch`, or Jest's `--watchAll`) runs the tests, then runs again what each change touches, until you quit: a changed test file runs again, a changed module reruns the test files that loaded it, a new test file runs, and a change to the config (or `package.json`, or a `.env` file) reruns everything. In a terminal, keys narrow it: Enter runs the last ones again, a all, f the files that failed, p and t filter by file and by test name, q quits.

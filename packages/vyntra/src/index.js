@@ -7,7 +7,9 @@ const state = require('./state');
 // vitest's inject(): a value a globalSetup provided.
 const inject = (key) => state.config?.provided?.[key];
 
-const api = { ...collect, expect, vi, vitest: vi, jest: vi, inject };
+const { expectTypeOf, assertType } = require('./expect-type');
+
+const api = { ...collect, expect, vi, vitest: vi, jest: vi, inject, expectTypeOf, assertType };
 
 const GLOBALS = [
   'describe',
@@ -24,6 +26,8 @@ const GLOBALS = [
   'vi',
   'vitest',
   'jest',
+  'expectTypeOf',
+  'assertType',
 ];
 
 // describe, it, expect, vi, jest... as globals, like Jest (and vitest with globals: true).

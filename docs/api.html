@@ -390,6 +390,7 @@
               <tr><td><code>--fail-on-flaky</code></td><td>Fails the run when a test passed only on a retry (see <a href="guide.html#retry">Retries</a>); also <code>--failOnFlaky</code></td></tr>
               <tr><td><code>--project &lt;name&gt;</code></td><td>Runs only these projects (repeat it, or use commas; see <a href="guide.html#projects">Projects</a>)</td></tr>
               <tr><td><code>--watch</code>, <code>--watchAll</code>, <code>vyntra watch</code></td><td>Runs the tests, then what each change touches, until <kbd>q</kbd> (see <a href="guide.html#watch">Watch mode</a>)</td></tr>
+              <tr><td><code>--typecheck</code>, <code>--typecheck.only</code></td><td>Checks the types of the <code>*.test-d.ts</code> files with the project's <code>tsc</code>, each error failing its test; <code>.only</code> runs nothing else (see <a href="guide.html#typecheck">Type tests</a>)</td></tr>
               <tr><td><code>--last-failed</code></td><td>Runs only the tests that failed, until they pass (see <a href="guide.html#last-failed">Rerunning failures</a>); also <code>--lastFailed</code></td></tr>
               <tr><td><code>--outputDir &lt;dir&gt;</code></td><td>Where the run's report goes (<code>.vyntra</code>)</td></tr>
               <tr><td><code>--shard &lt;index&gt;/&lt;total&gt;</code></td><td>Runs one slice of the test files (from 1), the same on every machine, for CI jobs in parallel (see <a href="guide.html#sharding">Sharding</a>)</td></tr>

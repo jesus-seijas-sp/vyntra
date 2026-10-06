@@ -29,6 +29,8 @@ const OPTIONS = {
   splitFiles: { type: 'boolean' },
   shard: { type: 'string' },
   project: { type: 'string', multiple: true },
+  typecheck: { type: 'boolean' },
+  'typecheck.only': { type: 'boolean' },
   'last-failed': { type: 'boolean' },
   'fail-on-flaky': { type: 'boolean' },
   failOnFlaky: { type: 'boolean' },
@@ -67,6 +69,7 @@ Options:
       --project <name>           Run only this project (repeat it, or use commas)
       --shard <index>/<total>    Run one slice of the test files, for CI jobs in parallel (e.g. --shard 2/4)
       --fail-on-flaky            Fail the run when a test passed only on a retry (also --failOnFlaky)
+      --typecheck                Check the types of the *.test-d.ts files (--typecheck.only: and run nothing else)
       --last-failed              Run only the tests that failed, until they pass (also --lastFailed)
       --outputDir <dir>          Where the run's report goes (default: .vyntra)
       --ci                       Do not write new snapshots
@@ -97,6 +100,7 @@ function parseCli(argv) {
     splitFiles: values.splitFiles,
     shard: values.shard,
     lastFailed: values['last-failed'] ?? values.lastFailed,
+    typecheckFlag: values['typecheck.only'] ? 'only' : values.typecheck,
     failOnFlaky: values['fail-on-flaky'] ?? values.failOnFlaky,
     outputDir: values.outputDir,
     ci: values.ci,

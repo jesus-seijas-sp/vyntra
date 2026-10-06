@@ -175,6 +175,17 @@ npx vyntra -u                   # update the snapshots that changed</code></pre>
             node or jsdom environment the class extends, and copies in what the class adds to its global.</li>
         </ul>
 
+        <h3 id="typecheck">Type tests</h3>
+        <p>
+          <code>vyntra --typecheck</code> (or Vitest's <code>typecheck.enabled</code>) checks the types of the
+          <code>*.test-d.ts</code> files instead of running them, with your project's <code>tsc</code>, as Vitest does: a
+          type error fails the test whose call it is in, one outside every test fails the file, and one in a file the
+          tests reach fails the run unless <code>typecheck.ignoreSourceErrors</code>. The other tests run as usual;
+          <code>--typecheck.only</code> runs none of them. <code>expectTypeOf</code> and <code>assertType</code> are there
+          for the checker, and do nothing at run time. <code>typecheck.include</code>, <code>tsconfig</code> and
+          <code>checker</code> (<code>'vue-tsc'</code>) are read as Vitest reads them.
+        </p>
+
         <h3 id="watch">Watch mode</h3>
         <p>
           <code>vyntra --watch</code> (or <code>vyntra watch</code>, or Jest's <code>--watchAll</code>) runs the tests,
@@ -983,7 +994,7 @@ test('adds a todo', async ({ page }) => {
         </p>
         <h3>What is not supported yet?</h3>
         <p>
-          Type checking (Vitest's <code>typecheck</code>).
+          Vitest's browser mode, <code>bench</code> and in-source tests.
           <a href="migrating.html#missing">Migrating</a> has the whole list.
         </p>
         <h3>My tests expect <code>NODE_ENV=test</code>.</h3>

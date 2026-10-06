@@ -20,6 +20,7 @@ const { resolveProjects, assignFiles } = require('./projects');
 const { ProjectRun } = require('./run-projects');
 const { guide, init } = require('./guide');
 const { watch } = require('./watch');
+const { runTypecheck, typeTestFiles, typeError } = require('./typecheck');
 
 // Caches that make loading the dependencies faster, kept in node_modules/.cache (only for projects with node_modules).
 function loadingCaches(rootDir) {
@@ -89,6 +90,11 @@ async function runOnce(argv, outcome = {}) {
     Object.assign(outcome, { relaunched: true });
     return relaunch(argv);
   }
+  // --typecheck (or vitest's typecheck.enabled): the type test files are checked, not run.
+  if (config.typecheckFlag) {
+    config.typecheck = { ...config.typecheck, enabled: true, only: config.typecheckFlag === 'only' };
+  }
+  const typeFiles = config.typecheck?.enabled ? typeTestFiles(config, cli.patterns) : [];
   // Watch mode keeps the main process for watching: every file runs on a worker, which records what it loads.
   config.watch = Boolean(cli.watch);
   if (config.watch && config.pool === 'inline') {
@@ -147,8 +153,11 @@ async function runOnce(argv, outcome = {}) {
     keep(new Set(selectShard(discovered, shard, config.rootDir)));
   }
   projects = projects.map((project) => ({ ...project, files: timings.sort(project.files) }));
+  if (config.typecheck?.only) {
+    projects = projects.map((project) => ({ ...project, files: [] }));
+  }
   const files = projects.flatMap((project) => project.files);
-  if (files.length === 0) {
+  if (files.length === 0 && typeFiles.length === 0) {
     const where = shard ? ` in shard ${shard.index}/${shard.total} (of ${discovered.length})` : '';
     process.stdout.write(`${c.yellow(`No test files found${where}`)}\n`);
     return config.passWithNoTests ? EXIT.passed : EXIT.setup;
@@ -209,14 +218,37 @@ async function runOnce(argv, outcome = {}) {
   if (!config.lastFailed) {
     clearOutputs(config);
   }
-  reporter.onStart(files.length, layout.workers);
+  reporter.onStart(files.length + typeFiles.length, layout.workers);
   const onInterrupt = () => {
     run.interrupt();
     process.stdout.write(`\n${c.yellow('Interrupted')}\n`, () => process.exit(EXIT.interrupted));
   };
   process.once('SIGINT', onInterrupt);
-  const collected = await run.run();
+  const collected = files.length > 0 ? await run.run() : [];
   process.off('SIGINT', onInterrupt);
+  if (typeFiles.length > 0) {
+    let checked;
+    try {
+      checked = runTypecheck(config, typeFiles);
+    } catch (error) {
+      process.stderr.write(`${c.red(error.message)}\n`);
+      return EXIT.setup;
+    }
+    checked.results.forEach(onFileResult);
+    // Errors in the files the type tests reach, not in them: failures too, unless ignoreSourceErrors.
+    if (!config.typecheck.ignoreSourceErrors) {
+      Map.groupBy(checked.outside, (diagnostic) => diagnostic.file).forEach((diagnostics, file) =>
+        onFileResult({
+          path: file,
+          synthetic: true,
+          duration: 0,
+          tests: [],
+          errors: diagnostics.map(typeError),
+          console: [],
+        })
+      );
+    }
+  }
   timings.save();
   if (shared.resolveCache) {
     ResolveCache.save(
