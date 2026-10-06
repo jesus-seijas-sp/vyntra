@@ -42,7 +42,7 @@ In `vyntra.config.js`, `"vyntra"` in `package.json`, or your Vitest or Jest conf
 | `alias` | none | Vite's: `[{ find, replacement }]`, a string matching the specifier or its subpaths, a regular expression replaced as `String.replace` does |
 | `moduleFileExtensions` | `js`, `mjs`, `cjs`, `ts`, `mts`, `cts`, `json`, `node` | Extensions tried for an import that names no file, as a bundler does |
 | `transform` | on | `false` loads files as they are, without compiling JSX or TypeScript-only syntax. A Jest config's `transform` (your transformers) is read from the Jest config |
-| `plugins` | `[]` | Vite plugins whose synchronous `transform` hooks rewrite your source |
+| `plugins` | `[]` | Vite plugins: their `transform`, `resolveId` and `load` hooks run on your files, async ones too |
 | `compileCache` | `false` | Keeps V8's compiled code on disk, in `node_modules/.cache/vyntra` |
 | `reporter` | `'default'` | A name or a list: `'default'`, `'verbose'` or `'json'` to print the run, and `'junit'`, `'markdown'`, `'github'` to write it (`'github'` is added under GitHub Actions when none is set) |
 | `coverage` | `false` | Collects coverage (Jest's `collectCoverage`) |

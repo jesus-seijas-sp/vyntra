@@ -1,5 +1,6 @@
 const crypto = require('node:crypto');
 const { registerCompiledCode } = require('./source-maps');
+const { callSync } = require('./sync-bridge');
 const fs = require('node:fs');
 const Module = require('node:module');
 const path = require('node:path');
@@ -71,10 +72,17 @@ function transformerOf(rule) {
     const module = loaded?.__esModule && loaded.default ? loaded.default : loaded;
     const transformer =
       typeof module.createTransformer === 'function' ? module.createTransformer(rule.options) : module;
+    const version = fs.statSync(rule.file).mtimeMs;
+    // One with only processAsync (or made by an async createTransformer) runs on the bridge's helper thread.
     if (typeof transformer?.then === 'function' || typeof transformer?.process !== 'function') {
-      throw new Error(`The Jest transformer ${rule.file} has no synchronous process(): vyntra can not run it`);
+      transformer?.then?.(null, () => {});
+      if (typeof transformer?.then !== 'function' && typeof transformer?.processAsync !== 'function') {
+        throw new Error(`The Jest transformer ${rule.file} has neither process() nor processAsync()`);
+      }
+      instances.set(id, { transformer: null, async: true, version });
+    } else {
+      instances.set(id, { transformer, version });
     }
-    instances.set(id, { transformer, version: fs.statSync(rule.file).mtimeMs });
   }
   return instances.get(id);
 }
@@ -126,13 +134,15 @@ function transformWithJest(source, filename) {
   if (kept?.source === source) {
     return kept.code;
   }
-  const { transformer, version } = transformerOf(rule);
+  const { transformer, version, async } = transformerOf(rule);
   const options = transformOptions(rule);
-  const own = transformer.getCacheKey?.(source, filename, options) ?? source;
+  const own = transformer?.getCacheKey?.(source, filename, options) ?? source;
   const key = crypto.createHash('sha1').update(`jest\0${rule.file}\0${version}\0${filename}\0${own}`).digest('hex');
   let code = readCompiled(key);
   if (code === null) {
-    const result = transformer.process(source, filename, options);
+    const result = async
+      ? callSync('jestTransform', rule.file, rule.options, source, filename, options)
+      : transformer.process(source, filename, options);
     code = withInlineMap(typeof result === 'string' ? result : result.code, result?.map);
     writeCompiled(key, code);
   }

@@ -5,6 +5,7 @@ const { fileURLToPath, pathToFileURL } = require('node:url');
 const { globToRegExp } = require('./glob');
 const { VITEST_CONFIG_FILES, isVitestConfig, fromVitestConfig } = require('./vitest-config');
 const { expandProjects } = require('./foreign-projects');
+const { hasHooks } = require('../plugins');
 const { loadEnvFiles } = require('../import-meta-env');
 
 const DEFAULTS = {
@@ -75,7 +76,7 @@ const DEFAULTS = {
   transform: undefined,
   // V8's on-disk code cache for the modules loaded (off: see cli/index.js).
   compileCache: false,
-  // Vite plugins whose transform hooks rewrite the project's source (synchronous hooks only).
+  // Vite plugins: their transform, resolveId and load hooks run on the project's files.
   plugins: [],
   // Jest's moduleNameMapper: { '<regex>': '<rootDir>/path/$1' }, for the aliases a bundler would resolve.
   moduleNameMapper: undefined,
@@ -461,10 +462,8 @@ async function loadConfig(cliOptions) {
   };
   config.setupFiles = config.setupFiles.map((file) => resolveSetupFile(file, rootDir));
   config.coverageInclude = coverageFilter(config.collectCoverageFrom, rootDir);
-  // Workers load the plugins from the config file, which costs an import: only when it has some that transform.
-  config.transformPlugins = [config.plugins ?? []]
-    .flat(Infinity)
-    .some((plugin) => typeof plugin?.transform === 'function');
+  // Workers load the plugins from the config file, which costs an import: only when it has some with hooks.
+  config.transformPlugins = [config.plugins ?? []].flat(Infinity).some(hasHooks);
   // import.meta.env's VITE_ variables from the .env files, read once for every worker.
   config.importMetaEnv = loadEnvFiles(path.resolve(rootDir, config.envDir ?? '.'), config.envPrefix ?? 'VITE_');
   // vitest's test.env: the variables the tests see, set before any worker starts so they all inherit them.

@@ -28,10 +28,9 @@ vyntra reads your `vitest.config.ts` (or a `vite.config.*` with a `test` section
 | `test.alias`, `resolve.alias`, `test.env` | ✓ The same |
 | `import.meta.env`, `envDir`, `envPrefix`, named JSON imports | ✓ As Vite provides them: Vite's values and the `VITE_` variables of `.env` files, over `process.env` (see [What files can import](../guide/imports.md)) |
 | Oxc's `decorator` and esbuild's `tsconfigRaw` options | ✓ For the TypeScript transform |
-| Vite plugins | ✓ Their synchronous `transform` hooks; no `resolveId` |
+| Vite plugins | ✓ Their `transform`, `resolveId` and `load` hooks, async ones too, on every project file; virtual modules work. Plugins with only synchronous transforms run in the worker; the others on a helper thread the module hooks wait for |
 | `globalSetup` | ✓ Its `provide()` and the tests' `inject()` too |
 | `test.projects`, `vitest.workspace` | ✓ Each project from its own folder: folders (with their own config or none), config files, or projects written inline, which take the root config's options with `extends: true`. Named by `test.name`, or their `package.json`. See [Projects](../guide/projects.md) |
-| Vite plugins' `resolveId` and `load`, async `transform` hooks | ✗ Not run: vyntra's module hooks are synchronous |
 | Browser mode, `typecheck`, `bench`, in-source tests | ✗ Not supported |
 
 ## Differences with Vitest

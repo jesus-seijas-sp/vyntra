@@ -6,6 +6,10 @@ const state = require('./state');
 const { isSpyable, makeSpyable, markSpyable } = require('./modules/spyable');
 const { installCjsLoader, nearestType } = require('./cjs-loader');
 const { rewriteImportMetaEnv } = require('./import-meta-env');
+const { resolveWithPlugins, loadWithPlugins, applyPlugins, transformWithPlugins } = require('./plugins');
+
+// Modules Vite plugins make up (resolveId to an id that is no file, load to its code).
+const VIRTUAL = 'vyntra-virtual:';
 const { compiledCodeOf } = require('./source-maps');
 const { recordExecuted } = require('./coverage/remap');
 const {
@@ -233,6 +237,14 @@ function hookEsm(config) {
         const url = context.conditions.includes('require') ? pathToFileURL(ENTRY_CJS).href : ENTRY_ESM;
         return { url, shortCircuit: true };
       }
+      // Vite plugins' resolveId: a path, or a virtual module served by their load hook.
+      const importer = context.parentURL?.startsWith('file:') ? fileURLToPath(context.parentURL) : undefined;
+      const fromPlugin = resolveWithPlugins(specifier, importer);
+      if (fromPlugin) {
+        return path.isAbsolute(fromPlugin) && fs.existsSync(fromPlugin.replace(/\?.*$/, ''))
+          ? { url: pathToFileURL(fromPlugin).href, shortCircuit: true }
+          : { url: `${VIRTUAL}${encodeURIComponent(fromPlugin)}`, shortCircuit: true };
+      }
       const from = parentDir(context.parentURL);
       const target = resolveAlias(specifier, from) ?? specifier;
       const mapped = path.isAbsolute(target) ? target : (mapToFile(target, from) ?? sourceFile(target, from));
@@ -263,6 +275,14 @@ function hookEsm(config) {
       return isolate ? { ...result, url: isolatedUrl(result.url, context.conditions) } : result;
     },
     load(url, context, nextLoad) {
+      if (url.startsWith(VIRTUAL)) {
+        const id = decodeURIComponent(url.slice(VIRTUAL.length));
+        const code = loadWithPlugins(id);
+        if (code === null) {
+          throw new Error(`No plugin loads the virtual module "${id}"`);
+        }
+        return { format: 'module', source: applyPlugins(code, id), shortCircuit: true };
+      }
       if (!url.startsWith('file:')) {
         return nextLoad(url, context);
       }
@@ -286,8 +306,22 @@ function hookEsm(config) {
       if (isAsset(file)) {
         return { format: 'module', source: assetSource(file), shortCircuit: true };
       }
+      // A plugin's load hook may give a project file's code itself; it is compiled as the file's would be.
+      const loadedByPlugin = file.includes(NODE_MODULES) ? null : loadWithPlugins(file);
+      if (loadedByPlugin !== null) {
+        return {
+          format: 'module',
+          source: transform(loadedByPlugin, file) ?? applyPlugins(loadedByPlugin, file),
+          shortCircuit: true,
+        };
+      }
       if (!needsTransform(file)) {
-        const loaded = typelessModule(file) ?? loadOrRead(url, file, context, nextLoad);
+        let loaded = typelessModule(file) ?? loadOrRead(url, file, context, nextLoad);
+        if ((loaded.format === 'module' || loaded.format === 'module-typescript') && !file.includes(NODE_MODULES)) {
+          const source = String(loaded.source);
+          const rewritten = transformWithPlugins(source, file);
+          loaded = rewritten === source ? loaded : { ...loaded, source: rewritten };
+        }
         if (loaded.format === 'module' && isSpyable(file)) {
           return { format: 'module', source: makeSpyable(String(loaded.source), url), shortCircuit: true };
         }

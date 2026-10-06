@@ -93,8 +93,7 @@ Differences with Jest and Vitest: `NODE_ENV` is left as it is (they set it to `t
 `env: { NODE_ENV: 'test' }` in `vyntra.config.js`), `import()` of ES modules works from CommonJS (Jest can not
 run it without `--experimental-vm-modules`).
 
-Not available yet: asynchronous transformers and Vite `resolveId`/`load` hooks, type
-checking.
+Not available yet: type checking.
 
 ## CLI
 

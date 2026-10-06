@@ -1,6 +1,7 @@
 const { discover } = require('./discover');
 const { resolveSetupFile, DEFAULTS } = require('./config');
 const { withEngineDefaults } = require('../engines');
+const { hasHooks } = require('../plugins');
 
 // Options of the whole run, which a project can not set for itself.
 const RUN_OPTIONS = [
@@ -54,9 +55,7 @@ function projectConfig(base, project, index) {
     config.use = { ...parent.use, ...own.use };
   }
   // Workers load a project's plugins from the config file too.
-  config.transformPlugins = [config.plugins ?? []]
-    .flat(Infinity)
-    .some((plugin) => typeof plugin?.transform === 'function');
+  config.transformPlugins = [config.plugins ?? []].flat(Infinity).some(hasHooks);
   return config;
 }
 
