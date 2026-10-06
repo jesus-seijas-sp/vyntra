@@ -112,8 +112,9 @@ function limited(option, text) {
 
 // The options of the AI steps, from the project's use.ai, the environment and the run: --ai <mode> wins over
 // use.ai.mode; without either, CI replays what was recorded and a developer's machine records what is missing.
-function settingsOf(options = projectConfig().use.ai ?? {}) {
-  const { rootDir, outputDir } = projectConfig();
+// `where`: the project's rootDir and outputDir, given outside a test run (vyntra explore).
+function settingsOf(options = projectConfig().use.ai ?? {}, where = projectConfig()) {
+  const { rootDir, outputDir } = where;
   // The provider and the model may come from the environment (VYNTRA_AI_PROVIDER, VYNTRA_AI_MODEL), so a machine or a
   // CI job chooses them without a config change; use.ai wins over them.
   const ai = {

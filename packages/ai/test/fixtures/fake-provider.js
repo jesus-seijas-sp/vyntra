@@ -123,6 +123,33 @@ function blocked(messages) {
   return toolUse('give_up', { reason: 'the sign-in was rejected', category: 'credentials' });
 }
 
+// Explores: plans one step (adding a todo), then calls it covered; reviews a step by the count the page shows.
+function plan(messages) {
+  const answer = (json) => reply([{ type: 'text', text: JSON.stringify(json) }], { json });
+  if (textOf(messages[0]).includes('Steps so far:\n(none)')) {
+    return answer({ done: false, step: 'add the todo Buy milk', assessment: '' });
+  }
+  return answer({ done: true, step: '', assessment: 'Adding a todo was tried.' });
+}
+
+function review(messages) {
+  const after = textOf(messages[0]).split('The page after:')[1] ?? '';
+  const findings =
+    after.includes('listitem: Buy milk') && after.includes('status: 0 todos')
+      ? [
+          {
+            kind: 'issue',
+            severity: 3,
+            title: 'The count says 0 todos after adding one',
+            expected: '1 todo',
+            observed: '0 todos',
+            steps: ['Add the todo Buy milk', 'Read the count under the list'],
+          },
+        ]
+      : [];
+  return reply([{ type: 'text', text: JSON.stringify({ findings }) }], { json: { findings } });
+}
+
 module.exports = {
   name: 'fake',
   async complete({ model, system, messages, tools, schema }) {
@@ -150,6 +177,12 @@ module.exports = {
     }
     if (tools) {
       return act(messages);
+    }
+    if (schema?.properties?.step && schema?.properties?.done) {
+      return plan(messages);
+    }
+    if (schema?.properties?.findings) {
+      return review(messages);
     }
     if (schema?.properties?.shown) {
       return read(messages);

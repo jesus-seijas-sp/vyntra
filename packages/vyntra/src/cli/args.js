@@ -58,6 +58,7 @@ const USAGE = `Usage: vyntra [options] [path patterns...]
        vyntra bench [options]     Run the benchmarks (*.bench.*); --outputJson <file>, --compare <file>
        vyntra guide [topic]       Print the documentation (no topic: the list of topics)
        vyntra init --agents       Write the skill coding agents use to run and fix tests here
+       vyntra explore '<goal>'    An agent explores the app and reports what it finds (@vyntra/ai)
 
 Options:
   -t, --testNamePattern <regex>  Run only the tests whose full name matches (also --grep)

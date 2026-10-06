@@ -25,3 +25,5 @@ A step calls the model once. Its result is recorded in `vyntra.ai-cache/`, one f
           live` asks it every time; `--ai off` skips the tests with AI steps. The model is Claude (`ANTHROPIC_API_KEY`), set in `use.ai` with the effort, a budget of calls and tokens for the run (past it the run ends with exit code 3) and a provider of your own. A failed step's page shows the verdict and its reasoning, or the actions taken, and the last turns with the model.
 
 A password or a key goes to an agent as a `secret('ADMIN_PASSWORD')` in the step's `params`: the model sees `<secret:ADMIN_PASSWORD>` and asks the runner to type it, the value is hidden from everything the run reports and records, and the attempt keeps no screenshot or trace once it was typed.
+
+`npx vyntra explore 'Check that adding todos keeps the count right'` runs an exploration with no test file: a planner picks the steps, the agent carries them out, and a reviewer reports what is wrong, each finding with its severity, what was expected and observed, the steps to reproduce it and a screenshot, in `.vyntra/explore.md`. It exits 1 when it found an issue.

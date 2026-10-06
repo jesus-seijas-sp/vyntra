@@ -39,4 +39,6 @@ Tags on `describe` and `test` (`{ tags: ['slow'] }`), with `--tag` and `--exclud
 
 `@vyntra/mcp` gains live sessions: `open_session` starts the app as the tests see it, and `observe`, `act`, `locate` (the locator to write), `screenshot` and `close_session` work on it, several at once for subagents. The core exports `vyntra/tooling` for it.
 
+`vyntra explore '<goal>'`: an agent explores the app with no test file and reports what it finds, issues and warnings with severity, repro steps and screenshots, in `.vyntra/explore.md`; exit 1 on an issue.
+
 On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.

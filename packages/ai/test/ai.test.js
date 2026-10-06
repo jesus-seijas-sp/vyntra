@@ -6,6 +6,7 @@ const { spawnSync } = require('node:child_process');
 const BIN = path.join(path.dirname(require.resolve('vyntra/package.json')), 'bin', 'vyntra.js');
 const FIXTURES = path.join(__dirname, 'fixtures');
 const ENGINES = {
+  // explore's config names both engines in one line.
   "path.join(__dirname, '../../../src/index.js')": path.join(__dirname, '..', 'src', 'index.js'),
   "path.join(__dirname, '../../../../web/src/index.js')": path.join(__dirname, '..', '..', 'web', 'src', 'index.js'),
 };
@@ -444,5 +445,51 @@ describe('run summary', () => {
     // Without the flag, no trace.
     run(['todo.e2e.js'], { CI: '1' });
     expect(fs.existsSync(path.join(dir, '.vyntra', 'ai-trace.jsonl'))).toBe(false);
+  });
+});
+
+describe('explore', () => {
+  const explore = (env) => {
+    const { dir } = project('explore');
+    const port = String(42_000 + Math.floor(Math.random() * 1_000));
+    const calls = path.join(dir, 'calls.txt');
+    fs.writeFileSync(calls, '');
+    const result = spawnSync(process.execPath, [BIN, 'explore', '--root', dir, 'check that todos can be added'], {
+      encoding: 'utf8',
+      env: { ...process.env, CI: '', VYNTRA_AI_MODE: '', FAKE_CALLS: calls, APP_PORT: port, ...env },
+    });
+    const report = (name) => fs.readFileSync(path.join(dir, '.vyntra', name), 'utf8');
+    const count = fs.readFileSync(calls, 'utf8').split('\n').filter(Boolean).length;
+    return { ...result, dir, report, calls: count };
+  };
+
+  it('plans, drives and reviews the app, and fails on an issue it finds', () => {
+    const { status, stdout, report, dir, calls } = explore({ BUG: '1' });
+    expect(status).toBe(1);
+    // plan; fill, click, done; review; plan again, which ends it.
+    expect(calls).toBe(6);
+    expect(stdout).toContain(' EXPLORE  check that todos can be added');
+    expect(stdout).toContain('   ⚑ medium issue  The count says 0 todos after adding one (/)');
+    expect(stdout).toContain('   ✓ 1  add the todo Buy milk');
+    expect(stdout).toContain('failed: the goal is covered. 1 issues, 0 warnings, in 1 steps.');
+    const markdown = report('explore.md');
+    expect(markdown).toContain('## medium issue: The count says 0 todos after adding one');
+    expect(markdown).toContain('- Expected: 1 todo\n- Observed: 0 todos');
+    expect(markdown).toContain('1. Add the todo Buy milk\n2. Read the count under the list');
+    const [, screenshot] = /!\[screenshot\]\(([^)]+)\)/.exec(markdown);
+    expect(fs.statSync(path.join(dir, '.vyntra', screenshot)).size).toBeGreaterThan(1000);
+    expect(JSON.parse(report('explore.json'))).toMatchObject({
+      status: 'failed',
+      exitCode: 1,
+      steps: [{ status: 'passed' }],
+    });
+  });
+
+  it('passes when nothing is wrong, and records nothing', () => {
+    const { status, stdout, report, dir } = explore({});
+    expect(status).toBe(0);
+    expect(stdout).toContain('passed: the goal is covered. 0 issues, 0 warnings, in 1 steps.');
+    expect(report('explore.md')).toContain('Nothing wrong was found.');
+    expect(fs.existsSync(path.join(dir, 'vyntra.ai-cache'))).toBe(false);
   });
 });

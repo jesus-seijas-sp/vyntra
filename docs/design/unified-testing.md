@@ -387,6 +387,14 @@ screenshot, close_session): `vyntra/tooling` gives the server a project's config
 core's `TestServer`; servers are shared by the sessions that need the same one and stopped with the last; each
 session is a browser context on the project's baseURL in one shared browser, at most `--max-sessions` (4).
 
+`vyntra explore '<goal>'` (core: src/cli/explore.js finds the project with `vyntra/tooling` and hands it to the engine
+exporting explore, @vyntra/ai): a planner (structured output: done, step, assessment) picks a step from the goal,
+the steps so far, the findings and the page; the agent's act carries it out under a stand-in test in live mode (nothing
+recorded); a reviewer reads the pages before and after and returns findings (issue or warning, severity 1 to 5,
+expected, observed, steps), each saved with a screenshot. Budgets: 8 steps (1 to 12), 10 minutes (3 to 15), three
+failed steps in a row with nothing found. Exit 1 on an issue, 2 or 3 when every step was blocked by the setup or the
+environment.
+
 Exit check, done: in a copy of the example app with a bug planted in the shared `summary()` (it
 counted finished todos as left, breaking two end-to-end tests and no unit test), an agent given only
 the project's path and the report's location found and fixed the line from the failure pages, in 7

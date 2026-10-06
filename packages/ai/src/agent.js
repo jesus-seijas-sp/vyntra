@@ -99,6 +99,8 @@ class Agent {
 
   #settings;
 
+  #test;
+
   // Vocabulary the test added to the project's (addContext), for every later step.
   #context = [];
 
@@ -111,9 +113,11 @@ class Agent {
   // Acts replayed from a recording: { session, key, checks }.
   #replayed = [];
 
-  constructor(page, settings) {
+  // test: the test the steps belong to, given outside a test run (vyntra explore); the running test otherwise.
+  constructor(page, settings, { test } = {}) {
     this.#page = page;
     this.#settings = settings;
+    this.#test = test;
   }
 
   // The checks that passed in the test so far.
@@ -149,7 +153,7 @@ class Agent {
   }
 
   session() {
-    return new AiSession(this.#settings, undefined, { context: this.#context });
+    return new AiSession(this.#settings, this.#test, { context: this.#context });
   }
 
   // Adds what only this test knows to the app's vocabulary, for its later steps: the name of seeded data, a feature

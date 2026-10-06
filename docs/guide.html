@@ -972,6 +972,13 @@ test('a member upgrades to Pro', async ({ page, agent }) => {
           once it was typed.
         </p>
 
+        <p>
+          <code>npx vyntra explore 'Check that adding todos keeps the count right'</code> runs an exploration with no test
+          file: a planner picks the steps, the agent carries them out, and a reviewer reports what is wrong, each finding
+          with its severity, what was expected and observed, the steps to reproduce it and a screenshot, in
+          <code>.vyntra/explore.md</code>. It exits 1 when it found an issue.
+        </p>
+
         <h2 id="browser-mode">Browser mode</h2>
         <p>
           With Vitest's <code>browser.enabled</code>, a project's test files run in a real browser page, as under

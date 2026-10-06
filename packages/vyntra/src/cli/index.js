@@ -20,6 +20,7 @@ const { Timings } = require('./timings');
 const { resolveProjects, assignFiles } = require('./projects');
 const { ProjectRun } = require('./run-projects');
 const { guide, init } = require('./guide');
+const { explore } = require('./explore');
 const { watch } = require('./watch');
 const { runTypecheck, typeTestFiles, typeError } = require('./typecheck');
 const {
@@ -346,6 +347,9 @@ async function main(argv = process.argv.slice(2)) {
   }
   if (argv[0] === 'init') {
     return init(argv.slice(1));
+  }
+  if (argv[0] === 'explore') {
+    return explore(argv.slice(1));
   }
   // `vyntra watch` and `vyntra bench`, as `vitest watch` and `vitest bench`.
   const subcommands = { watch: '--watch', bench: '--bench' };

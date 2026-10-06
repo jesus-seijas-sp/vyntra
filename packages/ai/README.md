@@ -153,6 +153,33 @@ The app under test is not trusted: a page can say anything, including "ignore yo
   and on the last turn the step allows (`use.ai.maxSteps`), it is offered only `done` and `give_up`. Three
   turns before the limit it is told how many are left.
 
+## Exploring without a test
+
+`vyntra explore '<goal>'` lets an agent explore the app toward a goal, with no test file: a planner picks one step
+at a time, the agent of `act` carries it out, and a reviewer reads what the step did and reports what is wrong.
+
+```text
+$ npx vyntra explore 'Check that adding todos keeps the count right'
+ EXPLORE  Check that adding todos keeps the count right
+   ⚑ high issue  Status counter does not update after adding a todo (/)
+   × 1  Add a todo called 'Task 1' and verify the status shows '1 todos'
+   failed: the goal is covered. 1 issues, 0 warnings, in 1 steps.
+   Report: .vyntra/explore.md
+```
+
+- It starts the servers of the project (`--project`, by default the first web one) and opens its `baseURL`
+  (`--url` to start elsewhere).
+- A finding is an `issue` (a functional defect) or a `warning` (cosmetic), with a severity from trivial to
+  critical, what was expected, what the page showed, the steps to reproduce it, and a screenshot.
+- It ends when the planner says the goal is covered, after `--max-steps` (8; 1 to 12), after `--timeout` (10
+  minutes; 3 to 15), or when three steps in a row fail with nothing found.
+- `.vyntra/explore.md` lists issues before warnings, most severe first; `.vyntra/explore.json` holds the same.
+- Exit code 1 when an issue was found (or nothing could run), 0 otherwise, 2 or 3 for a problem of the setup or the
+  environment. Nothing is recorded: exploring always calls the model.
+
+Findings are the model's reading of the page: check each against its screenshot before filing it, and turn the ones
+that hold into tests.
+
 ## The replay cache
 
 A step's result is recorded under a hash of the step (its claim or goal), its input (the value, or the page's
