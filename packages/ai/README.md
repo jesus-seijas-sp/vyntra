@@ -111,6 +111,25 @@ goal, on the page (so later `assert`, `waitFor` and `extract` steps match too), 
 in what the step changed; as written, URL-encoded or JSON-escaped. A replay types the value of its own run. Keep
 values that choose the flow (a plan name) as plain params: changing those should record again.
 
+## Vision
+
+The agent reads the page as its accessibility tree. When that is not enough (a canvas, a chart, a layout), it asks
+for a `screenshot`, and can `click_at` a point of it. The checking steps take `vision`:
+
+```js
+await agent.assert('the chart trends upward', { vision: 'only' }); // the screenshot alone
+await agent.assert('the error shows next to the email field', { vision: true }); // the tree and the screenshot
+await agent.waitFor('the map shows the route', { vision: 'only' });
+const price = await agent.extract('the price on the banner image', { type: 'number' }, { vision: true });
+```
+
+- A call that carries a screenshot goes to `use.ai.vision` (or `VYNTRA_AI_VISION_MODEL`) when it is set, so a
+  text-only model can act and a model that reads images can look: with OpenRouter, `VYNTRA_AI_MODEL=deepseek/deepseek-v4-flash`
+  and `VYNTRA_AI_VISION_MODEL=anthropic/claude-opus-5.5`.
+- A recording is keyed by the page's tree and the vision mode, not by its pixels, which differ between machines'
+  fonts: a change only the pixels show does not make a recorded verdict miss. `waitFor` does notice it while it waits.
+- Once a secret was typed, no screenshot leaves the page: `vision: true` falls back to the tree, `'only'` fails.
+
 ## Secrets
 
 A password or a key goes to an agent as a `secret()`: a handle with a name and no readable value.
@@ -255,6 +274,7 @@ In `use.ai`:
 | `maxSteps` | `25` | Model turns `agent.act` may take for one goal |
 | `actionTimeout` | `5000` | How long one action waits for its target (ms) |
 | `judge` | the acting model | The model for judgments (`assert`, `waitFor`, `extract`, `toSatisfy`): a model name on the same provider, or `{ provider, model, effort, baseURL }`. `VYNTRA_AI_JUDGE_MODEL` names one too. A cheap model can act while a strong one judges; recordings name the model that answered, and a new judge records the judgments again but not the actions |
+| `vision` | the acting or judging model | The model for the calls that carry a screenshot, when the others read no images: the same forms as `judge`; `VYNTRA_AI_VISION_MODEL` names one too |
 | `context` | | What the app calls things (screens, menus, terms), read by every model call, judges included. At most 16 KiB |
 | `system` | | Instructions for the agent that acts (verify a confirmation before finishing, close unasked-for notices). Judges never read them. At most 16 KiB |
 | `provider` | `'anthropic'` | `'openrouter'`, `'openai'` (with `baseURL` for other hosts of its API), or the path of a module exporting a provider |

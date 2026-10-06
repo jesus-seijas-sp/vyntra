@@ -407,6 +407,12 @@ the dialog and the interrupted action until it is answered; the page reads as th
 content of up to 5 iframes appended to the tree under `Inside iframe "<title>"`, with `frame` on targets (title,
 name, or #n). A target with role "text" (the tree's plain-text lines) is found by its text.
 
+Vision: act offers screenshot (the runner sends the viewport as an image block with the next message) and click_at
+(page.mouse.click at the point); assert, waitFor and extract take vision: true (tree and screenshot) or 'only'. A call
+whose messages carry an image goes to use.ai.vision (VYNTRA_AI_VISION_MODEL) when set. The OpenAI-compatible
+provider sends images as image_url data parts; the trace keeps their size, not their bytes. Recordings are keyed by
+the tree plus the vision mode, not the pixels. No screenshot after a secret was typed.
+
 Exit check, done: in a copy of the example app with a bug planted in the shared `summary()` (it
 counted finished todos as left, breaking two end-to-end tests and no unit test), an agent given only
 the project's path and the report's location found and fixed the line from the failure pages, in 7

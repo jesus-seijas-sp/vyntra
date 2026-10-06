@@ -48,7 +48,20 @@ function toChat(system, messages) {
         chat.push({ role: 'tool', tool_call_id: block.tool_use_id, content: block.is_error ? `Error: ${text}` : text });
       });
     const text = content.filter((block) => block.type === 'text').map((block) => block.text);
-    if (text.length > 0) {
+    const images = content.filter((block) => block.type === 'image' && block.source?.type === 'base64');
+    if (images.length > 0) {
+      // Text and images as parts, the images as data URLs.
+      chat.push({
+        role,
+        content: [
+          ...text.map((part) => ({ type: 'text', text: part })),
+          ...images.map(({ source }) => ({
+            type: 'image_url',
+            image_url: { url: `data:${source.media_type};base64,${source.data}` },
+          })),
+        ],
+      });
+    } else if (text.length > 0) {
       chat.push({ role, content: text.join('\n\n') });
     }
   });

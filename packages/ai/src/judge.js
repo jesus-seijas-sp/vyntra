@@ -61,9 +61,12 @@ async function ask(session, messages, claim, kind) {
 // ('toSatisfy', 'assert'); input is the text the model reads, keyInput what the recording is keyed by (the input,
 // unless it holds what changes from run to run). With `skipMissing`, a judgment not recorded in replay mode is null
 // instead of a failure (waitFor waits on, for a page it has a recording of).
-async function judge(session, { kind, claim, input, keyInput = input, skipMissing = false }) {
+// image: a screenshot to judge with the input (vision: true), or instead of it (vision: 'only'). The recording is keyed
+// by the input and the vision mode, not by the pixels, which differ from one machine's fonts to another's.
+async function judge(session, options) {
+  const { kind, claim, input, keyInput = input, skipMissing = false, image = null, vision = false } = options;
   session.checkEnabled();
-  const step = { kind, text: claim, input: keyInput };
+  const step = { kind, text: claim, input: vision ? `${keyInput}\nvision: ${vision}` : keyInput };
   const key = session.keyOf(step);
   const recorded = session.recorded(key);
   if (recorded) {
@@ -79,7 +82,14 @@ async function judge(session, { kind, claim, input, keyInput = input, skipMissin
     throw session.missing(step);
   }
   session.noteStep('missed');
-  const messages = [{ role: 'user', content: `${asData('input', input)}\n\n<claim>${claim}</claim>` }];
+  const claimed = `<claim>${claim}</claim>`;
+  let content = `${asData('input', input)}\n\n${claimed}`;
+  if (image && vision === 'only') {
+    content = [image, { type: 'text', text: `The input is the screenshot.\n\n${claimed}` }];
+  } else if (image) {
+    content = [{ type: 'text', text: `${asData('input', input)}\n\nA screenshot of it follows.\n\n${claimed}` }, image];
+  }
+  const messages = [{ role: 'user', content }];
   const { completion, turns } = await ask(session, messages, claim, kind);
   const { verdict, reasoning } = completion.json;
   session.record(key, step, { verdict, reasoning });

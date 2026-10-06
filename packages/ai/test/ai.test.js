@@ -204,6 +204,40 @@ describe('surfaces', () => {
   });
 });
 
+describe('vision', () => {
+  it('sends screenshots to the vision model, clicks points of them, and never after a secret', () => {
+    const { dir, run } = project('agent');
+    const requests = path.join(dir, 'requests.jsonl');
+    const env = {
+      AI_MODEL: 'text-only',
+      AI_VISION: 'sees-images',
+      APP_PASSWORD: 'hunter2-Correct-Horse',
+      VYNTRA_AI_SRC: path.join(__dirname, '..', 'src', 'index.js'),
+      FAKE_REQUESTS: requests,
+    };
+    const first = run(['vision.e2e.js'], env);
+    expect(first.status).toBe(0);
+    const sent = fs
+      .readFileSync(requests, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    const imaged = (request) => JSON.stringify(request.messages).includes('"type":"image"');
+    // screenshot, click_at, done; the assert.
+    expect(sent.map((request) => [request.model, imaged(request)])).toEqual([
+      ['text-only', false],
+      ['sees-images', true],
+      ['sees-images', true],
+      ['sees-images', true],
+    ]);
+    // vision: 'only' sends the screenshot, not the tree.
+    expect(JSON.stringify(sent[3].messages)).not.toContain('<input>');
+    // The act replays with no model: click_at at the same point.
+    const replayed = run(['vision.e2e.js'], { ...env, CI: '1' });
+    expect([replayed.status, replayed.calls]).toEqual([0, 0]);
+  });
+});
+
 describe('secrets', () => {
   const VALUE = 'hunter2-Correct-Horse';
   const SECRET = ['secret.e2e.js'];

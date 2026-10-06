@@ -45,4 +45,6 @@ Tags on `describe` and `test` (`{ tags: ['slow'] }`), with `--tag` and `--exclud
 
 The agent drags, answers native dialogs its actions open, and acts inside iframes, whose content now follows the page's tree.
 
+Vision: the agent can ask for a screenshot and click a point of it, and `assert`, `waitFor` and `extract` take `vision: true | 'only'`; `use.ai.vision` (or `VYNTRA_AI_VISION_MODEL`) sends the calls that carry a screenshot to a model that reads images.
+
 On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.

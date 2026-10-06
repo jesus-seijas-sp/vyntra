@@ -27,10 +27,11 @@ regressions. Every scenario has two tests:
 
 | Date | Model | Score | Calls | Tokens | Changed |
 | --- | --- | --- | ---: | ---: | --- |
+| 2026-10-06 | deepseek/deepseek-v4-flash, anthropic/claude-opus-5.5 for vision | 11 of 11 | 34 | 182k | Vision: the agent asks for a screenshot and clicks a point of it |
 | 2026-10-06 | deepseek/deepseek-v4-flash | 10 of 11 | 56 | 303k | Dialogs, iframes and drag for the agent; plain text named by its text |
 | 2026-10-06 | deepseek/deepseek-v4-flash | 7 of 11 | 133 | 853k | The first run |
 
-The canvas scenario still fails: it needs the agent to see pixels.
+Vision runs set `VYNTRA_AI_VISION_MODEL`: the steps that carry a screenshot go to that model.
 
 ## The first run
 

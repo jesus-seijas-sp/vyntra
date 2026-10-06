@@ -173,6 +173,17 @@ function surfaces(messages) {
   });
 }
 
+const hasImage = (messages) => JSON.stringify(messages).includes('"type":"image"');
+
+// Presses a button drawn on a canvas: asks for a screenshot, then clicks the button's point.
+function canvas(messages) {
+  const page = textOf(messages.at(-1));
+  if (page.includes('status: Started')) {
+    return toolUse('done', { summary: 'Started' });
+  }
+  return hasImage(messages) ? toolUse('click_at', { x: 100, y: 40 }) : toolUse('screenshot', {});
+}
+
 module.exports = {
   name: 'fake',
   async complete({ model, system, messages, tools, schema }) {
@@ -195,6 +206,9 @@ module.exports = {
     if (tools && textOf(messages[0]).includes('Goal: make something happen')) {
       return stuck(tools);
     }
+    if (tools && textOf(messages[0]).includes('Goal: press the Start button')) {
+      return canvas(messages);
+    }
     if (tools && textOf(messages[0]).includes('Goal: open the local file')) {
       return breakRules(messages);
     }
@@ -212,6 +226,10 @@ module.exports = {
     }
     if (schema?.properties?.shown) {
       return read(messages);
+    }
+    if (hasImage(messages)) {
+      const json = { reasoning: 'The screenshot shows it.', verdict: 'holds' };
+      return reply([{ type: 'text', text: JSON.stringify(json) }], { json });
     }
     return judge(textOf(messages.at(-1)));
   },

@@ -10,6 +10,7 @@ module.exports = {
       actionTimeout: 500,
       model: process.env.AI_MODEL,
       judge: process.env.AI_JUDGE,
+      vision: process.env.AI_VISION,
       context: process.env.AI_CONTEXT,
       system: process.env.AI_SYSTEM,
     },

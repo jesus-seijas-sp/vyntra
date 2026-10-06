@@ -59,4 +59,17 @@ describe('the OpenAI-compatible provider', () => {
     });
     expect(() => OpenAIProvider.completion(answer('length', '{"pass"'))).toThrow('cut off');
   });
+
+  it('sends a screenshot as an image part of the message', () => {
+    const image = { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'iVBORw0KGgo=' } };
+    expect(toChat(null, [{ role: 'user', content: [{ type: 'text', text: 'The page now' }, image] }])).toEqual([
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'The page now' },
+          { type: 'image_url', image_url: { url: 'data:image/png;base64,iVBORw0KGgo=' } },
+        ],
+      },
+    ]);
+  });
 });

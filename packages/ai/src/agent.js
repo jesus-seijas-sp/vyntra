@@ -1,3 +1,4 @@
+const crypto = require('node:crypto');
 const { setTimeout: sleep } = require('node:timers/promises');
 const { currentTest, verified, redact } = require('vyntra/engine');
 const { AiSession } = require('./session');
@@ -6,7 +7,7 @@ const { effectOf, mismatchOf } = require('./effect');
 const { isSecret } = require('./secrets');
 const { isUnique } = require('./unique');
 const { Uniques } = require('./uniques');
-const { FINISHING, TOOLS, toolsFor, perform, pageState } = require('./page-tools');
+const { FINISHING, TOOLS, toolsFor, perform, pageState, screenshotOf } = require('./page-tools');
 
 // What a step that must conclude is offered.
 const CONCLUDING = TOOLS.filter((tool) => FINISHING.has(tool.name));
@@ -173,6 +174,27 @@ class Agent {
     return this;
   }
 
+  // Whether a secret was typed into the page in this test: no screenshot may leave it then.
+  tainted() {
+    return (this.#test ?? currentTest())?.tainted ?? false;
+  }
+
+  // The page as a judgment reads it: its tree, and a screenshot under vision (true: both, 'only': the screenshot
+  // alone). After a secret was typed there is no screenshot: true falls back to the tree, 'only' fails.
+  async evidence(vision) {
+    const state = await this.state();
+    if (!vision) {
+      return { state, image: null };
+    }
+    if (this.tainted()) {
+      if (vision === 'only') {
+        throw new Error('No screenshot to judge: a secret was typed into the page in this test');
+      }
+      return { state, image: null };
+    }
+    return { state, image: await screenshotOf(this.page) };
+  }
+
   // The page as pageState reads it, with this test's unique() values as placeholders in what keys and recordings use
   // (the key, the tree, the route); the model's text keeps them as they are.
   async state() {
@@ -285,7 +307,7 @@ class Agent {
       });
       messages.push(completion.message);
       // eslint-disable-next-line no-await-in-loop
-      const { results, finish } = await this.run(completion.toolCalls, actions, {
+      const { results, images, finish } = await this.run(completion.toolCalls, actions, {
         timeout: actionTimeout,
         secrets,
         tools,
@@ -316,6 +338,7 @@ class Agent {
         content: [
           ...results,
           { type: 'text', text: `The page now:\n${asData('page', now.text)}` },
+          ...images,
           ...(advice.text ? [{ type: 'text', text: advice.text }] : []),
         ],
       });
@@ -333,6 +356,7 @@ class Agent {
   // action before them ran.
   async run(calls, actions, options) {
     const results = [];
+    const images = [];
     let failed = false;
     let finish = null;
     for (let i = 0; i < calls.length; i += 1) {
@@ -354,6 +378,14 @@ class Agent {
       } else if (FINISHING.has(call.name)) {
         finish = call;
         result('Noted.');
+      } else if (call.name === 'screenshot') {
+        if (this.tainted()) {
+          result('No screenshots: a secret was typed into the page in this test, and the page may show it.', true);
+        } else {
+          // eslint-disable-next-line no-await-in-loop -- the page as it is now
+          images.push(await screenshotOf(this.page));
+          result('Taken: the screenshot comes with the next message.');
+        }
       } else {
         // eslint-disable-next-line no-await-in-loop -- the page as this action finds it
         const before = options.guard ? (await this.state()).key : null;
@@ -379,19 +411,22 @@ class Agent {
         }
       }
     }
-    return { results, finish: failed ? null : finish };
+    return { results, images, finish: failed ? null : finish };
   }
 
-  // Judges a claim about the page as it is; fails the test when it does not hold.
-  async assert(claim) {
+  // Judges a claim about the page as it is; fails the test when it does not hold. vision: true judges a screenshot
+  // too, 'only' the screenshot alone (a chart, a canvas, a layout).
+  async assert(claim, { vision = false } = {}) {
     const session = this.session();
     session.checkEnabled();
-    const state = await this.state();
+    const { state, image } = await this.evidence(vision);
     const { verdict, reasoning } = await judge(session, {
       kind: 'assert',
       claim,
       input: state.text,
       keyInput: state.key,
+      image,
+      vision,
     });
     if (verdict === 'inconclusive') {
       throw new InconclusiveError(
@@ -411,7 +446,7 @@ class Agent {
   // when it changed, so an idle page costs no model calls. A judgment recorded for a page is reused; in replay mode a
   // page with no recording is not judged at all (the states a page passes through differ from run to run), and the
   // wait goes on until a page recorded as holding appears. Fails after `timeout` ms, with the last judgment.
-  async waitFor(condition, { timeout = 30_000, interval = 500 } = {}) {
+  async waitFor(condition, { timeout = 30_000, interval = 500, vision = false } = {}) {
     const session = this.session();
     session.checkEnabled();
     const deadline = Date.now() + timeout;
@@ -419,9 +454,13 @@ class Agent {
     let last = null;
     for (;;) {
       // eslint-disable-next-line no-await-in-loop -- the page is read again until the claim holds
-      const state = await this.state();
-      if (!judged.has(state.key)) {
-        judged.add(state.key);
+      const { state, image } = await this.evidence(vision);
+      // Under vision, a change only the pixels show is a change too.
+      const seen = image
+        ? `${state.key}\n${crypto.createHash('sha256').update(image.source.data).digest('hex')}`
+        : state.key;
+      if (!judged.has(seen)) {
+        judged.add(seen);
         // eslint-disable-next-line no-await-in-loop
         const judgment = await judge(session, {
           kind: 'waitFor',
@@ -429,6 +468,8 @@ class Agent {
           input: state.text,
           keyInput: state.key,
           skipMissing: true,
+          image,
+          vision,
         });
         if (judgment?.verdict === 'holds') {
           verified();
@@ -450,11 +491,12 @@ class Agent {
   }
 
   // Reads something off the page: text by default, or a value of the JSON schema given.
-  async extract(what, schema = { type: 'string' }) {
+  async extract(what, schema = { type: 'string' }, { vision = false } = {}) {
     const session = this.session();
     session.checkEnabled();
-    const state = await this.state();
-    const step = { kind: 'extract', text: what, input: `${JSON.stringify(schema)}\n${state.key}` };
+    const { state, image } = await this.evidence(vision);
+    const keyed = `${JSON.stringify(schema)}\n${state.key}${vision ? `\nvision: ${vision}` : ''}`;
+    const step = { kind: 'extract', text: what, input: keyed };
     const key = session.keyOf(step);
     const notShown = ({ missing }) =>
       new InconclusiveError(`agent.extract("${what}") is inconclusive: the page does not show ${missing}`);
@@ -473,7 +515,17 @@ class Agent {
     if (session.mode === 'replay') {
       throw session.missing(step);
     }
-    const messages = [{ role: 'user', content: `The page:\n${asData('page', state.text)}\n\nWhat to read: ${what}` }];
+    const asked = `What to read: ${what}`;
+    let content = `The page:\n${asData('page', state.text)}\n\n${asked}`;
+    if (image && vision === 'only') {
+      content = [image, { type: 'text', text: `The page is the screenshot.\n\n${asked}` }];
+    } else if (image) {
+      content = [
+        { type: 'text', text: `The page:\n${asData('page', state.text)}\n\nA screenshot of it follows.\n\n${asked}` },
+        image,
+      ];
+    }
+    const messages = [{ role: 'user', content }];
     session.noteStep('missed');
     const { answer, turns } = await Agent.read(session, messages, schema, what);
     session.record(

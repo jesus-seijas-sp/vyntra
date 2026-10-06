@@ -15,6 +15,16 @@ const MAX_TURN_TEXT = 4_000;
 // A value with every secret value it holds hidden: the last guard before a model, a recording or a failure page.
 const hidden = (value) => JSON.parse(redact(JSON.stringify(value)));
 
+// Messages as the trace keeps them: an image as its size, not its bytes.
+const withoutImages = (messages) =>
+  JSON.parse(
+    JSON.stringify(messages, (key, value) =>
+      value?.type === 'image' && value.source?.data
+        ? { type: 'image', bytes: Math.round((value.source.data.length * 3) / 4) }
+        : value
+    )
+  );
+
 const clip = (text) => (text.length > MAX_TURN_TEXT ? `${text.slice(0, MAX_TURN_TEXT)}\n… (cut)` : text);
 
 // A turn as the failure page shows it.
@@ -67,6 +77,12 @@ class AiSession {
   // The provider, model and effort a step's calls go to: the judge's for judgments, when one is set.
   modelFor(kind) {
     return JUDGING.has(kind) && this.settings.judge ? this.settings.judge : this.settings;
+  }
+
+  // A call that carries a screenshot goes to the vision model, when one is set.
+  modelForCall(kind, request) {
+    const images = JSON.stringify(request.messages ?? []).includes('"type":"image"');
+    return images && this.settings.vision ? this.settings.vision : this.modelFor(kind);
   }
 
   keyOf({ kind, text, input }) {
@@ -158,7 +174,7 @@ class AiSession {
   // One model turn, within the run's budget.
   async call(request, kind = 'act') {
     this.budget.check();
-    const { model, effort, provider } = this.modelFor(kind);
+    const { model, effort, provider } = this.modelForCall(kind, request);
     this.asked = model;
     const sent = hidden(request);
     const started = Date.now();
@@ -189,7 +205,11 @@ class AiSession {
       step: { kind, text: this.step?.text },
       model: model ?? null,
       effort,
-      request: { system: sent.system, messages: sent.messages, tools: sent.tools?.map((tool) => tool.name) },
+      request: {
+        system: sent.system,
+        messages: withoutImages(sent.messages),
+        tools: sent.tools?.map((tool) => tool.name),
+      },
       ...(completion
         ? {
             response: hidden({

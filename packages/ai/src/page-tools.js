@@ -81,6 +81,19 @@ const TOOLS = [
     inputSchema: object({}),
   },
   {
+    name: 'screenshot',
+    description:
+      'See the page as an image (its viewport), when the accessibility tree does not show what you need: a canvas, ' +
+      'a chart, a layout. The image comes with the next message; click_at can then click a point of it.',
+    inputSchema: object({}),
+  },
+  {
+    name: 'click_at',
+    description:
+      'Click a point of the latest screenshot, in its pixels from its top left corner: for what the tree can not name.',
+    inputSchema: object({ x: { type: 'integer' }, y: { type: 'integer' } }),
+  },
+  {
     name: 'goto',
     description: 'Open a URL, or a path of the site.',
     inputSchema: object({ url: { type: 'string' } }),
@@ -185,6 +198,11 @@ function run(page, { name, input }, { timeout, secrets = new Map() }) {
       return locate(page, input.target).setChecked(input.checked, { timeout });
     case 'drag':
       return locate(page, input.target).dragTo(locate(page, input.to), { timeout });
+    case 'click_at':
+      return page.mouse.click(input.x, input.y);
+    case 'screenshot':
+      // Taken by the agent, which sends it to the model: nothing to do on the page.
+      return undefined;
     case 'goto':
       return page.goto(checkUrl(input.url), { timeout: Math.max(timeout, 15_000) });
     default:
@@ -343,4 +361,10 @@ async function perform(page, action, options) {
   await settle(page);
 }
 
-module.exports = { TOOLS, FINISHING, toolsFor, perform, pageState, locate };
+// The page's viewport as an image block of a message.
+async function screenshotOf(page) {
+  const data = await page.screenshot({ timeout: 10_000 });
+  return { type: 'image', source: { type: 'base64', media_type: 'image/png', data: data.toString('base64') } };
+}
+
+module.exports = { TOOLS, FINISHING, toolsFor, perform, pageState, locate, screenshotOf };

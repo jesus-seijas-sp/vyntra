@@ -80,21 +80,31 @@ function modelOf(ai) {
   return model;
 }
 
+// A model other than the acting one: a name on the same provider, or { provider, model, effort, baseURL }.
+function modelSettingsOf(given, ai, rootDir) {
+  if (given === undefined) {
+    return null;
+  }
+  const other = typeof given === 'string' ? { model: given } : given;
+  const options = { ...ai, ...other, provider: other.provider ?? ai.provider, baseURL: other.baseURL ?? ai.baseURL };
+  return {
+    provider: providerOf(options, rootDir),
+    model: modelOf(options),
+    effort: other.effort ?? ai.effort ?? 'medium',
+  };
+}
+
 // use.ai.judge: the model for judgments (assert, waitFor, extract, toSatisfy), when it is not the one that acts. A
 // model name on the same provider, or { provider, model, effort, baseURL }; VYNTRA_AI_JUDGE_MODEL names one too. A
 // cheap model can act while a strong one judges.
 function judgeOf(ai, rootDir) {
-  const given = ai.judge ?? (process.env.VYNTRA_AI_JUDGE_MODEL || undefined);
-  if (given === undefined) {
-    return null;
-  }
-  const judge = typeof given === 'string' ? { model: given } : given;
-  const options = { ...ai, ...judge, provider: judge.provider ?? ai.provider, baseURL: judge.baseURL ?? ai.baseURL };
-  return {
-    provider: providerOf(options, rootDir),
-    model: modelOf(options),
-    effort: judge.effort ?? ai.effort ?? 'medium',
-  };
+  return modelSettingsOf(ai.judge ?? (process.env.VYNTRA_AI_JUDGE_MODEL || undefined), ai, rootDir);
+}
+
+// use.ai.vision: the model for the calls that carry a screenshot, when the acting or judging one reads no images.
+// The same forms as judge; VYNTRA_AI_VISION_MODEL names one too.
+function visionOf(ai, rootDir) {
+  return modelSettingsOf(ai.vision ?? (process.env.VYNTRA_AI_VISION_MODEL || undefined), ai, rootDir);
 }
 
 const MAX_TEXT = 16_384;
@@ -139,6 +149,7 @@ function settingsOf(options = projectConfig().use.ai ?? {}, where = projectConfi
     traceFile: path.join(outputDir, 'ai-trace.jsonl'),
     // The model that judges, when it is not the one that acts.
     judge: judgeOf(ai, rootDir),
+    vision: visionOf(ai, rootDir),
     // The app's vocabulary for every model call, and instructions for the acting agent only.
     context: limited('use.ai.context', ai.context),
     system: limited('use.ai.system', ai.system),
