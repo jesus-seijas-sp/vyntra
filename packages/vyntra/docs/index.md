@@ -23,6 +23,7 @@ Read a topic with `vyntra guide <topic>`, or open its file here. Generated from 
 - [Projects](guide/projects.md) `guide/projects`: A project is a part of the suite with options of its own: its files, environment, setup files, timeouts, workers.
 - [API tests](guide/api-tests.md) `guide/api-tests`: The `api` fixture is an HTTP client for the test.
 - [End-to-end tests](guide/e2e.md) `guide/e2e`: A project with `engine: 'web'` runs its tests in a browser, with `@vyntra/web` on Playwright.
+- [Browser mode](guide/browser-mode.md) `guide/browser-mode`: With Vitest's `browser.enabled`, a project's test files run in a real browser page, as under `vitest`: real layout, real events, the browse…
 - [TypeScript and ES modules](guide/typescript.md) `guide/typescript`: vyntra loads files with Node.js, so what Node.js runs, vyntra runs: CommonJS, ES modules (`.mjs`, or `"type": "module"`), and TypeScript (`…
 - [What files can import](guide/imports.md) `guide/imports`: Code written for a bundler (Vite, webpack) imports things Node.js refuses.
 - [Why it is fast](guide/speed.md) `guide/speed`: Measured on real suites, most of a test run is not the tests.

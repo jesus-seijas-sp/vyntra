@@ -63,6 +63,7 @@
           <li><a href="#projects">Projects</a></li>
           <li><a href="#api-tests">API tests</a></li>
           <li><a href="#e2e">End-to-end tests</a></li>
+          <li><a href="#browser-mode">Browser mode</a></li>
           <li><a href="#typescript">TypeScript and ES modules</a></li>
           <li><a href="#imports">What files can import</a></li>
           <li><a href="#speed">Why it is fast</a></li>
@@ -913,6 +914,45 @@ test('adds a todo', async ({ page }) => {
           every attempt: what a person, or a coding agent, needs to see what went wrong without running it again.
         </p>
 
+        <h2 id="browser-mode">Browser mode</h2>
+        <p>
+          With Vitest's <code>browser.enabled</code>, a project's test files run in a real browser page, as under
+          <code>vitest</code>: real layout, real events, the browser's own APIs. vyntra does it with
+          <code>@vyntra/web</code> on Playwright, and with the esbuild your Vite project has: each test file is bundled,
+          its packages with it, and run in a page of its own, several at once.
+        </p>
+        <pre><code class="language-sh">npm install --save-dev @vyntra/web playwright
+npx playwright install chromium</code></pre>
+        <pre><code class="language-js">// vitest.config.ts
+export default {
+  test: { browser: { enabled: true, provider: 'playwright', instances: [{ browser: 'chromium' }] } },
+};
+
+// Counter.test.jsx
+import { render } from '@testing-library/react';
+import { page, userEvent } from 'vitest/browser';
+
+test('counts clicks', async () => {
+  render(&lt;Counter /&gt;);
+  await userEvent.click(page.getByRole('button', { name: 'Increment' }));
+  await expect.element(page.getByRole('status')).toHaveTextContent('Count: 1');
+});</code></pre>
+        <p>
+          <code>vitest/browser</code> (or <code>@vitest/browser/context</code>) gives <code>page</code>
+          (<code>getByRole</code>, <code>getByText</code>, <code>getByLabelText</code>, <code>getByPlaceholder</code>,
+          <code>getByAltText</code>, <code>getByTitle</code>, <code>getByTestId</code>, <code>viewport</code>,
+          <code>screenshot</code>) and <code>userEvent</code> (<code>click</code>, <code>dblClick</code>,
+          <code>fill</code>, <code>type</code>, <code>clear</code>, <code>hover</code>, <code>selectOptions</code>,
+          <code>keyboard</code>, <code>tab</code>), whose actions Playwright performs. <code>expect.element()</code> retries
+          for a second, and jest-dom's matchers are there (<code>toBeVisible</code>, <code>toHaveTextContent</code>,
+          <code>toHaveValue</code>...). <code>vi.mock</code> works with a factory (async, with
+          <code>importOriginal</code>) or without one. Stylesheets are added to the page, images are data URLs, and
+          failures and console output point at your files.
+        </p>
+        <p>
+          Not yet in browser mode: snapshots, coverage, and the WebdriverIO provider.
+        </p>
+
         <h2 id="typescript">TypeScript and ES modules</h2>
         <p>
           vyntra loads files with Node.js, so what Node.js runs, vyntra runs: CommonJS, ES modules (<code>.mjs</code>, or
@@ -1035,7 +1075,7 @@ test('adds a todo', async ({ page }) => {
         </p>
         <h3>What is not supported yet?</h3>
         <p>
-          Vitest's browser mode (<code>@vyntra/web</code> runs tests in a browser its own way).
+          In browser mode: snapshots, coverage and the WebdriverIO provider.
           <a href="migrating.html#missing">Migrating</a> has the whole list.
         </p>
         <h3>My tests expect <code>NODE_ENV=test</code>.</h3>

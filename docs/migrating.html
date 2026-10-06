@@ -177,7 +177,7 @@
               <tr><td><code>typecheck</code>, <code>expectTypeOf</code>, <code>assertType</code></td><td><span class="check">✓</span> <code>--typecheck</code> checks the <code>*.test-d.ts</code> files with your <code>tsc</code> (or <code>vue-tsc</code>), each error on its test; <code>include</code>, <code>tsconfig</code>, <code>checker</code>, <code>ignoreSourceErrors</code> as in Vitest. At run time <code>expectTypeOf</code> and <code>assertType</code> do nothing</td></tr>
               <tr><td><code>includeSource</code>, in-source tests (<code>if (import.meta.vitest)</code>)</td><td><span class="check">✓</span> The same: a source file is a test file when it has them, and a module another test imports keeps them to itself</td></tr>
               <tr><td><code>bench</code>, <code>vitest bench</code>, <code>benchmark</code> options</td><td><span class="check">✓</span> <code>vyntra bench</code> runs the <code>*.bench.*</code> files: <code>bench(name, fn, { time, iterations, warmupTime, warmupIterations, setup, teardown })</code>, tables of hz, percentiles and margin of error, <code>--outputJson</code> and <code>--compare</code></td></tr>
-              <tr><td>Browser mode</td><td><span class="cross">✗</span> Not supported: <a href="guide.html#e2e"><code>@vyntra/web</code></a> runs tests in a browser with Playwright</td></tr>
+              <tr><td>Browser mode (<code>browser.enabled</code>), <code>vitest/browser</code></td><td><span class="check">✓</span> With <code>@vyntra/web</code>, on Playwright: each test file is bundled with your esbuild and runs in a page; <code>page</code>, <code>userEvent</code>, locators, <code>expect.element</code>, jest-dom's matchers, <code>vi.mock</code>. Not yet: snapshots, coverage, WebdriverIO. See <a href="guide.html#browser-mode">Browser mode</a></td></tr>
             </tbody>
           </table>
         </div>
@@ -210,7 +210,6 @@
 
         <h2 id="missing">Not supported yet</h2>
         <ul>
-          <li>Vitest's browser mode (<code>@vyntra/web</code> tests in a browser its own way).</li>
         </ul>
         <p>
           If your suite needs one of them, keep your current runner for now, or run the tests that need it with it.

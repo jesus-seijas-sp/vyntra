@@ -861,6 +861,12 @@ module.exports = [
     },
   },
   {
+    // vyntra's runtime for browser pages (browser mode): a page's globals, and the hooks the runner exposes on it.
+    files: ['packages/vyntra/src/browser/**/*.js'],
+    languageOptions: { globals: { ...globals.browser } },
+    rules: { 'no-underscore-dangle': 'off' },
+  },
+  {
     files: ['examples/*/public/**/*.mjs'],
     languageOptions: { globals: { ...globals.browser } },
   },

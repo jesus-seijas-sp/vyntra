@@ -63,6 +63,13 @@ A web project runs in child processes (`pool: 'forks'`) on half the cores, retri
 (and reports it as flaky if it then passes), and gives tests and hooks 30 seconds. Set any of them in the
 project to change it.
 
+## Browser mode
+
+A project with Vitest's `browser.enabled` runs its test files in browser pages through this package: each file is
+bundled with the project's esbuild and runs in a page of its own, with `vitest/browser`'s `page`, `userEvent`,
+locators and `expect.element`, jest-dom's matchers and `vi.mock`. See
+[Browser mode](https://jesus-seijas-sp.github.io/vyntra/guide.html#browser-mode).
+
 ## License
 
 MIT

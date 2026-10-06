@@ -1,5 +1,6 @@
 const { fixtures } = require('./fixtures');
 const { matchers } = require('./matchers');
+const { BrowserRunner } = require('./browser/runner');
 
 // The web engine of vyntra: a project with engine: 'web' gets these fixtures (browser, context, page), these
 // matchers, and these defaults under the options it sets itself.
@@ -15,4 +16,4 @@ const defaults = {
   use: { browserName: 'chromium', headless: true, trace: 'on-failure', screenshot: 'only-on-failure' },
 };
 
-module.exports = { fixtures, matchers, defaults };
+module.exports = { fixtures, matchers, defaults, BrowserRunner };

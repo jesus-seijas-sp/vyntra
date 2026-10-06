@@ -4,6 +4,7 @@ const { plan, explicitWorkers: workersOf } = require('./schedule');
 const { ShardMerger } = require('./shard-merger');
 const { WorkerPool } = require('./worker-pool');
 const { InlineRunner } = require('./inline-runner');
+const { loadEngine } = require('../engines');
 const { runGlobalSetup, runGlobalTeardown } = require('./global-setup');
 const { TestServer } = require('./server');
 
@@ -59,7 +60,8 @@ class ProjectRun {
       return { workers: Math.min(this.cap, files), inline: false };
     }
     const planned = this.singlePlan();
-    const inline = !planned || (planned.jobs.length === 1 && !this.projects[0].config.watch);
+    const { watch, browser } = this.projects[0].config;
+    const inline = !browser?.enabled && (!planned || (planned.jobs.length === 1 && !watch));
     return { workers: inline ? 1 : planned.workers, inline };
   }
 
@@ -265,11 +267,17 @@ class ProjectRun {
     const planned = single ? this.singlePlan() : plan(files, this.timings, limited);
     // One job (a file run whole) runs in the main thread: no worker to start. A single long file split in parts does
     // get workers. In the main thread, split files would only run one part after the other: they run whole.
-    if (single && (!planned || (planned.jobs.length === 1 && !config.watch))) {
+    if (single && !config.browser?.enabled && (!planned || (planned.jobs.length === 1 && !config.watch))) {
       return {
         runner: new InlineRunner({ config, onResult }),
         jobs: files.map((file) => ({ path: file, shard: null })),
       };
+    }
+    // Vitest's browser mode: the files run in browser pages, which @vyntra/web drives with Playwright.
+    if (config.browser?.enabled) {
+      const { BrowserRunner } = loadEngine('web', config.rootDir);
+      const jobs = files.map((file) => ({ path: file, shard: null }));
+      return { runner: new BrowserRunner({ config, size: planned?.workers ?? 1, onResult }), jobs };
     }
     const runner = new WorkerPool({ size: planned.workers, config: forWorkers({ ...config, pool }), onResult });
     return { runner, jobs: planned.jobs };
