@@ -60,6 +60,11 @@ class WebdriverioProvider {
     return false;
   }
 
+  // How many sessions at once: safaridriver runs one.
+  get lanes() {
+    return this.name === 'safari' ? 1 : Infinity;
+  }
+
   async launch() {
     this.webdriverio = webdriverioOf(this.rootDir);
   }

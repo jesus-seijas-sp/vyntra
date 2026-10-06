@@ -28,7 +28,9 @@ test('counts clicks', async () => {
 
 `--coverage` works in Chromium, from its V8 coverage, as in Node: the same lines, functions and branches.
 
-With WebdriverIO (`provider: 'webdriverio'`, or vitest 4's `webdriverio()` from `@vitest/browser-webdriverio`, which vyntra reads without it installed), tests run in `chrome`, `firefox`, `edge` or `safari` through WebDriver, each worker a session whose files run one after the other, their storage and cookies cleared between them. The factory's options, `capabilities` included, go to WebdriverIO's `remote()`. Locators find their element in the page, which WebdriverIO then acts on. Coverage is Chromium's on Playwright only; Safari runs with a window, as it has no headless mode.
+With WebdriverIO (`provider: 'webdriverio'`, or vitest 4's `webdriverio()` from `@vitest/browser-webdriverio`, which vyntra reads without it installed), tests run in `chrome`, `firefox`, `edge` or `safari` through WebDriver, each worker a session whose files run one after the other, their storage and cookies cleared between them. The factory's options, `capabilities` included, go to WebdriverIO's `remote()`. Locators find their element in the page, which WebdriverIO then acts on. Coverage is Chromium's on Playwright only.
+
+Safari, through `safaridriver`: run `sudo safaridriver --enable` once, and turn on Safari's Develop → Allow Remote Automation. It runs with a window (it has no headless mode), one session, so its files run one after the other. What Safari's WebDriver does not do: `dblclick` events (a double click is two clicks), and full-page screenshots. On macOS, Tab skips buttons and links unless the system's keyboard navigation is on.
 
 ```sh
 npm install --save-dev @vyntra/web webdriverio

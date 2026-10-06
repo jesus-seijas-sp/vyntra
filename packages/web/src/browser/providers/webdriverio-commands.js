@@ -89,9 +89,13 @@ function commandsFor(browser, { Key, rootDir, file, setViewport }) {
     viewport: (width, height) => setViewport({ width, height }),
     screenshot: async (options = {}) => {
       const target = screenshotPath(file, options);
+      if (options.fullPage && !browser.isBidi) {
+        throw new Error('page.screenshot({ fullPage }) needs WebDriver BiDi, which this browser session does not have');
+      }
+      // Options only when asked for: WebdriverIO takes none outside BiDi sessions (Safari's).
       await (options.target
         ? $(options.target).saveScreenshot(target)
-        : browser.saveScreenshot(target, { fullPage: Boolean(options.fullPage) }));
+        : browser.saveScreenshot(target, ...(options.fullPage ? [{ fullPage: true }] : [])));
       return screenshotResult(rootDir, target, options);
     },
   };

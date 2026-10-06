@@ -960,8 +960,14 @@ test('counts clicks', async () => {
           <code>chrome</code>, <code>firefox</code>, <code>edge</code> or <code>safari</code> through WebDriver, each
           worker a session whose files run one after the other, their storage and cookies cleared between them. The
           factory's options, <code>capabilities</code> included, go to WebdriverIO's <code>remote()</code>. Locators
-          find their element in the page, which WebdriverIO then acts on. Coverage is Chromium's on Playwright only;
-          Safari runs with a window, as it has no headless mode.
+          find their element in the page, which WebdriverIO then acts on. Coverage is Chromium's on Playwright only.
+        </p>
+        <p>
+          Safari, through <code>safaridriver</code>: run <code>sudo safaridriver --enable</code> once, and turn on
+          Safari's Develop → Allow Remote Automation. It runs with a window (it has no headless mode), one session, so
+          its files run one after the other. What Safari's WebDriver does not do: <code>dblclick</code> events (a
+          double click is two clicks), and full-page screenshots. On macOS, Tab skips buttons and links unless the
+          system's keyboard navigation is on.
         </p>
         <pre><code class="language-sh">npm install --save-dev @vyntra/web webdriverio</code></pre>
         <pre><code class="language-js">// vitest.config.ts

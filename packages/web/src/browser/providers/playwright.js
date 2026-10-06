@@ -36,6 +36,11 @@ class PlaywrightProvider {
     return this.options.name === 'chromium';
   }
 
+  // eslint-disable-next-line class-methods-use-this -- part of the provider's interface
+  get lanes() {
+    return Infinity;
+  }
+
   async launch() {
     const { name, headless, providerOptions } = this.options;
     this.browser = await playwrightOf(this.rootDir)[name].launch({

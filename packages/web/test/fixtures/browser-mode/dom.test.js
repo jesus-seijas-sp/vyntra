@@ -6,7 +6,7 @@ describe('in a browser page', () => {
   it('lays out with the page styles', () => {
     document.body.innerHTML = '<div class="card">Card</div>';
     expect(document.querySelector('.card').getBoundingClientRect().width).toBe(220);
-    expect(navigator.userAgent).toMatch(/Chrome/);
+    expect(navigator.userAgent).toMatch(/Chrome|Safari|Firefox/);
   });
 
   it('types and clicks as a user, found by role', async () => {

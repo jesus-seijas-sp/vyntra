@@ -277,7 +277,7 @@ class BrowserRunner {
     };
     try {
       await this.provider.launch();
-      await Promise.all(Array.from({ length: Math.min(this.size, jobs.length) }, lane));
+      await Promise.all(Array.from({ length: Math.min(this.size, jobs.length, this.provider.lanes) }, lane));
     } finally {
       await this.provider.close().catch(() => {});
       this.server.close();
