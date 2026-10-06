@@ -242,6 +242,31 @@ function withJestPreset(jest, rootDir) {
   return merged;
 }
 
+const BABEL_FILES = [
+  'babel.config.js',
+  'babel.config.cjs',
+  'babel.config.mjs',
+  'babel.config.cts',
+  'babel.config.json',
+  '.babelrc',
+  '.babelrc.js',
+  '.babelrc.cjs',
+  '.babelrc.mjs',
+  '.babelrc.json',
+];
+
+const hasBabelConfig = (rootDir) =>
+  BABEL_FILES.some((name) => fs.existsSync(path.join(rootDir, name))) || readPackageJson(rootDir).babel !== undefined;
+
+function canResolve(name, rootDir) {
+  try {
+    Module.createRequire(path.join(rootDir, 'package.json')).resolve(name);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // The options of a Jest config vyntra understands, so a Jest project runs without a vyntra config.
 function fromJestConfig(original, rootDir) {
   const jest = withJestPreset(original, rootDir);
@@ -304,9 +329,12 @@ function fromJestConfig(original, rootDir) {
     // to; the others ("**/__tests__/**/*.js") match anywhere, as they are.
     config.include = jest.testMatch.map((glob) => glob.replace(/^<rootDir>\//, '').replace(/^\.\//, ''));
   }
-  // The project's transformers, which the files they match are compiled with (see jest-transform.js).
+  // The project's transformers, which the files they match are compiled with (see jest-transform.js). Without any,
+  // Jest runs babel-jest on its own, which matters when the project has a Babel config.
   if (jest.transform) {
     config.jestTransform = jest.transform;
+  } else if (hasBabelConfig(rootDir) && canResolve('babel-jest', rootDir)) {
+    config.jestTransform = { '\\.[jt]sx?$': 'babel-jest' };
   }
   if (jest.transformIgnorePatterns) {
     config.transformIgnorePatterns = jest.transformIgnorePatterns;
