@@ -282,9 +282,11 @@ class FileRunner {
   // Attempts with retries and repeats: stops at the first failure, retries while there are retries left.
   async runAttempts(test, record) {
     const retries = test.retry ?? this.config.retry ?? 0;
+    // --repeat-each n runs every test n times, unless the test asks for its own repeats.
+    const repeats = test.repeats || Math.max(0, (this.config.repeatEach ?? 1) - 1);
     let outcome;
     for (let attempt = 0; attempt <= retries; attempt += 1) {
-      for (let repeat = 0; repeat <= test.repeats; repeat += 1) {
+      for (let repeat = 0; repeat <= repeats; repeat += 1) {
         outcome = await this.runAttempt(test, record);
         if (outcome.errors.length > 0 || outcome.skipped) {
           break;

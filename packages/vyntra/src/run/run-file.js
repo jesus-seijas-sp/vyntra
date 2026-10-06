@@ -9,6 +9,7 @@ const { releaseMocks } = require('../mock');
 const { timers, realTimers } = require('../timers');
 const { FileRunner } = require('./file-runner');
 const { teardownScope } = require('./fixtures');
+const { nameAndTagFilter } = require('./select');
 const { serializeError } = require('./serialize-error');
 const { testKey } = require('./test-key');
 
@@ -76,14 +77,15 @@ function saveSnapshots(file, results, shard) {
   }
 }
 
-// The tests this run wants of the file: those -t matches, and under --last-failed those the last run left failing.
+// The tests this run wants of the file: those its name and tag filters keep, and under --last-failed those the last
+// run left failing.
 function selection(path, config) {
-  const pattern = config.testNamePattern ? new RegExp(config.testNamePattern, 'i') : null;
+  const named = nameAndTagFilter(config);
   const owed = config.rerun?.[path] ? new Set(config.rerun[path]) : null;
-  if (!pattern && !owed) {
+  if (!named && !owed) {
     return null;
   }
-  return (test) => (!pattern || pattern.test(test.fullName)) && (!owed || owed.has(testKey(test.titlePath)));
+  return (test) => (!named || named(test)) && (!owed || owed.has(testKey(test.titlePath)));
 }
 
 // A shard of a split file ({ index, count }) runs one test of every count, the ones whose index is shard.index

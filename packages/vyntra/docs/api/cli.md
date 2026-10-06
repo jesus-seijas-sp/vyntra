@@ -8,7 +8,11 @@ Path patterns are regular expressions matched against the path of every test fil
 
 | Flag | What it does |
 | --- | --- |
-| `-t, --testNamePattern <regex>` | Runs only the tests whose full name matches |
+| `-t, --testNamePattern <regex>` | Runs only the tests whose full name matches (also `--grep`) |
+| `--grep-invert <regex>` | Leaves out the tests whose full name matches |
+| `--tag <tags>` | Runs only the tests with one of these tags, theirs or their `describe` blocks' (repeat it, or use commas) |
+| `--exclude-tag <tags>` | Leaves out the tests with any of these tags, whatever else selects them |
+| `--repeat-each <n>` | Runs every test n times; a test passes when every run passes (a test's own `repeats` wins) |
 | `-c, --config <file>` | The configuration file |
 | `-r, --root <dir>` | The project root (the current directory by default) |
 | `-w, --maxWorkers <n\|n%>` | Workers; by default, from the durations of the last run |

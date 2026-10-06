@@ -5,6 +5,11 @@ const OPTIONS = {
   config: { type: 'string', short: 'c' },
   root: { type: 'string', short: 'r' },
   testNamePattern: { type: 'string', short: 't' },
+  grep: { type: 'string' },
+  'grep-invert': { type: 'string' },
+  tag: { type: 'string', multiple: true },
+  'exclude-tag': { type: 'string', multiple: true },
+  'repeat-each': { type: 'string' },
   silent: { type: 'boolean' },
   isolate: { type: 'boolean' },
   'no-isolate': { type: 'boolean' },
@@ -55,7 +60,11 @@ const USAGE = `Usage: vyntra [options] [path patterns...]
        vyntra init --agents       Write the skill coding agents use to run and fix tests here
 
 Options:
-  -t, --testNamePattern <regex>  Run only the tests whose full name matches
+  -t, --testNamePattern <regex>  Run only the tests whose full name matches (also --grep)
+      --grep-invert <regex>      Leave out the tests whose full name matches
+      --tag <tags>               Run only the tests with one of these tags (repeat it, or use commas)
+      --exclude-tag <tags>       Leave out the tests with any of these tags
+      --repeat-each <n>          Run every test n times (it passes when every run passes)
   -c, --config <file>            Config file (default: vyntra.config.js, or the Vitest or Jest config)
   -r, --root <dir>               Project root (default: current directory)
   -w, --maxWorkers <n|n%>        Worker threads (default: cores - 1)
@@ -92,7 +101,11 @@ function parseCli(argv) {
   const options = {
     config: values.config,
     rootDir: values.root,
-    testNamePattern: values.testNamePattern,
+    testNamePattern: values.testNamePattern ?? values.grep,
+    grepInvert: values['grep-invert'],
+    tags: values.tag,
+    excludeTags: values['exclude-tag'],
+    repeatEach: toNumber(values['repeat-each']),
     silent: values.silent,
     pool: values.runInBand ? 'inline' : values.pool,
     maxWorkers: values.maxWorkers,

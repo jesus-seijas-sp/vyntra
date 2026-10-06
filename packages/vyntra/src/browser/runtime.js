@@ -6,6 +6,7 @@ const state = require('../state');
 const api = require('../index');
 const { Suite } = require('../collect/suite');
 const { FileRunner } = require('../run/file-runner');
+const { nameAndTagFilter } = require('../run/select');
 const { serializeError } = require('../run/serialize-error');
 const { realTimers } = require('../timers/real-timers');
 const { domMatchers } = require('./dom-matchers');
@@ -117,8 +118,7 @@ async function finish({ config, error }) {
   const collectDuration = now() - started;
   const runner = new FileRunner(file, config);
   if (file.errors.length === 0) {
-    const pattern = config.testNamePattern ? new RegExp(config.testNamePattern, 'i') : null;
-    file.root.interpretModes(file.hasOnly, pattern ? (test) => pattern.test(test.fullName) : null);
+    file.root.interpretModes(file.hasOnly, nameAndTagFilter(config));
     await runner.runSuite(file.root);
   }
   file.errors.push(...file.uncaught.splice(0).map(serializeError));

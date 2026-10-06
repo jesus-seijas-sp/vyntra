@@ -10,6 +10,8 @@ class Suite {
     this.hooks = { beforeAll: [], afterAll: [], beforeEach: [], afterEach: [] };
     this.concurrent = options.concurrent ?? parent?.concurrent ?? false;
     this.fullName = parent?.fullName ? `${parent.fullName} ${name}` : name;
+    // Tags the tests inside it carry, with those of the blocks around it.
+    this.tags = [...new Set([...(parent?.tags ?? []), ...[options.tags ?? []].flat()])];
     this.collectError = null;
   }
 

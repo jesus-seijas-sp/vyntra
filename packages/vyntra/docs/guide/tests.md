@@ -53,3 +53,13 @@ test.concurrent('loads the user', async ({ expect }) => {
   expect(await loadUser(1)).toMatchObject({ id: 1 });
 });
 ```
+
+## Tags and repeats
+
+A `describe` or a `test` takes `tags`, which the tests inside inherit; `--tag` runs the tests with one of them and `--exclude-tag` leaves out those with any. `--grep-invert` leaves out the tests whose name matches, as `-t` (or `--grep`) keeps them. `--repeat-each 5` runs every test five times, and a test passes only when every run passes: how to find a flaky test, or measure an AI step under `--ai live`.
+
+```js
+describe('billing', { tags: ['billing'] }, () => {
+  test('upgrades the plan', { tags: 'slow' }, async () => { /* ... */ });
+});
+```

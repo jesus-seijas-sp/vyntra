@@ -13,6 +13,8 @@ class TestCase {
     this.concurrent = flags.sequential ? false : Boolean(flags.concurrent || options.concurrent || parent.concurrent);
     this.fullName = parent.fullName ? `${parent.fullName} ${name}` : name;
     this.fixtures = flags.fixtures;
+    // Its tags and those of the describe blocks around it, for --tag and --exclude-tag.
+    this.tags = [...new Set([...(parent.tags ?? []), ...[options.tags ?? []].flat()])];
     // Set when a beforeAll of its suites failed.
     this.failError = null;
   }

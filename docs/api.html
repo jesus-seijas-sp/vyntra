@@ -370,7 +370,11 @@
           <table>
             <thead><tr><th>Flag</th><th>What it does</th></tr></thead>
             <tbody>
-              <tr><td><code>-t, --testNamePattern &lt;regex&gt;</code></td><td>Runs only the tests whose full name matches</td></tr>
+              <tr><td><code>-t, --testNamePattern &lt;regex&gt;</code></td><td>Runs only the tests whose full name matches (also <code>--grep</code>)</td></tr>
+              <tr><td><code>--grep-invert &lt;regex&gt;</code></td><td>Leaves out the tests whose full name matches</td></tr>
+              <tr><td><code>--tag &lt;tags&gt;</code></td><td>Runs only the tests with one of these tags, theirs or their <code>describe</code> blocks' (repeat it, or use commas)</td></tr>
+              <tr><td><code>--exclude-tag &lt;tags&gt;</code></td><td>Leaves out the tests with any of these tags, whatever else selects them</td></tr>
+              <tr><td><code>--repeat-each &lt;n&gt;</code></td><td>Runs every test n times; a test passes when every run passes (a test's own <code>repeats</code> wins)</td></tr>
               <tr><td><code>-c, --config &lt;file&gt;</code></td><td>The configuration file</td></tr>
               <tr><td><code>-r, --root &lt;dir&gt;</code></td><td>The project root (the current directory by default)</td></tr>
               <tr><td><code>-w, --maxWorkers &lt;n|n%&gt;</code></td><td>Workers; by default, from the durations of the last run</td></tr>

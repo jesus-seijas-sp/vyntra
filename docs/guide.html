@@ -348,6 +348,18 @@ test.each`
   expect(await loadUser(1)).toMatchObject({ id: 1 });
 });</code></pre>
 
+        <h3 id="tags">Tags and repeats</h3>
+        <p>
+          A <code>describe</code> or a <code>test</code> takes <code>tags</code>, which the tests inside inherit;
+          <code>--tag</code> runs the tests with one of them and <code>--exclude-tag</code> leaves out those with any.
+          <code>--grep-invert</code> leaves out the tests whose name matches, as <code>-t</code> (or <code>--grep</code>)
+          keeps them. <code>--repeat-each 5</code> runs every test five times, and a test passes only when every run
+          passes: how to find a flaky test, or measure an AI step under <code>--ai live</code>.
+        </p>
+        <pre><code class="language-js">describe('billing', { tags: ['billing'] }, () => {
+  test('upgrades the plan', { tags: 'slow' }, async () => { /* ... */ });
+});</code></pre>
+
         <h2 id="hooks">Hooks</h2>
         <p>
           <code>beforeAll</code> and <code>afterAll</code> run once around the tests of their <code>describe</code> (or

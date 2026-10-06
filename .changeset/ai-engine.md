@@ -31,4 +31,6 @@ The run summary and report.json say what the AI steps cost (tokens, model calls,
 
 `--ai-trace` writes every model call to `.vyntra/ai-trace.jsonl`, secret values hidden, and the summary lists the slowest traced steps. Engines can name output files the core clears when a run starts.
 
+Tags on `describe` and `test` (`{ tags: ['slow'] }`), with `--tag` and `--exclude-tag`; `--grep` (as `-t`) and `--grep-invert`; and `--repeat-each <n>` to run every test n times.
+
 On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.
