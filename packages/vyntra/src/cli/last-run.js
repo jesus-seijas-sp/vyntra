@@ -68,7 +68,7 @@ function rerunOf(report, rootDir) {
   return rerun;
 }
 
-function writeReport(config, { startedAt, duration, exitCode, results, owed }) {
+function writeReport(config, { startedAt, duration, exitCode, results, owed, engines }) {
   if (!config.outputDir) {
     return;
   }
@@ -78,7 +78,10 @@ function writeReport(config, { startedAt, duration, exitCode, results, owed }) {
     path: toPosix(config.rootDir, absolute),
   }));
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `${JSON.stringify({ version: VERSION, startedAt, duration, exitCode, owed, files })}\n`);
+  fs.writeFileSync(
+    file,
+    `${JSON.stringify({ version: VERSION, startedAt, duration, exitCode, owed, files, ...(engines ? { engines } : {}) })}\n`
+  );
 }
 
 module.exports = { readReport, owedAfter, rerunOf, writeReport };

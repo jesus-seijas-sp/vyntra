@@ -12,6 +12,7 @@ const { parseCli } = require('./args');
 const { loadConfig } = require('./config');
 const { parseShard, selectShard } = require('./select-shard');
 const { EXIT, brokeSetup, brokeEnvironment } = require('./exit-codes');
+const { enginesOf } = require('../engines');
 const { readReport, owedAfter, rerunOf, writeReport } = require('./last-run');
 const { reporterNames, unknownReporters, createReporters, clearOutputs } = require('./reporters');
 const { explicitWorkers } = require('./schedule');
@@ -81,6 +82,29 @@ function describeRerun(selections) {
 // One run of the tests: what `vyntra` does, and what watch mode does on every change. outcome gets what the watcher
 // needs to know about it: the config, the results (with each file's dependencies), and whether the process had to
 // start again for its locale, in which case the run, watching included, happened in that new process.
+// What the engines of the run say about it, once it ended (the AI engine: model calls, tokens, the replay cache):
+// { lines: [label, text] for the summary, data: by engine name for report.json }. An engine says it through an
+// optional summarize({ rootDir, outputDir, runId }) returning { lines, data }, or nothing.
+function summarizeEngines(projects) {
+  const engines = new Map();
+  projects.forEach(({ config }) =>
+    enginesOf(config).forEach(({ name, engine }) => {
+      if (typeof engine.summarize === 'function' && !engines.has(engine)) {
+        engines.set(engine, { name, config });
+      }
+    })
+  );
+  const summaries = [...engines].map(([engine, { name, config }]) => {
+    const outputDir = path.resolve(config.rootDir, config.outputDir || '.vyntra');
+    return [name, engine.summarize({ rootDir: config.rootDir, outputDir, runId: process.env.VYNTRA_RUN_ID })];
+  });
+  const said = summaries.filter(([, summary]) => summary);
+  return {
+    lines: said.flatMap(([, summary]) => summary.lines ?? []),
+    data: said.length > 0 ? Object.fromEntries(said.map(([name, summary]) => [name, summary.data])) : undefined,
+  };
+}
+
 async function runOnce(argv, outcome = {}) {
   const start = realTimers.performanceNow();
   const cli = parseCli(argv);
@@ -284,7 +308,8 @@ async function runOnce(argv, outcome = {}) {
     );
   }
   const duration = realTimers.performanceNow() - start;
-  const passed = reporter.onFinish(duration);
+  const engineSummary = summarizeEngines(projects);
+  const passed = reporter.onFinish(duration, engineSummary.lines);
   const coverage = collected.map((item) => item.coverage).filter(Boolean);
   const covered = config.coverage ? reportCoverage(mergeCoverage(coverage), { ...config, testFiles: files }) : true;
   // Fixtures shared by a worker end with it, after its files: their teardown errors belong to no file.
@@ -303,7 +328,7 @@ async function runOnce(argv, outcome = {}) {
     results.filter((result) => !result.synthetic),
     config.rootDir
   );
-  writeReport(config, { startedAt, duration, exitCode, results, owed });
+  writeReport(config, { startedAt, duration, exitCode, results, owed, engines: engineSummary.data });
   if (config.benchOutputJson) {
     writeBenchJson(config.benchOutputJson, results, config.rootDir);
   }

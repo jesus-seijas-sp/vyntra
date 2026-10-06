@@ -67,6 +67,7 @@ async function judge(session, { kind, claim, input, keyInput = input, skipMissin
   const key = session.keyOf(step);
   const recorded = session.recorded(key);
   if (recorded) {
+    session.noteStep('replayed');
     const verdict = { verdict: recorded.verdict, reasoning: recorded.reasoning, source: 'recorded' };
     session.attach(`${kind} "${claim}"`, { source: `recorded in ${session.cacheFile}`, summary: summaryOf(verdict) });
     return verdict;
@@ -77,6 +78,7 @@ async function judge(session, { kind, claim, input, keyInput = input, skipMissin
     }
     throw session.missing(step);
   }
+  session.noteStep('missed');
   const messages = [{ role: 'user', content: `${asData('input', input)}\n\n<claim>${claim}</claim>` }];
   const { completion, turns } = await ask(session, messages, claim, kind);
   const { verdict, reasoning } = completion.json;

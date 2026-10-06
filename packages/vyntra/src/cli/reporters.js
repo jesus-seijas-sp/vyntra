@@ -46,10 +46,11 @@ class Reporters {
     this.reporters.forEach((reporter) => reporter.onFileResult(result));
   }
 
-  onFinish(duration) {
+  // engineLines: what the engines say about the run ([label, text]), for the printed summary.
+  onFinish(duration, engineLines = []) {
     const [main, ...others] = this.reporters;
-    const passed = main.onFinish(duration);
-    others.forEach((reporter) => reporter.onFinish(duration));
+    const passed = main.onFinish(duration, engineLines);
+    others.forEach((reporter) => reporter.onFinish(duration, engineLines));
     return passed;
   }
 }

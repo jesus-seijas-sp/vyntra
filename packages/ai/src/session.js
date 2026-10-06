@@ -121,6 +121,14 @@ class AiSession {
     );
   }
 
+  // How a step was answered, for the run's summary: replayed (from a recording), handed-off (a recording broke and the
+  // model took over) or missed (no recording: the model answered). Nothing under --ai live, where the cache is off.
+  noteStep(outcome) {
+    if (this.mode !== 'live') {
+      this.budget.note(outcome);
+    }
+  }
+
   // Drops a recording that a failed test can no longer vouch for.
   forget(key) {
     if (this.mode !== 'live') {
@@ -150,7 +158,7 @@ class AiSession {
     const { model, effort, provider } = this.modelFor(kind);
     this.asked = model;
     const completion = await provider.complete({ model, effort, signal: this.test.signal, ...hidden(request) });
-    this.budget.add(completion.usage);
+    this.budget.add(completion.usage, completion.model ?? model);
     this.answeredBy = completion.model;
     return completion;
   }

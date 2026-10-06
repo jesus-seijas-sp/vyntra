@@ -4,6 +4,7 @@ const { Agent } = require('./agent');
 const { AnthropicProvider } = require('./providers/anthropic');
 const { secret, fillSecret } = require('./secrets');
 const { unique } = require('./unique');
+const { summarize } = require('./summary');
 
 // The AI engine of vyntra: a project with engine: 'ai' (or ['web', 'ai'], for the agent's page) gets the agent
 // fixture, expect().toSatisfy(), and longer timeouts, as model calls take seconds when a step is recorded.
@@ -12,4 +13,14 @@ const defaults = {
   hookTimeout: 60_000,
 };
 
-module.exports = { fixtures, matchers, defaults, Agent, AnthropicProvider, secret, fillSecret, unique };
+module.exports = {
+  fixtures,
+  matchers,
+  defaults,
+  summarize,
+  Agent,
+  AnthropicProvider,
+  secret,
+  fillSecret,
+  unique,
+};

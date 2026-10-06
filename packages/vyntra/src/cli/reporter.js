@@ -186,8 +186,9 @@ class Reporter {
     }
   }
 
-  // Prints the summary and returns whether the run succeeded.
-  onFinish(duration) {
+  // Prints the summary and returns whether the run succeeded. engineLines: [label, text] pairs the engines add (the
+  // AI engine's tokens and cache), above the duration.
+  onFinish(duration, engineLines = []) {
     this.printFailures();
     this.printFlaky();
     if (this.config.mode === 'bench') {
@@ -217,6 +218,7 @@ class Reporter {
     this.write(countLine('Test Files', fileCounts, this.results.length));
     this.write(countLine('Tests', testCounts, tests.length));
     this.printSnapshots();
+    engineLines.forEach(([label, text]) => this.write(`${c.dim(label.padStart(11))}  ${text}`));
     this.write(`${c.dim('Duration'.padStart(11))}  ${formatDuration(duration)}`);
     this.write('');
     return fileCounts.failed === 0 && !(this.config.failOnFlaky && testCounts.flaky > 0);

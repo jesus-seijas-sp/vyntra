@@ -186,6 +186,7 @@ class Agent {
     if (recorded) {
       broken = await this.replay(recorded, start, replayed, settings);
       if (!broken) {
+        session.noteStep('replayed');
         this.#replayed.push({ session, key, checks: Agent.checks() });
         session.attach(`act "${goal}"`, {
           source: `replayed from ${session.cacheFile}`,
@@ -201,6 +202,7 @@ class Agent {
     } else if (session.mode === 'replay') {
       throw session.missing(step);
     }
+    session.noteStep(broken ? 'handed-off' : 'missed');
     const { summary, actions, turns } = await this.drive(session, goal, replayed, secrets);
     const all = [...replayed, ...actions];
     const end = await this.state();
@@ -447,6 +449,7 @@ class Agent {
       new InconclusiveError(`agent.extract("${what}") is inconclusive: the page does not show ${missing}`);
     const recorded = session.recorded(key);
     if (recorded) {
+      session.noteStep('replayed');
       session.attach(`extract "${what}"`, {
         source: `recorded in ${session.cacheFile}`,
         summary: recorded.shown ? JSON.stringify(recorded.value) : `not shown: ${recorded.missing}`,
@@ -460,6 +463,7 @@ class Agent {
       throw session.missing(step);
     }
     const messages = [{ role: 'user', content: `The page:\n${asData('page', state.text)}\n\nWhat to read: ${what}` }];
+    session.noteStep('missed');
     const { answer, turns } = await Agent.read(session, messages, schema, what);
     session.record(
       key,

@@ -3,8 +3,9 @@ const path = require('node:path');
 const { EnvironmentError } = require('vyntra/engine');
 
 // What a run spent on models, over all its workers (threads and processes): one line per call in a file of the
-// run's output directory, tagged with the run. Workers check it before a call, so a run that would overspend stops
-// (exit code 3) instead of running up a bill; calls made at the same moment by several workers may pass it by a few.
+// run's output directory, tagged with the run, and one per step saying how it was answered (for the run's summary).
+// Workers check it before a call, so a run that would overspend stops (exit code 3) instead of running up a bill;
+// calls made at the same moment by several workers may pass it by a few.
 class Budget {
   constructor({ calls, tokens }, file) {
     this.limits = { calls, tokens };
@@ -12,12 +13,13 @@ class Budget {
     this.run = process.env.VYNTRA_RUN_ID ?? `${process.pid}`;
   }
 
-  spent() {
+  // The lines of a usage file for one run.
+  static entries(file, run) {
     let text = '';
     try {
-      text = fs.readFileSync(this.file, 'utf8');
+      text = fs.readFileSync(file, 'utf8');
     } catch {
-      return { calls: 0, tokens: 0 };
+      return [];
     }
     return text
       .split('\n')
@@ -29,7 +31,12 @@ class Budget {
           return null;
         }
       })
-      .filter((entry) => entry?.run === this.run)
+      .filter((entry) => entry?.run === run);
+  }
+
+  spent() {
+    return Budget.entries(this.file, this.run)
+      .filter((entry) => entry.tokens !== undefined)
       .reduce((sum, entry) => ({ calls: sum.calls + 1, tokens: sum.tokens + entry.tokens }), { calls: 0, tokens: 0 });
   }
 
@@ -43,9 +50,19 @@ class Budget {
     }
   }
 
-  add({ inputTokens, outputTokens }) {
+  // A model call: its tokens, and the model that answered.
+  add({ inputTokens, outputTokens }, model) {
+    this.write({ tokens: inputTokens + outputTokens, input: inputTokens, output: outputTokens, model });
+  }
+
+  // How a step was answered: replayed, handed-off or missed.
+  note(step) {
+    this.write({ step });
+  }
+
+  write(entry) {
     fs.mkdirSync(path.dirname(this.file), { recursive: true });
-    fs.appendFileSync(this.file, `${JSON.stringify({ run: this.run, tokens: inputTokens + outputTokens })}\n`);
+    fs.appendFileSync(this.file, `${JSON.stringify({ run: this.run, ...entry })}\n`);
   }
 }
 

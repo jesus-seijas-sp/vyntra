@@ -183,6 +183,22 @@ Everything else counts: `/companies` and `/companies?tab=notes`, or `/products/s
   new actions.
 - A new recording of a claim replaces the one made on an older input, so files keep one result per step.
 
+### What a run spent
+
+The run's summary says what the AI steps cost and how the cache served them, and `.vyntra/report.json` holds
+the same under `engines`:
+
+```text
+ Test Files  4 passed (4)
+      Tests  13 passed (13)
+         AI  9.6k tokens · 4 model calls · deepseek/deepseek-v4-flash · deepseek/deepseek-v4-pro
+      Cache  0 replayed · 0 handed off · 2 missed
+```
+
+`replayed` steps came from a recording with no model call, `handed off` ones replayed until the page changed
+and the model took over, `missed` ones had no recording. Under `--ai live` the cache is off and only usage
+shows.
+
 ### Modes
 
 `--ai <mode>` on the command line, or `use.ai.mode`:

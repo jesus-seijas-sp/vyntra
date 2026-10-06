@@ -395,3 +395,26 @@ describe('verdicts', () => {
     expect(run(['context.e2e.js'], { ...env, AI_JUDGE: 'other-judge' }).calls).toBe(1);
   });
 });
+
+describe('run summary', () => {
+  it('says what the AI steps cost and how the replay cache served them', () => {
+    const { dir, run } = project('agent');
+    const report = () =>
+      Object.values(JSON.parse(fs.readFileSync(path.join(dir, '.vyntra', 'report.json'), 'utf8')).engines);
+    const first = run(['todo.e2e.js']);
+    expect(first.stdout).toContain('AI  550 tokens · 5 model calls\n');
+    expect(first.stdout).toContain('Cache  0 replayed · 0 handed off · 3 missed');
+    expect(report()).toEqual([
+      expect.objectContaining({
+        calls: 5,
+        tokens: 550,
+        input: 500,
+        output: 50,
+        steps: { replayed: 0, 'handed-off': 0, missed: 3 },
+      }),
+    ]);
+    const replayed = run(['todo.e2e.js'], { CI: '1' });
+    expect(replayed.stdout).toContain('AI  no model calls');
+    expect(replayed.stdout).toContain('Cache  3 replayed · 0 handed off · 0 missed');
+  });
+});
