@@ -67,7 +67,8 @@ project to change it.
 
 A project with Vitest's `browser.enabled` runs its test files in browser pages through this package: each file is
 bundled with the project's esbuild and runs in a page of its own, with `vitest/browser`'s `page`, `userEvent`,
-locators and `expect.element`, jest-dom's matchers and `vi.mock`. See
+locators and `expect.element`, jest-dom's matchers, `vi.mock`, snapshots and coverage. Its provider is Playwright
+(`chromium`, `firefox`, `webkit`) or WebdriverIO (`chrome`, `firefox`, `edge`, `safari`; install `webdriverio`). See
 [Browser mode](https://jesus-seijas-sp.github.io/vyntra/guide.html#browser-mode).
 
 ## License

@@ -918,8 +918,8 @@ test('adds a todo', async ({ page }) => {
         <p>
           With Vitest's <code>browser.enabled</code>, a project's test files run in a real browser page, as under
           <code>vitest</code>: real layout, real events, the browser's own APIs. vyntra does it with
-          <code>@vyntra/web</code> on Playwright, and with the esbuild your Vite project has: each test file is bundled,
-          its packages with it, and run in a page of its own, several at once.
+          <code>@vyntra/web</code> on Playwright or WebdriverIO, and with the esbuild your Vite project has: each test
+          file is bundled, its packages with it, and run in a page of its own, several at once.
         </p>
         <pre><code class="language-sh">npm install --save-dev @vyntra/web playwright
 npx playwright install chromium</code></pre>
@@ -943,7 +943,7 @@ test('counts clicks', async () => {
           <code>getByAltText</code>, <code>getByTitle</code>, <code>getByTestId</code>, <code>viewport</code>,
           <code>screenshot</code>) and <code>userEvent</code> (<code>click</code>, <code>dblClick</code>,
           <code>fill</code>, <code>type</code>, <code>clear</code>, <code>hover</code>, <code>selectOptions</code>,
-          <code>keyboard</code>, <code>tab</code>), whose actions Playwright performs. <code>expect.element()</code> retries
+          <code>keyboard</code>, <code>tab</code>), whose actions the provider performs. <code>expect.element()</code> retries
           for a second, and jest-dom's matchers are there (<code>toBeVisible</code>, <code>toHaveTextContent</code>,
           <code>toHaveValue</code>...). <code>vi.mock</code> works with a factory (async, with
           <code>importOriginal</code>) or without one. Snapshots work as in Node: <code>toMatchSnapshot</code> and
@@ -952,8 +952,24 @@ test('counts clicks', async () => {
         </p>
         <p>
           <code>--coverage</code> works in Chromium, from its V8 coverage, as in Node: the same lines, functions and
-          branches. Not yet in browser mode: the WebdriverIO provider.
+          branches.
         </p>
+        <p>
+          With WebdriverIO (<code>provider: 'webdriverio'</code>, or vitest 4's <code>webdriverio()</code> from
+          <code>@vitest/browser-webdriverio</code>, which vyntra reads without it installed), tests run in
+          <code>chrome</code>, <code>firefox</code>, <code>edge</code> or <code>safari</code> through WebDriver, each
+          worker a session whose files run one after the other, their storage and cookies cleared between them. The
+          factory's options, <code>capabilities</code> included, go to WebdriverIO's <code>remote()</code>. Locators
+          find their element in the page, which WebdriverIO then acts on. Coverage is Chromium's on Playwright only;
+          Safari runs with a window, as it has no headless mode.
+        </p>
+        <pre><code class="language-sh">npm install --save-dev @vyntra/web webdriverio</code></pre>
+        <pre><code class="language-js">// vitest.config.ts
+import { webdriverio } from '@vitest/browser-webdriverio';
+
+export default {
+  test: { browser: { enabled: true, provider: webdriverio(), instances: [{ browser: 'chrome' }] } },
+};</code></pre>
 
         <h2 id="typescript">TypeScript and ES modules</h2>
         <p>
@@ -1077,7 +1093,7 @@ test('counts clicks', async () => {
         </p>
         <h3>What is not supported yet?</h3>
         <p>
-          In browser mode: the WebdriverIO provider, and coverage in Firefox and WebKit.
+          In browser mode: coverage outside Chromium on Playwright.
           <a href="migrating.html#missing">Migrating</a> has the whole list.
         </p>
         <h3>My tests expect <code>NODE_ENV=test</code>.</h3>

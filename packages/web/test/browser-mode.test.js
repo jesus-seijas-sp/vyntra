@@ -6,6 +6,18 @@ const { spawnSync } = require('node:child_process');
 const BIN = path.join(path.dirname(require.resolve('vyntra/package.json')), 'bin', 'vyntra.js');
 const ROOT = path.join(__dirname, 'fixtures', 'browser-mode');
 
+const statuses = (tests) =>
+  Object.fromEntries(Object.entries(tests).map(([name, test]) => [name, [test.status, test.errors[0]?.message]]));
+
+const INTERACTIONS = {
+  'keyboard: text, named keys and keys held down': ['passed', undefined],
+  'tab moves the focus, shift+tab back': ['passed', undefined],
+  'selects options by value or label': ['passed', undefined],
+  'hovers, double clicks, clears': ['passed', undefined],
+  'waits for the element a locator means, and says when it is ambiguous': ['passed', undefined],
+  'sets the viewport, and screenshots an element': ['passed', undefined],
+};
+
 function run(args = []) {
   const { stdout, status } = spawnSync(
     process.execPath,
@@ -148,5 +160,43 @@ exports[\`snapshots > of an element: viewport 1\`] = \`
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it('types, tabs, selects, hovers and waits for elements', () => {
+    expect(statuses(run(['interactions.test.js']).tests)).toEqual(INTERACTIONS);
+    fs.rmSync(path.join(ROOT, '__screenshots__'), { recursive: true, force: true });
+  });
+
+  describe('on WebdriverIO', () => {
+    it('runs the same tests, with the same commands, in Chrome', () => {
+      const { report, tests, status } = run([
+        '--config',
+        'vitest.webdriverio.config.mjs',
+        'dom.test.js',
+        'packages.test.js',
+        'mocks.test.js',
+        'interactions.test.js',
+        'failing.test.js',
+      ]);
+      fs.rmSync(path.join(ROOT, '__screenshots__'), { recursive: true, force: true });
+      expect(status).toBe(1);
+      expect(Object.fromEntries(Object.entries(statuses(tests)).map(([name, [state]]) => [name, state]))).toEqual({
+        'in a browser page lays out with the page styles': 'passed',
+        'in a browser page types and clicks as a user, found by role': 'passed',
+        'in a browser page keeps console output with the test': 'passed',
+        'imports a CommonJS package, as React is': 'passed',
+        'takes a screenshot': 'passed',
+        'replaces a package with what the factory returns': 'passed',
+        'replaces part of a module everywhere it is imported, keeping the rest': 'passed',
+        'automocks a module without a factory': 'passed',
+        ...Object.fromEntries(Object.keys(INTERACTIONS).map((name) => [name, 'passed'])),
+        'fails where it is written': 'failed',
+      });
+      expect(tests['fails where it is written'].errors[0].stack).toContain(
+        `${path.join(ROOT, 'failing.test.js')}:3:51`
+      );
+      const dom = report.files.find((file) => file.path.endsWith('dom.test.js'));
+      expect(dom.console).toEqual([expect.objectContaining({ type: 'log', text: 'from the page' })]);
+    });
   });
 });

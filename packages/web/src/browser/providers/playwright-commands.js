@@ -1,5 +1,4 @@
-const fs = require('node:fs');
-const path = require('node:path');
+const { screenshotPath, screenshotResult } = require('./screenshot-path');
 
 // What a page of browser mode asks Node for (userEvent, page.screenshot, locators' actions): done with Playwright,
 // on the page the test runs in.
@@ -58,8 +57,6 @@ const keyboard = (page, text) =>
     Promise.resolve()
   );
 
-let shots = 0;
-
 function commandsFor(page, { rootDir, file }) {
   const handlers = {
     click: (target, options) => locatorOf(page, target).click(options ?? undefined),
@@ -75,29 +72,19 @@ function commandsFor(page, { rootDir, file }) {
     keyboard: (text) => keyboard(page, String(text)),
     tab: (options) => page.keyboard.press(options?.shift ? 'Shift+Tab' : 'Tab'),
     viewport: (width, height) => page.setViewportSize({ width, height }),
-    // vitest's place for them: __screenshots__/<test file>/, next to the test.
     screenshot: async (options = {}) => {
-      shots += 1;
-      const shotFile =
-        options.path ??
-        path.join(path.dirname(file), '__screenshots__', path.basename(file), `screenshot-${shots}.png`);
-      const target = path.resolve(path.dirname(file), shotFile);
-      fs.mkdirSync(path.dirname(target), { recursive: true });
+      const target = screenshotPath(file, options);
       const subject = options.target ? locatorOf(page, options.target) : page;
-      const buffer = await subject.screenshot({
-        path: target,
-        ...(options.target ? {} : { fullPage: options.fullPage }),
-      });
-      return options.base64
-        ? { path: path.relative(rootDir, target), base64: buffer.toString('base64') }
-        : path.relative(rootDir, target);
+      await subject.screenshot({ path: target, ...(options.target ? {} : { fullPage: options.fullPage }) });
+      return screenshotResult(rootDir, target, options);
     },
   };
   return async (name, args) => {
     if (!handlers[name]) {
       throw new Error(`browser mode has no command "${name}"`);
     }
-    return handlers[name](...(args ?? []));
+    // Arguments the page left out come as null (JSON's): as undefined, they take the handlers' defaults.
+    return handlers[name](...(args ?? []).map((arg) => arg ?? undefined));
   };
 }
 

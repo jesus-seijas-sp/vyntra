@@ -9,10 +9,18 @@ const { userFrames, samePath } = require('../utils/stack');
 // The Node side of a browser page's run (used by @vyntra/web): what the page needs from the file system before it
 // starts, and what it sent back, written there.
 
+// The provider of vitest's browser.provider: a name (vitest 3), or what @vitest/browser-<name>'s factory returns.
+function providerOf(browser = {}) {
+  const { provider } = browser;
+  return typeof provider === 'string' ? provider : (provider?.name ?? 'playwright');
+}
+
 // What the page's config adds to the project's.
 function pageConfig(file, config) {
   return {
     browserMode: true,
+    // Vitest's "preview" provider runs here on Playwright.
+    browserProvider: providerOf(config.browser) === 'webdriverio' ? 'webdriverio' : 'playwright',
     update: Boolean(config.update),
     ci: config.ci ?? Boolean(process.env.CI),
     snapshotStyle: config.snapshotStyle,
@@ -62,4 +70,4 @@ function pageCoverage(bundle, functions, config, testFiles) {
   });
 }
 
-module.exports = { pageConfig, saveSnapshots, pageCoverage };
+module.exports = { pageConfig, saveSnapshots, pageCoverage, providerOf };

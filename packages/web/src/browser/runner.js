@@ -2,49 +2,87 @@ const http = require('node:http');
 const { SourceMap } = require('node:module');
 const path = require('node:path');
 const { bundleTestFile, coreFiles } = require('./bundle');
-const { commandsFor } = require('./commands');
+const { PlaywrightProvider } = require('./providers/playwright');
+const { WebdriverioProvider } = require('./providers/webdriverio');
 
-// Vitest's browser mode: each test file runs in a real browser page, through Playwright. Its bundle (see bundle.js)
-// is served from a local server (a page with an origin, as vitest's), each file in a browser context of its own,
-// several at once; the page reports its result, which goes on as a Node worker's would, its stack traces read back
-// through the bundle's source map onto the files as written.
+// Vitest's browser mode: each test file runs in a real browser page, through Playwright or WebdriverIO. Its bundle
+// (see bundle.js) is served from a local server (a page with an origin, as vitest's), several files at once; the
+// page sends its result and its commands back to that server, and its stack traces are read back through the
+// bundle's source map onto the files as written.
 
-const BROWSERS = ['chromium', 'firefox', 'webkit'];
 const FILE_TIMEOUT_MS = 5 * 60_000;
+const PROVIDERS = { playwright: PlaywrightProvider, preview: PlaywrightProvider, webdriverio: WebdriverioProvider };
+// The options of a vitest 3 instance that are vitest's, not the provider's.
+const INSTANCE_KEYS = ['browser', 'name', 'headless', 'viewport', 'setupFiles', 'provide', 'testerHtmlPath'];
 
-// vitest's browser options: name (v2), or instances (v3), and the provider's.
+// vitest's browser options: name (v2), or instances (v3); the provider, a name or what its factory returned (v4),
+// and its options, wherever the version put them.
 function browserOptions(config) {
   const browser = config.browser ?? {};
-  const name = browser.instances?.[0]?.browser ?? browser.name ?? 'chromium';
-  if (!BROWSERS.includes(name)) {
-    throw new Error(`browser ${name}: browser mode runs chromium, firefox or webkit`);
+  const { provider = 'playwright' } = browser;
+  const providerName = typeof provider === 'string' ? provider : provider.name;
+  if (!PROVIDERS[providerName]) {
+    throw new Error(`browser.provider ${providerName}: vyntra runs browser mode on Playwright or WebdriverIO`);
   }
-  if (browser.provider && browser.provider !== 'playwright' && browser.provider !== 'preview') {
-    throw new Error(`browser.provider ${browser.provider}: vyntra runs browser mode on Playwright`);
-  }
+  const instance = browser.instances?.[0] ?? {};
+  const instanceOptions = Object.fromEntries(Object.entries(instance).filter(([key]) => !INSTANCE_KEYS.includes(key)));
   return {
-    name,
-    headless: browser.headless ?? true,
-    viewport: browser.viewport ?? { width: 414, height: 896 },
-    launch: browser.instances?.[0]?.launch ?? browser.providerOptions?.launch ?? {},
+    provider: providerName,
+    name: instance.browser ?? browser.name ?? (providerName === 'webdriverio' ? 'chrome' : 'chromium'),
+    headless: instance.headless ?? browser.headless ?? true,
+    explicitHeadless: (instance.headless ?? browser.headless) === true,
+    viewport: instance.viewport ?? browser.viewport ?? { width: 414, height: 896 },
+    providerOptions: {
+      ...browser.providerOptions,
+      ...instanceOptions,
+      ...(typeof provider === 'object' ? provider.options : {}),
+    },
   };
 }
 
-function playwrightOf(rootDir) {
-  try {
-    // eslint-disable-next-line global-require -- the project's Playwright
-    return require(require.resolve('playwright', { paths: [rootDir] }));
-  } catch {
-    try {
-      // eslint-disable-next-line global-require -- the peer installed with @vyntra/web
-      return require('playwright');
-    } catch {
-      throw new Error(
-        'Browser mode runs on Playwright: npm install --save-dev playwright, then npx playwright install chromium'
-      );
+// The page of a test file: the bundle, and how it talks to the runner, by any provider: POSTs to its server.
+function pageHtml(id, script) {
+  const channel = `/__vyntra/${id}`;
+  return `<!doctype html><html><head><meta charset="utf-8"><title>vyntra</title>
+<script>
+(() => {
+  const send = (kind, body) =>
+    fetch(${JSON.stringify(channel)} + '/' + kind, { method: 'POST', body: JSON.stringify(body ?? null) })
+      .then((response) => response.json())
+      .then((answer) => {
+        if (answer.error) {
+          throw Object.assign(new Error(answer.error.message), { name: answer.error.name });
+        }
+        return answer.value;
+      });
+  globalThis.__vyntraReport = (result) => send('report', result);
+  globalThis.__vyntraCommand = (name, args) => send('command', { name, args });
+  // Until vyntra's runtime runs, an error is the bundle's: the file fails with it.
+  const failed = (error) => {
+    if (!globalThis[Symbol.for('vyntra.started')]) {
+      send('error', { name: error?.name ?? 'Error', message: String(error?.message ?? error), stack: error?.stack ?? '' });
     }
-  }
+  };
+  globalThis.__vyntraFailed = failed;
+  addEventListener('error', (event) => failed(event.error ?? new Error(event.message)));
+  addEventListener('unhandledrejection', (event) => failed(event.reason));
+})();
+</script></head><body><script type="module" src="${script}" onerror="__vyntraFailed(new Error('The test bundle did not load'))"></script></body></html>`;
 }
+
+const readBody = (request) =>
+  new Promise((resolve, reject) => {
+    const chunks = [];
+    request.on('data', (chunk) => chunks.push(chunk));
+    request.on('end', () => {
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || 'null'));
+      } catch (error) {
+        reject(error);
+      }
+    });
+    request.on('error', reject);
+  });
 
 // Frames of the bundle, at the files and lines they came from.
 function mapStack(stack, url, map, rootDir) {
@@ -87,13 +125,19 @@ class BrowserRunner {
     this.queue = [];
     this.stopped = false;
     this.pages = new Map();
-    this.contexts = new Set();
+    // What each page's channel goes to: { report, command, error }, by the page's id.
+    this.channels = new Map();
     this.coverage = [];
   }
 
   async serve() {
     this.server = http.createServer((request, response) => {
-      const page = this.pages.get(request.url.split('?')[0]);
+      const url = request.url.split('?')[0];
+      if (request.method === 'POST') {
+        this.answer(url, request, response);
+        return;
+      }
+      const page = this.pages.get(url);
       if (!page) {
         response.writeHead(404);
         response.end();
@@ -108,7 +152,25 @@ class BrowserRunner {
     this.origin = `http://127.0.0.1:${this.server.address().port}`;
   }
 
-  async runFile(file, id) {
+  // A page's POST to /__vyntra/<id>/<report|command|error>: the answer is { value } or { error }.
+  async answer(url, request, response) {
+    const [, id, kind] = /^\/__vyntra\/(\d+)\/(\w+)$/.exec(url) ?? [];
+    const channel = this.channels.get(id)?.[kind];
+    let answer;
+    try {
+      if (!channel) {
+        throw new Error(`No page ${id} to take ${kind}`);
+      }
+      const body = await readBody(request);
+      answer = { value: (await channel(body)) ?? null };
+    } catch (error) {
+      answer = { error: { name: error?.name ?? 'Error', message: String(error?.message ?? error) } };
+    }
+    response.writeHead(200, { 'content-type': 'application/json' });
+    response.end(JSON.stringify(answer));
+  }
+
+  async runFile(file, id, lane) {
     const start = performance.now();
     const { rootDir } = this.config;
     let bundle;
@@ -118,27 +180,25 @@ class BrowserRunner {
       return this.failure(file, error, start);
     }
     const script = `/__vyntra/${id}.js`;
+    const html = `/__vyntra/${id}.html`;
     const url = `${this.origin}${script}`;
     this.pages.set(script, { type: 'text/javascript', body: bundle.code });
-    this.pages.set(`/__vyntra/${id}.html`, {
-      type: 'text/html',
-      body: `<!doctype html><html><head><meta charset="utf-8"><title>vyntra</title></head><body><script type="module" src="${script}"></script></body></html>`,
-    });
+    this.pages.set(html, { type: 'text/html', body: pageHtml(id, script) });
     const map = bundle.map ? new SourceMap(JSON.parse(bundle.map)) : null;
-    const context = await this.browser.newContext({ viewport: this.options.viewport });
-    this.contexts.add(context);
+    let page;
     try {
-      const page = await context.newPage();
-      // V8's, as in Node: Chromium's alone gives it.
-      const coverage = this.config.coverage && page.coverage;
-      if (coverage) {
-        await coverage.startJSCoverage({ resetOnNavigation: false });
-      }
+      page = await this.provider.open({ file, lane });
       const reported = Promise.withResolvers();
-      await page.exposeFunction('__vyntraReport', (result) => reported.resolve(result));
-      await page.exposeFunction('__vyntraCommand', commandsFor(page, { rootDir, file }));
-      page.on('pageerror', (error) => reported.reject(error));
-      await page.goto(`${this.origin}/__vyntra/${id}.html`);
+      this.channels.set(String(id), {
+        report: (result) => reported.resolve(result),
+        command: ({ name, args }) => page.command(name, args),
+        error: (error) => reported.reject(Object.assign(new Error(error.message), error)),
+      });
+      const coverage = this.config.coverage && this.provider.coverage;
+      if (coverage) {
+        await page.startCoverage();
+      }
+      await page.goto(`${this.origin}${html}`);
       const timer = setTimeout(
         () => reported.reject(new Error(`The page did not report within ${FILE_TIMEOUT_MS / 1000}s`)),
         FILE_TIMEOUT_MS
@@ -152,7 +212,7 @@ class BrowserRunner {
       // eslint-disable-next-line global-require -- vyntra's internals, by path
       const host = require(coreFiles(rootDir).host);
       if (coverage) {
-        const ran = (await coverage.stopJSCoverage()).find((entry) => entry.url === url);
+        const ran = (await page.takeCoverage()).find((entry) => entry.url === url);
         if (ran) {
           this.coverage.push(host.pageCoverage(bundle, ran.functions, this.config, this.files));
         }
@@ -167,12 +227,16 @@ class BrowserRunner {
       };
       return host.saveSnapshots(mapped, this.config, (stack) => mapStack(stack, url, map, rootDir));
     } catch (error) {
-      return this.failure(file, error, start);
+      return this.failure(
+        file,
+        { ...error, stack: mapStack(error.stack, url, map, rootDir), message: error.message, name: error.name },
+        start
+      );
     } finally {
-      this.contexts.delete(context);
-      await context.close().catch(() => {});
+      this.channels.delete(String(id));
+      await page?.close();
       this.pages.delete(script);
-      this.pages.delete(`/__vyntra/${id}.html`);
+      this.pages.delete(html);
     }
   }
 
@@ -198,30 +262,30 @@ class BrowserRunner {
 
   async run(jobs) {
     this.options = browserOptions(this.config);
+    this.provider = new PROVIDERS[this.options.provider](this.options, { rootDir: this.config.rootDir });
     this.queue = jobs.map((job) => job.path);
     this.files = [...this.queue];
     await this.serve();
-    this.browser = await playwrightOf(this.config.rootDir)[this.options.name].launch({
-      headless: this.options.headless,
-      ...this.options.launch,
-    });
     let next = 0;
-    const lane = async () => {
+    const lane = async (_, index) => {
       while (!this.stopped && this.queue.length > 0) {
         const file = this.queue.shift();
         next += 1;
         // eslint-disable-next-line no-await-in-loop -- a lane runs its files one after the other
-        this.onResult(await this.runFile(file, next));
+        this.onResult(await this.runFile(file, next, index));
       }
     };
     try {
+      await this.provider.launch();
       await Promise.all(Array.from({ length: Math.min(this.size, jobs.length) }, lane));
     } finally {
-      await this.browser.close().catch(() => {});
+      await this.provider.close().catch(() => {});
       this.server.close();
     }
-    if (this.config.coverage && this.options.name !== 'chromium') {
-      process.stderr.write(`Coverage in browser mode is Chromium's: ${this.options.name} gives none\n`);
+    if (this.config.coverage && !this.provider.coverage) {
+      process.stderr.write(
+        `Coverage in browser mode is Chromium's, on Playwright: ${this.options.provider} with ${this.options.name} gives none\n`
+      );
     }
     // As a Node worker's: merged with theirs by the run.
     return this.coverage.map((coverage) => ({ coverage }));
@@ -234,9 +298,8 @@ class BrowserRunner {
 
   interrupt() {
     this.stop();
-    this.contexts.forEach((context) => context.close().catch(() => {}));
-    this.browser?.close().catch(() => {});
+    this.provider?.close().catch(() => {});
   }
 }
 
-module.exports = { BrowserRunner };
+module.exports = { BrowserRunner, browserOptions };

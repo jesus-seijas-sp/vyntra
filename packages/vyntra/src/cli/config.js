@@ -90,6 +90,9 @@ const CONFIG_FILES = ['vyntra.config.js', 'vyntra.config.cjs', 'vyntra.config.mj
 const JEST_FILES = ['jest.config.js', 'jest.config.cjs', 'jest.config.mjs', 'jest.config.json'];
 
 const VITEST_CONFIG_STUB = pathToFileURL(path.join(__dirname, 'vitest-config-stub.mjs')).href;
+// vitest 4's browser.provider: playwright(), webdriverio() or preview(), from packages that load Vite and vitest.
+const BROWSER_PROVIDERS = /^@vitest\/browser-(?:playwright|webdriverio|preview)$/;
+const BROWSER_PROVIDER_STUB = pathToFileURL(path.join(__dirname, 'browser-provider-stub.mjs')).href;
 
 // A vitest config imports defineConfig from 'vitest/config', which loads all of Vite: while the config loads, it gets
 // vyntra's stand-in, which also lets it load where vitest is no longer installed.
@@ -163,7 +166,12 @@ function loadConfigModule(url, context, nextLoad) {
 async function importWithStubs(file) {
   const hooks = Module.registerHooks?.({
     resolve: (specifier, context, nextResolve) =>
-      specifier === 'vitest/config' ? { url: VITEST_CONFIG_STUB, shortCircuit: true } : nextResolve(specifier, context),
+      // eslint-disable-next-line no-nested-ternary -- the stand-ins, else the module
+      specifier === 'vitest/config'
+        ? { url: VITEST_CONFIG_STUB, shortCircuit: true }
+        : BROWSER_PROVIDERS.test(specifier)
+          ? { url: BROWSER_PROVIDER_STUB, shortCircuit: true }
+          : nextResolve(specifier, context),
     load: loadConfigModule,
   });
   try {

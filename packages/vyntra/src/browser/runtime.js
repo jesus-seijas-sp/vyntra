@@ -56,6 +56,8 @@ let started;
 // Before the test file's code: the file's state, the globals tests use without importing them.
 function prepare({ path, config }) {
   started = now();
+  // From here errors are the tests' (see @vyntra/web's runner): the page's own handlers no longer fail the file.
+  globalThis[Symbol.for('vyntra.started')] = true;
   state.config = config;
   state.file = {
     path,

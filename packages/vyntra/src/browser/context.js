@@ -1,11 +1,27 @@
 // `vitest/browser` (and `@vitest/browser/context`) in a page of browser mode: page, userEvent, locators and
-// expect.element. Actions (a click, typing, a screenshot) are Playwright's, asked for through a function the runner
-// exposes on the page; locators find their elements in the page itself, as vitest's do.
+// expect.element. Actions (a click, typing, a screenshot) are the provider's (Playwright or WebdriverIO), asked for
+// through a function the runner gives the page; locators find their elements in the page itself, as vitest's do.
 
+const runtimeState = require('../state');
 const { expect } = require('../expect');
 const { realTimers } = require('../timers/real-timers');
 
-const command = (name, ...args) => globalThis.__vyntraCommand(name, args);
+const providerName = () => runtimeState.config?.browserProvider ?? 'playwright';
+
+// Locators in a command's arguments (and in its options' target), as the provider finds elements.
+/* eslint-disable no-use-before-define -- Locator's methods send commands */
+const command = async (name, ...args) => {
+  const resolve = (arg) => (arg instanceof Locator ? targetFor(arg) : arg);
+  const resolved = await Promise.all(
+    args.map(async (arg) =>
+      arg && typeof arg === 'object' && arg.target instanceof Locator
+        ? { ...arg, target: await resolve(arg.target) }
+        : resolve(arg)
+    )
+  );
+  return globalThis.__vyntraCommand(name, resolved);
+};
+/* eslint-enable no-use-before-define */
 
 // RegExps cross to Node as their source and flags.
 const portable = (value) => {
@@ -216,6 +232,32 @@ function find(root, { by, value, options = {} }) {
 let refs = 0;
 
 // A selector Playwright finds an element by: the element marked with a number of its own.
+// Playwright finds a locator's element itself, waiting for it, by the same getBy... WebdriverIO has none of them:
+// the page waits for the one element the locator means and marks it, as vitest's provider does.
+async function targetFor(locator) {
+  if (providerName() === 'playwright') {
+    return locator.target;
+  }
+  const deadline = realTimers.performanceNow() + (runtimeState.config?.testTimeout ?? 5000);
+  for (;;) {
+    const found = locator.elements();
+    if (found.length > 1) {
+      throw new Error(`The locator ${locator} matches ${found.length} elements; an action needs one`);
+    }
+    if (found.length === 1) {
+      // eslint-disable-next-line no-use-before-define -- marks the element
+      return refOf(found[0]);
+    }
+    if (realTimers.performanceNow() >= deadline) {
+      throw new Error(`Nothing matches the locator ${locator}`);
+    }
+    // eslint-disable-next-line no-await-in-loop -- asked again until the page has it
+    await new Promise((resolve) => {
+      realTimers.setTimeout(resolve, 50);
+    });
+  }
+}
+
 function refOf(element) {
   if (!element.hasAttribute('data-vyntra-ref')) {
     refs += 1;
@@ -287,19 +329,19 @@ class Locator {
   }
 
   click(options) {
-    return command('click', this.target, options);
+    return command('click', this, options);
   }
 
   dblClick(options) {
-    return command('click', this.target, { ...options, clickCount: 2 });
+    return command('click', this, { ...options, clickCount: 2 });
   }
 
   tripleClick(options) {
-    return command('click', this.target, { ...options, clickCount: 3 });
+    return command('click', this, { ...options, clickCount: 3 });
   }
 
   hover(options) {
-    return command('hover', this.target, options);
+    return command('hover', this, options);
   }
 
   // Moves the pointer off the page, wherever this locator is.
@@ -309,19 +351,19 @@ class Locator {
   }
 
   fill(text) {
-    return command('fill', this.target, text);
+    return command('fill', this, text);
   }
 
   clear() {
-    return command('fill', this.target, '');
+    return command('fill', this, '');
   }
 
   selectOptions(values) {
-    return command('selectOptions', this.target, values);
+    return command('selectOptions', this, values);
   }
 
   screenshot(options) {
-    return command('screenshot', { ...options, target: this.target });
+    return command('screenshot', { ...options, target: this });
   }
 }
 
@@ -341,7 +383,7 @@ Object.keys(locators).forEach((name) => {
   };
 });
 
-const targetOf = (subject) => (subject instanceof Locator ? subject.target : refOf(subject));
+const targetOf = (subject) => (subject instanceof Locator ? subject : refOf(subject));
 
 const userEvent = {
   setup: () => userEvent,
@@ -370,7 +412,13 @@ const page = {
   elementLocator: (element) => new Locator({ by: 'ref', value: refOf(element).css }),
 };
 
-const server = { platform: 'browser', provider: 'playwright', config: {} };
+const server = {
+  platform: 'browser',
+  get provider() {
+    return providerName();
+  },
+  config: {},
+};
 const commands = {};
 
 // expect.element(locator or element): the assertion, retried until it passes or the time is up (1s), as the page
