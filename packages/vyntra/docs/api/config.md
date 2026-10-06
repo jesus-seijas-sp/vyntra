@@ -35,7 +35,7 @@ In `vyntra.config.js`, `"vyntra"` in `package.json`, or your Vitest or Jest conf
 | `bail` | `0` | Stops after that many failed files |
 | `silent` | `false` | Hides console output; `'passed-only'` keeps that of failing tests, as Vitest |
 | `env` | none | Environment variables set for the run, before the workers start (Vitest's `test.env`). vyntra does not set `NODE_ENV`: `{ NODE_ENV: 'test' }` gives what Jest and Vitest set. When the config changes the locale (`LC_ALL`, `LANG`, `LC_TIME`... in `env`, or in `process.env` from the config file), vyntra starts again with it, as Node.js only reads it when it starts; `TZ` needs no restart |
-| `environment` | `'node'` | `'node'`, `'jsdom'` or `'happy-dom'` (your project's); a file can ask for its own with a `@vitest-environment` or `@jest-environment` comment |
+| `environment` | `'node'` | `'node'`, `'jsdom'` or `'happy-dom'` (your project's), or an environment of your own by path or package (see [Test environments](../guide/running.md)); a file can ask for its own with a `@vitest-environment` or `@jest-environment` comment |
 | `environmentUrl` | none | The URL the document reports |
 | `environmentOptions` | none | Options of the document, in Vitest's shape: `{ jsdom: { ... }, happyDOM: { settings } }` |
 | `moduleNameMapper` | none | Jest's: `{ '^@app/(.*)$': '<rootDir>/src/$1' }` |

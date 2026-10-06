@@ -1,6 +1,5 @@
 # Not supported yet
 
-- **Test environments of your own** (a Jest `testEnvironment` module), and `testEnvironmentOptions`.
 - **Babel run implicitly**, as Jest does when it finds a Babel config: name `babel-jest` in `transform`.
 - **Asynchronous transformers** (a Jest transformer with only `processAsync`), and Vite plugins' `resolveId` and `load` hooks.
 - **Type checking** (Vitest's `typecheck`), browser mode, `bench`, and in-source tests.

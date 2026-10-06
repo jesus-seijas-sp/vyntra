@@ -346,7 +346,8 @@ function install(config = {}) {
   return current;
 }
 
-const DOCBLOCK_ENVIRONMENT = /@(?:vitest|jest)-environment\s+([\w-]+)/;
+// A name (jsdom), a package (jest-environment-jsdom) or a path (./test/my-environment.js).
+const DOCBLOCK_ENVIRONMENT = /@(?:vitest|jest)-environment\s+([^\s*]+)/;
 
 // The environment a file asks for in its leading comment (`@vitest-environment jsdom`, or Jest's), if any.
 function environmentOf(file) {

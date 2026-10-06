@@ -23,6 +23,7 @@ const { loadPlugins } = require('./plugins');
 const { teardownScope } = require('./run/fixtures');
 const { loadEngine } = require('./engines');
 const { installImportMetaEnv } = require('./import-meta-env');
+const { isCustom, setupEnvironment, baseEnvironment } = require('./custom-environment');
 const { expect } = require('./expect');
 const { serializeError } = require('./run/serialize-error');
 
@@ -186,6 +187,18 @@ function loadProjectEngine(config) {
   }
 }
 
+// The result of a file whose custom environment did not set up: its tests did not run.
+const environmentFailure = (path, shard, error) => ({
+  path,
+  shard,
+  duration: 0,
+  collectDuration: 0,
+  tests: [],
+  errors: [{ ...serializeError(error), phase: 'setup' }],
+  console: [],
+  snapshot: null,
+});
+
 // Prepares this thread to run test files: { run(path), finish() }, finish giving what the thread collected over the
 // run (coverage, new module resolutions).
 async function createRuntime(config) {
@@ -204,8 +217,20 @@ async function createRuntime(config) {
   const pristine = globalSnapshot.snapshot();
   const pristineEnv = globalSnapshot.snapshotEnv();
   globalSnapshot.keepGlobalsRemovable();
-  installEnvironment(config);
-  let installed = config.environment ?? 'node';
+  // A custom environment (a Jest class, a vitest object) runs on a built-in one: node, or jsdom under a Jest class
+  // that extends JSDOMEnvironment. One it can not load fails the files that ask for it, not the worker.
+  const bases = new Map();
+  const baseOf = async (name) => {
+    if (!isCustom(name)) {
+      return name;
+    }
+    if (!bases.has(name)) {
+      bases.set(name, await baseEnvironment(name, config.rootDir).catch(() => 'node'));
+    }
+    return bases.get(name);
+  };
+  let installed = await baseOf(config.environment ?? 'node');
+  installEnvironment({ ...config, environment: installed });
   // A document keeps cookies, storage and nodes, which the next file must not inherit.
   const switchEnvironment = (environment) => {
     teardownEnvironment();
@@ -217,10 +242,21 @@ async function createRuntime(config) {
   await coverage?.start();
   const run = async (path, shard) => {
     const wanted = environmentOf(path) ?? config.environment ?? 'node';
-    if (wanted !== installed) {
-      switchEnvironment(wanted);
+    const base = await baseOf(wanted);
+    if (base !== installed) {
+      switchEnvironment(base);
     }
-    const result = await runFile(path, { ...config, environment: wanted }, shard);
+    let teardownCustom = null;
+    let result;
+    try {
+      teardownCustom = isCustom(wanted) ? await setupEnvironment(wanted, config, path) : null;
+      result = await runFile(path, { ...config, environment: base }, shard);
+    } catch (error) {
+      result = environmentFailure(path, shard, error);
+    }
+    if (teardownCustom) {
+      await teardownCustom().catch((error) => result.errors.push(serializeError(error)));
+    }
     await settle();
     releaseStubs();
     globalSnapshot.restoreEnv(pristineEnv);

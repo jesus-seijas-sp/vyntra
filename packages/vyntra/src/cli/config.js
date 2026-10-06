@@ -259,7 +259,6 @@ function fromJestConfig(original, rootDir) {
     'coverageThreshold',
     'collectCoverageFrom',
     'moduleFileExtensions',
-    'testEnvironment',
   ];
   copy
     .filter((key) => jest[key] !== undefined)
@@ -272,8 +271,13 @@ function fromJestConfig(original, rootDir) {
     config.coverage = true;
   }
   if (jest.testEnvironment) {
-    config.environment = { jsdom: 'jsdom', 'happy-dom': 'happy-dom', node: 'node' }[jest.testEnvironment] ?? 'node';
-    delete config.testEnvironment;
+    const known = { 'jest-environment-jsdom': 'jsdom', 'jest-environment-node': 'node' };
+    const name = resolveRootDir(jest.testEnvironment, rootDir);
+    // A path or package of the project's own is a custom environment (see custom-environment.js).
+    config.environment = known[name] ?? name;
+  }
+  if (jest.testEnvironmentOptions) {
+    config.environmentOptions = jest.testEnvironmentOptions;
   }
   if (jest.moduleNameMapper) {
     config.moduleNameMapper = Object.fromEntries(

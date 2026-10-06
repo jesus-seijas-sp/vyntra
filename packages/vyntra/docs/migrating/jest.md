@@ -30,8 +30,7 @@ Your tests, your `jest.config.js` (or the `"jest"` key of `package.json`) and yo
 | `testEnvironment: 'node'`, `'jsdom'`, `'happy-dom'` | ✓ With the jsdom or happy-dom your project has; a file can ask for its own with a `@jest-environment` comment |
 | `moduleNameMapper` | ✓ The same |
 | `transform`, `transformIgnorePatterns` | ✓ Your transformers (`babel-jest`, `ts-jest`, `@swc/jest`, your own) compile the files they match; they must have a synchronous `process()` |
-| `testEnvironment` as a module of your own (a class extending `jest-environment-jsdom`) | ✗ Not supported: the tests run in Node's environment, without a warning |
-| `testEnvironmentOptions` | ✗ Not read |
+| `testEnvironment` as a module of your own (a class extending `NodeEnvironment` or `JSDOMEnvironment`), `testEnvironmentOptions` | ✓ Set up and torn down for each file. The tests run in the worker's global, not in a VM context: what the class adds to `this.global` is copied there, over the node or jsdom environment it extends. See [Test environments](../guide/running.md) |
 | Babel without a `transform` (Jest runs `babel-jest` by itself when it finds a Babel config) | ✗ Not run: name `babel-jest` in `transform`. Flow, and syntax only Babel knows, do not run otherwise |
 | `globalSetup`, `globalTeardown` | ✓ Run once, in the main process, before and after the test files |
 | `projects`, `displayName` | ✓ Each project from its own `rootDir`: folders with a `jest.config.*` or a `"jest"` key, config files, or projects written inline. As in Jest, they do not take the root config's options. See [Projects](../guide/projects.md) |

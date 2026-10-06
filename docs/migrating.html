@@ -99,8 +99,7 @@
               <tr><td><code>testEnvironment: 'node'</code>, <code>'jsdom'</code>, <code>'happy-dom'</code></td><td><span class="check">✓</span> With the jsdom or happy-dom your project has; a file can ask for its own with a <code>@jest-environment</code> comment</td></tr>
               <tr><td><code>moduleNameMapper</code></td><td><span class="check">✓</span> The same</td></tr>
               <tr><td><code>transform</code>, <code>transformIgnorePatterns</code></td><td><span class="check">✓</span> Your transformers (<code>babel-jest</code>, <code>ts-jest</code>, <code>@swc/jest</code>, your own) compile the files they match; they must have a synchronous <code>process()</code></td></tr>
-              <tr><td><code>testEnvironment</code> as a module of your own (a class extending <code>jest-environment-jsdom</code>)</td><td><span class="cross">✗</span> Not supported: the tests run in Node's environment, without a warning</td></tr>
-              <tr><td><code>testEnvironmentOptions</code></td><td><span class="cross">✗</span> Not read</td></tr>
+              <tr><td><code>testEnvironment</code> as a module of your own (a class extending <code>NodeEnvironment</code> or <code>JSDOMEnvironment</code>), <code>testEnvironmentOptions</code></td><td><span class="check">✓</span> Set up and torn down for each file. The tests run in the worker's global, not in a VM context: what the class adds to <code>this.global</code> is copied there, over the node or jsdom environment it extends. See <a href="guide.html#environments">Test environments</a></td></tr>
               <tr><td>Babel without a <code>transform</code> (Jest runs <code>babel-jest</code> by itself when it finds a Babel config)</td><td><span class="cross">✗</span> Not run: name <code>babel-jest</code> in <code>transform</code>. Flow, and syntax only Babel knows, do not run otherwise</td></tr>
               <tr><td><code>globalSetup</code>, <code>globalTeardown</code></td><td><span class="check">✓</span> Run once, in the main process, before and after the test files</td></tr>
               <tr><td><code>projects</code>, <code>displayName</code></td><td><span class="check">✓</span> Each project from its own <code>rootDir</code>: folders with a <code>jest.config.*</code> or a <code>"jest"</code> key, config files, or projects written inline. As in Jest, they do not take the root config's options. See <a href="guide.html#projects">Projects</a></td></tr>
@@ -209,7 +208,6 @@
 
         <h2 id="missing">Not supported yet</h2>
         <ul>
-          <li><strong>Test environments of your own</strong> (a Jest <code>testEnvironment</code> module), and <code>testEnvironmentOptions</code>.</li>
           <li><strong>Babel run implicitly</strong>, as Jest does when it finds a Babel config: name <code>babel-jest</code> in <code>transform</code>.</li>
           <li><strong>Asynchronous transformers</strong> (a Jest transformer with only <code>processAsync</code>), and Vite plugins' <code>resolveId</code> and <code>load</code> hooks.</li>
           <li><strong>Type checking</strong> (Vitest's <code>typecheck</code>), browser mode, <code>bench</code>, and in-source tests.</li>

@@ -160,6 +160,21 @@ npx vyntra -u                   # update the snapshots that changed</code></pre>
           for tools. Other reporters write the run next to it: see <a href="#reports">Reports for CI and agents</a>.
         </p>
 
+        <h3 id="environments">Test environments of your own</h3>
+        <p>
+          <code>environment</code> (Vitest) or <code>testEnvironment</code> (Jest) can name an environment of your own,
+          by path or package (<code>jest-environment-&lt;name&gt;</code>, <code>vitest-environment-&lt;name&gt;</code>),
+          and so can a file's <code>@vitest-environment</code> or <code>@jest-environment</code> comment. It is set up
+          before each of its files and torn down after:
+        </p>
+        <ul>
+          <li>A Vitest environment, <code>{ name, setup(global, options) }</code>, gets the global object the tests run
+            in, and its options from <code>environmentOptions[name]</code>.</li>
+          <li>A Jest environment class gets <code>testEnvironmentOptions</code> and the test file's path as Jest gives
+            them. Jest runs the tests in its <code>this.global</code>; vyntra runs them in the worker's global, over the
+            node or jsdom environment the class extends, and copies in what the class adds to its global.</li>
+        </ul>
+
         <h3 id="watch">Watch mode</h3>
         <p>
           <code>vyntra --watch</code> (or <code>vyntra watch</code>, or Jest's <code>--watchAll</code>) runs the tests,
@@ -968,7 +983,7 @@ test('adds a todo', async ({ page }) => {
         </p>
         <h3>What is not supported yet?</h3>
         <p>
-          Test environments of your own, Babel run without a <code>transform</code>, and type checking.
+          Babel run without a <code>transform</code>, and type checking.
           <a href="migrating.html#missing">Migrating</a> has the whole list.
         </p>
         <h3>My tests expect <code>NODE_ENV=test</code>.</h3>

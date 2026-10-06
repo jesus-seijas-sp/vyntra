@@ -37,6 +37,13 @@ AssertionError: expect(received).toEqual(expected)
 
 `--verbose` lists every test; `--reporter json` prints the whole run as one JSON document, for tools. Other reporters write the run next to it: see [Reports for CI and agents](ci.md).
 
+## Test environments of your own
+
+`environment` (Vitest) or `testEnvironment` (Jest) can name an environment of your own, by path or package (`jest-environment-<name>`, `vitest-environment-<name>`), and so can a file's `@vitest-environment` or `@jest-environment` comment. It is set up before each of its files and torn down after:
+
+- A Vitest environment, `{ name, setup(global, options) }`, gets the global object the tests run in, and its options from `environmentOptions[name]`.
+- A Jest environment class gets `testEnvironmentOptions` and the test file's path as Jest gives them. Jest runs the tests in its `this.global`; vyntra runs them in the worker's global, over the node or jsdom environment the class extends, and copies in what the class adds to its global.
+
 ## Watch mode
 
 `vyntra --watch` (or `vyntra watch`, or Jest's `--watchAll`) runs the tests, then runs again what each change touches, until you quit: a changed test file runs again, a changed module reruns the test files that loaded it, a new test file runs, and a change to the config (or `package.json`, or a `.env` file) reruns everything. In a terminal, keys narrow it: Enter runs the last ones again, a all, f the files that failed, p and t filter by file and by test name, q quits.
