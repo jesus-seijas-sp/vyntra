@@ -10,7 +10,7 @@ Jest runs tests in child processes, where `process.send` exists. In vyntra's wor
 
 ## What is not supported yet?
 
-Vitest's browser mode and `bench`. [Migrating](../migrating/missing.md) has the whole list.
+Vitest's browser mode (`@vyntra/web` runs tests in a browser its own way). [Migrating](../migrating/missing.md) has the whole list.
 
 ## My tests expect `NODE_ENV=test`.
 

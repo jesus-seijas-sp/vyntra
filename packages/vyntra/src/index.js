@@ -28,6 +28,7 @@ const GLOBALS = [
   'jest',
   'expectTypeOf',
   'assertType',
+  'bench',
 ];
 
 // describe, it, expect, vi, jest... as globals, like Jest (and vitest with globals: true).

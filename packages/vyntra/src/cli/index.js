@@ -21,6 +21,11 @@ const { ProjectRun } = require('./run-projects');
 const { guide, init } = require('./guide');
 const { watch } = require('./watch');
 const { runTypecheck, typeTestFiles, typeError } = require('./typecheck');
+const {
+  DEFAULT_INCLUDE: BENCH_INCLUDE,
+  writeJson: writeBenchJson,
+  readJson: readBenchJson,
+} = require('../bench/report');
 
 // Caches that make loading the dependencies faster, kept in node_modules/.cache (only for projects with node_modules).
 function loadingCaches(rootDir) {
@@ -90,6 +95,23 @@ async function runOnce(argv, outcome = {}) {
     Object.assign(outcome, { relaunched: true });
     return relaunch(argv);
   }
+  // vyntra bench: the benchmark files, one at a time unless asked otherwise, as measured runs are best alone.
+  if (config.benchMode) {
+    const benchmark = config.benchmark ?? {};
+    Object.assign(config, {
+      mode: 'bench',
+      include: benchmark.include ?? BENCH_INCLUDE,
+      exclude: [...config.exclude, ...(benchmark.exclude ?? [])],
+      includeSource: benchmark.includeSource ?? [],
+      maxWorkers: config.maxWorkers ?? 1,
+      retry: 0,
+      benchOutputJson: config.benchOutputJson ?? benchmark.outputJson,
+      benchPrevious:
+        (config.benchCompare ?? benchmark.compare)
+          ? readBenchJson(config.benchCompare ?? benchmark.compare, config.rootDir)
+          : null,
+    });
+  }
   // --typecheck (or vitest's typecheck.enabled): the type test files are checked, not run.
   if (config.typecheckFlag) {
     config.typecheck = { ...config.typecheck, enabled: true, only: config.typecheckFlag === 'only' };
@@ -128,6 +150,9 @@ async function runOnce(argv, outcome = {}) {
   }
   const startedAt = new Date().toISOString();
   const previous = readReport(config);
+  if (config.mode === 'bench') {
+    resolved.projects.forEach((project) => Object.assign(project.config, { include: config.include, mode: 'bench' }));
+  }
   let projects = assignFiles(resolved.projects, cli.patterns).filter(
     (project) => !resolved.selected || resolved.selected.has(project.name)
   );
@@ -277,6 +302,9 @@ async function runOnce(argv, outcome = {}) {
     config.rootDir
   );
   writeReport(config, { startedAt, duration, exitCode, results, owed });
+  if (config.benchOutputJson) {
+    writeBenchJson(config.benchOutputJson, results, config.rootDir);
+  }
   Object.assign(outcome, { results, exitCode });
   return exitCode;
 }
@@ -289,8 +317,9 @@ async function main(argv = process.argv.slice(2)) {
   if (argv[0] === 'init') {
     return init(argv.slice(1));
   }
-  // `vyntra watch`, as `vitest watch`.
-  const command = argv[0] === 'watch' ? ['--watch', ...argv.slice(1)] : argv;
+  // `vyntra watch` and `vyntra bench`, as `vitest watch` and `vitest bench`.
+  const subcommands = { watch: '--watch', bench: '--bench' };
+  const command = subcommands[argv[0]] ? [subcommands[argv[0]], ...argv.slice(1)] : argv;
   const cli = parseCli(command);
   if (cli.help) {
     process.stdout.write(cli.usage);

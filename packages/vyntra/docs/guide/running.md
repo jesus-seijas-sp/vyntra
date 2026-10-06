@@ -44,6 +44,24 @@ AssertionError: expect(received).toEqual(expected)
 - A Vitest environment, `{ name, setup(global, options) }`, gets the global object the tests run in, and its options from `environmentOptions[name]`.
 - A Jest environment class gets `testEnvironmentOptions` and the test file's path as Jest gives them. Jest runs the tests in its `this.global`; vyntra runs them in the worker's global, over the node or jsdom environment the class extends, and copies in what the class adds to its global.
 
+## Benchmarks
+
+`vyntra bench` runs the `*.bench.*` files (Vitest's `benchmark.include`), as `vitest bench` does, one file at a time unless `-w` says otherwise, so the measures do not take from each other. `bench(name, fn, options)` warms `fn` up, then times one call per sample until both `time` (500 ms) and `iterations` (10) are reached; `setup` and `teardown` run around it.
+
+```js
+// sort.bench.js
+describe('sorting', () => {
+  bench('Array#sort', () => {
+    [...numbers].sort((a, b) => a - b);
+  });
+  bench('Float64Array#sort', () => {
+    Float64Array.from(numbers).sort();
+  }, { time: 1000 });
+});
+```
+
+Each group prints a table (operations per second, min, max, mean, p75 to p999 in milliseconds, margin of error, samples), and the summary says which is fastest and by how much. `--outputJson bench.json` saves the results; `--compare bench.json` shows how each changed since.
+
 ## In-source tests
 
 As in Vitest, tests can live in the source file they test, in an `if (import.meta.vitest)` block, for the files `includeSource` names. A file there that has such a block is a test file; `import.meta.vitest` is the test API in it, and `undefined` anywhere else, so a module another test file imports does not add its tests to that one. A build leaves the block out with Vite's `define: { 'import.meta.vitest': 'undefined' }`.

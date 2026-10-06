@@ -175,6 +175,29 @@ npx vyntra -u                   # update the snapshots that changed</code></pre>
             node or jsdom environment the class extends, and copies in what the class adds to its global.</li>
         </ul>
 
+        <h3 id="bench">Benchmarks</h3>
+        <p>
+          <code>vyntra bench</code> runs the <code>*.bench.*</code> files (Vitest's <code>benchmark.include</code>), as
+          <code>vitest bench</code> does, one file at a time unless <code>-w</code> says otherwise, so the measures do not
+          take from each other. <code>bench(name, fn, options)</code> warms <code>fn</code> up, then times one call per
+          sample until both <code>time</code> (500 ms) and <code>iterations</code> (10) are reached; <code>setup</code>
+          and <code>teardown</code> run around it.
+        </p>
+        <pre><code class="language-js">// sort.bench.js
+describe('sorting', () => {
+  bench('Array#sort', () => {
+    [...numbers].sort((a, b) => a - b);
+  });
+  bench('Float64Array#sort', () => {
+    Float64Array.from(numbers).sort();
+  }, { time: 1000 });
+});</code></pre>
+        <p>
+          Each group prints a table (operations per second, min, max, mean, p75 to p999 in milliseconds, margin of error,
+          samples), and the summary says which is fastest and by how much. <code>--outputJson bench.json</code> saves the
+          results; <code>--compare bench.json</code> shows how each changed since.
+        </p>
+
         <h3 id="in-source">In-source tests</h3>
         <p>
           As in Vitest, tests can live in the source file they test, in an <code>if (import.meta.vitest)</code> block,
@@ -1012,7 +1035,7 @@ test('adds a todo', async ({ page }) => {
         </p>
         <h3>What is not supported yet?</h3>
         <p>
-          Vitest's browser mode and <code>bench</code>.
+          Vitest's browser mode (<code>@vyntra/web</code> runs tests in a browser its own way).
           <a href="migrating.html#missing">Migrating</a> has the whole list.
         </p>
         <h3>My tests expect <code>NODE_ENV=test</code>.</h3>

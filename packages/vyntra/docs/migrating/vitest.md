@@ -33,7 +33,8 @@ vyntra reads your `vitest.config.ts` (or a `vite.config.*` with a `test` section
 | `test.projects`, `vitest.workspace` | ✓ Each project from its own folder: folders (with their own config or none), config files, or projects written inline, which take the root config's options with `extends: true`. Named by `test.name`, or their `package.json`. See [Projects](../guide/projects.md) |
 | `typecheck`, `expectTypeOf`, `assertType` | ✓ `--typecheck` checks the `*.test-d.ts` files with your `tsc` (or `vue-tsc`), each error on its test; `include`, `tsconfig`, `checker`, `ignoreSourceErrors` as in Vitest. At run time `expectTypeOf` and `assertType` do nothing |
 | `includeSource`, in-source tests (`if (import.meta.vitest)`) | ✓ The same: a source file is a test file when it has them, and a module another test imports keeps them to itself |
-| Browser mode, `bench` | ✗ Not supported |
+| `bench`, `vitest bench`, `benchmark` options | ✓ `vyntra bench` runs the `*.bench.*` files: `bench(name, fn, { time, iterations, warmupTime, warmupIterations, setup, teardown })`, tables of hz, percentiles and margin of error, `--outputJson` and `--compare` |
+| Browser mode | ✗ Not supported: [`@vyntra/web`](../guide/e2e.md) runs tests in a browser with Playwright |
 
 ## Differences with Vitest
 

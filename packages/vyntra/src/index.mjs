@@ -17,6 +17,7 @@ export const {
   jest,
   inject,
   expectTypeOf,
+  bench,
   assertType,
   installGlobals,
 } = vyntra;

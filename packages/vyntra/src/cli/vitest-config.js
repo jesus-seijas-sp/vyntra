@@ -117,6 +117,9 @@ function fromVitestConfig(vite, rootDir) {
   if (test.projects || test.workspace) {
     config.foreignProjects = { kind: 'vitest', entries: test.projects ?? test.workspace };
   }
+  if (test.benchmark) {
+    config.benchmark = test.benchmark;
+  }
   if (test.typecheck) {
     config.typecheck = test.typecheck;
   }

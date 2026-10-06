@@ -1,6 +1,7 @@
 const path = require('node:path');
 const { colors: c } = require('../colors');
 const { userFrames, codeFrame } = require('../utils/stack');
+const { tables, formatTable, summary } = require('../bench/report');
 
 const ICONS = {
   passed: c.green('✓'),
@@ -98,6 +99,16 @@ class Reporter {
     shown.forEach((test) => {
       this.write(`   ${ICONS[test.status]} ${test.path.join(' > ')} ${c.gray(formatDuration(test.duration))}`);
     });
+    if (this.config.mode === 'bench') {
+      tables(result, { rootDir: this.config.rootDir, previous: this.config.benchPrevious }).forEach(
+        ({ group, rows }) => {
+          if (group) {
+            this.write(c.dim(`   ${group}`));
+          }
+          this.write(formatTable(rows));
+        }
+      );
+    }
   }
 
   printError(error, indent = '') {
@@ -179,6 +190,13 @@ class Reporter {
   onFinish(duration) {
     this.printFailures();
     this.printFlaky();
+    if (this.config.mode === 'bench') {
+      const lines = summary(this.results, this.config.rootDir);
+      if (lines.length > 0) {
+        this.write(`\n ${c.bold(c.cyan('BENCH'))} ${c.dim('Summary')}\n`);
+        lines.forEach((line) => this.write(line));
+      }
+    }
     const tests = this.results.flatMap((result) => result.tests);
     const count = (list, status) => list.filter((item) => item.status === status).length;
     const testCounts = Object.fromEntries(

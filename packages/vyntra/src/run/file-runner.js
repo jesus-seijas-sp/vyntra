@@ -331,6 +331,9 @@ class FileRunner {
     } else if (record.retries > 0) {
       record.status = 'flaky';
     }
+    if (test.benchResult) {
+      record.bench = test.benchResult;
+    }
     return record;
   }
 

@@ -28,6 +28,7 @@ Path patterns are regular expressions matched against the path of every test fil
 | `--fail-on-flaky` | Fails the run when a test passed only on a retry (see [Retries](../guide/async.md)); also `--failOnFlaky` |
 | `--project <name>` | Runs only these projects (repeat it, or use commas; see [Projects](../guide/projects.md)) |
 | `--watch`, `--watchAll`, `vyntra watch` | Runs the tests, then what each change touches, until q (see [Watch mode](../guide/running.md)) |
+| `vyntra bench`, `--outputJson <file>`, `--compare <file>` | Runs the benchmarks (`*.bench.*`, or `benchmark.include`), one file at a time; saves their results, or compares with saved ones (see [Benchmarks](../guide/running.md)) |
 | `--typecheck`, `--typecheck.only` | Checks the types of the `*.test-d.ts` files with the project's `tsc`, each error failing its test; `.only` runs nothing else (see [Type tests](../guide/running.md)) |
 | `--last-failed` | Runs only the tests that failed, until they pass (see [Rerunning failures](../guide/ci.md)); also `--lastFailed` |
 | `--outputDir <dir>` | Where the run's report goes (`.vyntra`) |

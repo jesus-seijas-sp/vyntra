@@ -29,6 +29,9 @@ const OPTIONS = {
   splitFiles: { type: 'boolean' },
   shard: { type: 'string' },
   project: { type: 'string', multiple: true },
+  bench: { type: 'boolean' },
+  outputJson: { type: 'string' },
+  compare: { type: 'string' },
   typecheck: { type: 'boolean' },
   'typecheck.only': { type: 'boolean' },
   'last-failed': { type: 'boolean' },
@@ -45,6 +48,7 @@ const OPTIONS = {
 
 const USAGE = `Usage: vyntra [options] [path patterns...]
        vyntra watch [options]     Run the tests, then what each change touches (also --watch)
+       vyntra bench [options]     Run the benchmarks (*.bench.*); --outputJson <file>, --compare <file>
        vyntra guide [topic]       Print the documentation (no topic: the list of topics)
        vyntra init --agents       Write the skill coding agents use to run and fix tests here
 
@@ -101,6 +105,9 @@ function parseCli(argv) {
     shard: values.shard,
     lastFailed: values['last-failed'] ?? values.lastFailed,
     typecheckFlag: values['typecheck.only'] ? 'only' : values.typecheck,
+    benchMode: values.bench,
+    benchOutputJson: values.outputJson,
+    benchCompare: values.compare,
     failOnFlaky: values['fail-on-flaky'] ?? values.failOnFlaky,
     outputDir: values.outputDir,
     ci: values.ci,

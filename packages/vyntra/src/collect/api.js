@@ -1,3 +1,4 @@
+const { measure } = require('../bench/measure');
 const path = require('node:path');
 const state = require('../state');
 const { formatTitle, normalizeTable } = require('./each');
@@ -132,8 +133,27 @@ function createApi(register, flags) {
   return api;
 }
 
+// The longest timeout setTimeout takes: a benchmark runs for as long as it was asked to.
+const NO_TIMEOUT = 2 ** 31 - 1;
+
+// vitest's bench(name, fn, options): a test whose body measures fn (see bench/measure.js), its statistics kept on
+// the test's result.
+function registerBench(name, fn, options, flags) {
+  const run =
+    typeof fn === 'function'
+      ? async () => {
+          const result = await measure(fn, options ?? {});
+          if (state.test) {
+            state.test.benchResult = result;
+          }
+        }
+      : fn;
+  return registerTest(name, run, { timeout: NO_TIMEOUT }, flags);
+}
+
 const describe = createApi(registerSuite, {});
 const test = createApi(registerTest, {});
+const bench = createApi(registerBench, {});
 
 const RUNTIME_DIR = path.dirname(__dirname);
 
@@ -172,6 +192,7 @@ function currentTest(kind) {
 }
 
 module.exports = {
+  bench,
   describe,
   suite: describe,
   test,

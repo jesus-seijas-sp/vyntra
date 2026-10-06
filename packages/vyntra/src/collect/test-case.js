@@ -37,6 +37,8 @@ class TestCase {
     this.attachments = [];
     this.failing = false;
     this.attempt = (this.attempt ?? -1) + 1;
+    // A benchmark's statistics, when the test is one.
+    this.benchResult = undefined;
   }
 
   // Names from the outermost describe to the test.
