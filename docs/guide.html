@@ -718,6 +718,27 @@ const url = inject('databaseUrl');</code></pre>
           do not run.
         </p>
 
+        <h3 id="server">A server for the tests</h3>
+        <p>
+          <code>server</code> starts a command before the tests (of the run, or of a project), waits until its
+          <code>url</code> answers, and stops it after them, with whatever it started:
+        </p>
+        <pre><code class="language-js">server: {
+  command: 'npm run start:test',
+  url: 'http://localhost:4000/health', // or port: 4000
+  timeout: 60_000, // how long it may take to answer (the default)
+  reuseExisting: !process.env.CI, // attach to one already running, locally
+  env: { DATABASE_URL: 'postgres://localhost/test' },
+},</code></pre>
+        <p>
+          It is up when it answers with a success, a redirect, or 400 to 403, as in Playwright. One that exits first, or
+          does not answer in time, fails the run as a problem of the environment (exit code 3), with what it printed.
+          Without <code>reuseExisting</code>, finding something already answering at the url is an error, so a test
+          never runs against a stale server by mistake. A test reaches it through the <code>server</code> fixture,
+          <code>{ url, name, reused }</code>, and the failure pages of a file that failed end with the last lines the
+          server printed.
+        </p>
+
         <h2 id="typescript">TypeScript and ES modules</h2>
         <p>
           vyntra loads files with Node.js, so what Node.js runs, vyntra runs: CommonJS, ES modules (<code>.mjs</code>, or

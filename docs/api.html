@@ -126,7 +126,7 @@
               <tr><td><code>skip(note?)</code>, <code>skip(condition, note?)</code></td><td>Stops the test and marks it as skipped</td></tr>
               <tr><td><code>signal</code></td><td>An <code>AbortSignal</code> aborted when the test ends</td></tr>
               <tr><td><code>onTestFinished(fn)</code>, <code>onTestFailed(fn)</code></td><td>As the globals</td></tr>
-              <tr><td>fixtures</td><td>The values of the fixtures of <code>test.extend</code> the test destructures</td></tr>
+              <tr><td>fixtures</td><td>The values of the fixtures of <code>test.extend</code> the test destructures, the values of the config's <code>use</code>, and the built-in <code>server</code> (<code>{ url, name, reused }</code>)</td></tr>
             </tbody>
           </table>
         </div>
@@ -399,6 +399,7 @@
               <tr><td><code>roots</code></td><td><code>['.']</code></td><td>Folders to look for tests in</td></tr>
               <tr><td><code>projects</code></td><td><code>undefined</code></td><td>Parts of the suite with options of their own: <code>{ name, include, dependsOn, globalSetup, globalTeardown, ... }</code> (see <a href="guide.html#projects">Projects</a>)</td></tr>
               <tr><td><code>globalSetup</code>, <code>globalTeardown</code></td><td><code>undefined</code></td><td>Files run once in the main process, before and after the test files (see <a href="guide.html#global-setup">Global setup</a>)</td></tr>
+              <tr><td><code>server</code></td><td><code>undefined</code></td><td>A command started before the tests and stopped after: <code>{ command, url | port, timeout, reuseExisting, env, cwd }</code> (see <a href="guide.html#server">A server for the tests</a>)</td></tr>
               <tr><td><code>use</code></td><td><code>undefined</code></td><td>Options of the fixtures (<code>{ baseURL: 'http://localhost:4000' }</code>): each a fixture tests can destructure, and the value of a <code>test.extend</code> option of that name</td></tr>
               <tr><td><code>setupFiles</code></td><td><code>[]</code></td><td>Files loaded before every test file: paths from the root, or package names (<code>'reflect-metadata'</code>, <code>'jest-extended/all'</code>)</td></tr>
               <tr><td><code>testTimeout</code></td><td><code>5000</code></td><td>Timeout of tests, in ms</td></tr>

@@ -5,6 +5,9 @@ const { ShardMerger } = require('./shard-merger');
 const { WorkerPool } = require('./worker-pool');
 const { InlineRunner } = require('./inline-runner');
 const { runGlobalSetup, runGlobalTeardown } = require('./global-setup');
+const { TestServer } = require('./server');
+
+const SERVER_LINES = 50;
 
 // The config crosses to the workers by structured clone: no functions. Plugins hold functions too: each worker
 // loads them from the config file.
@@ -45,6 +48,8 @@ class ProjectRun {
     this.collected = [];
     this.stopped = false;
     this.provided = {};
+    this.servers = new Set();
+    this.serverInfo = null;
   }
 
   // How the run goes, for the header: { workers, inline }.
@@ -81,6 +86,32 @@ class ProjectRun {
     }
   }
 
+  // The server of the run or of a project, started: the server, undefined when there is none, or null when it did
+  // not start (reported as a problem of the environment).
+  async startServer(hooks, project) {
+    if (!hooks.server) {
+      return undefined;
+    }
+    let server;
+    try {
+      server = new TestServer(hooks.server, { rootDir: this.shared.rootDir, name: project });
+      this.servers.add(server);
+      await server.start();
+      return server;
+    } catch (error) {
+      this.servers.delete(server);
+      this.problem(null, project, error, 'environment');
+      return null;
+    }
+  }
+
+  async stopServer(server) {
+    if (server) {
+      await server.stop();
+      this.servers.delete(server);
+    }
+  }
+
   async tearDown(hooks, project, teardowns) {
     const errors = await runGlobalTeardown(hooks.globalTeardown, teardowns);
     errors.forEach((error) => this.problem(hooks.globalTeardown[0] ?? hooks.globalSetup[0], project, error));
@@ -93,7 +124,16 @@ class ProjectRun {
       return this.collected;
     }
     this.provided = setup.provided;
-    await this.runProjects();
+    const server = await this.startServer(this.hooks, null);
+    if (server !== null) {
+      this.server = server;
+      this.serverInfo = server?.info() ?? null;
+      try {
+        await this.runProjects();
+      } finally {
+        await this.stopServer(server);
+      }
+    }
     await this.tearDown(this.hooks, null, setup.teardowns);
     return this.collected;
   }
@@ -183,10 +223,21 @@ class ProjectRun {
       return false;
     }
     Object.assign(config.provided, setup.provided);
+    const own = await this.startServer(project, name);
+    if (own === null) {
+      await this.tearDown(project, name, setup.teardowns);
+      return false;
+    }
+    const server = own ?? this.server;
+    config.serverInfo = server?.info() ?? null;
     let passed = true;
     const merger = new ShardMerger((result) => {
       if (name) {
         Object.assign(result, { project: name });
+      }
+      // What the server printed until then: the other half of a failing API test.
+      if (server && failing(result)) {
+        Object.assign(result, { serverOutput: server.output(SERVER_LINES) });
       }
       passed &&= !failing(result);
       this.onFileResult(result);
@@ -198,6 +249,7 @@ class ProjectRun {
     } finally {
       this.active.delete(runner.runner);
       merger.flush();
+      await this.stopServer(own);
     }
     const tornDown = await this.tearDown(project, name, setup.teardowns);
     return passed && tornDown;
@@ -230,6 +282,7 @@ class ProjectRun {
 
   interrupt() {
     this.stopped = true;
+    this.servers.forEach((server) => server.kill());
     this.active.forEach((runner) => (runner.interrupt ?? runner.stop).call(runner));
   }
 }

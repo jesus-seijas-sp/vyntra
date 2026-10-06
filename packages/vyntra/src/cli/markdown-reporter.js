@@ -138,6 +138,16 @@ class MarkdownReporter {
       const text = output.map(({ type, text: logged }) => `${type}: ${stripAnsi(logged)}`).join('\n');
       lines.push('', '## Console output', '', fenced(text));
     }
+    if (result.serverOutput) {
+      lines.push(
+        '',
+        '## Server output',
+        '',
+        'The last lines the server printed by the end of the file:',
+        '',
+        fenced(stripAnsi(result.serverOutput))
+      );
+    }
     const rerun = test
       ? `npx vyntra ${file} -t '${escapeRegExp(test.name).replaceAll("'", "'\\''")}'`
       : `npx vyntra ${file}`;
