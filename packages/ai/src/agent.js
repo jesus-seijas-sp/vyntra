@@ -499,11 +499,10 @@ class Agent {
     const turns = [...messages];
     for (let attempt = 0; attempt < 2; attempt += 1) {
       // eslint-disable-next-line no-await-in-loop -- the second call answers the first one's problem
-      const completion = await session.call({
-        system: session.systemFor(EXTRACT_SYSTEM),
-        messages: turns,
-        schema: shape,
-      });
+      const completion = await session.call(
+        { system: session.systemFor(EXTRACT_SYSTEM), messages: turns, schema: shape },
+        'extract'
+      );
       turns.push(completion.message);
       const problem = problemWith(completion.json);
       if (!problem) {

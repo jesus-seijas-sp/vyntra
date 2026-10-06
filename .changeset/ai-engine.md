@@ -25,4 +25,6 @@ An agent that gives up says why (product, environment, credentials, setup, unsup
 
 `use.ai.context` gives the app's vocabulary to every model call, judges included, and `use.ai.system` gives instructions to the acting agent only; `agent.addContext()` adds what one test knows.
 
+`use.ai.judge` (or `VYNTRA_AI_JUDGE_MODEL`) gives judgments a model of their own, so a cheap model can act while a strong one judges.
+
 On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.

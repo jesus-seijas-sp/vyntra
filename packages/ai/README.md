@@ -207,6 +207,7 @@ In `use.ai`:
 | `budget` | `{ calls: 200, tokens: 2_000_000 }` | What one run may spend over all its workers. Past it, AI steps fail and the run ends with exit code 3 |
 | `maxSteps` | `25` | Model turns `agent.act` may take for one goal |
 | `actionTimeout` | `5000` | How long one action waits for its target (ms) |
+| `judge` | the acting model | The model for judgments (`assert`, `waitFor`, `extract`, `toSatisfy`): a model name on the same provider, or `{ provider, model, effort, baseURL }`. `VYNTRA_AI_JUDGE_MODEL` names one too. A cheap model can act while a strong one judges; recordings name the model that answered, and a new judge records the judgments again but not the actions |
 | `context` | | What the app calls things (screens, menus, terms), read by every model call, judges included. At most 16 KiB |
 | `system` | | Instructions for the agent that acts (verify a confirmation before finishing, close unasked-for notices). Judges never read them. At most 16 KiB |
 | `provider` | `'anthropic'` | `'openrouter'`, `'openai'` (with `baseURL` for other hosts of its API), or the path of a module exporting a provider |

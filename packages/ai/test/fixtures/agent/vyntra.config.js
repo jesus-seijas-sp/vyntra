@@ -8,6 +8,8 @@ module.exports = {
     ai: {
       provider: './fake-provider.js',
       actionTimeout: 500,
+      model: process.env.AI_MODEL,
+      judge: process.env.AI_JUDGE,
       context: process.env.AI_CONTEXT,
       system: process.env.AI_SYSTEM,
     },

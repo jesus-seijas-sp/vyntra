@@ -372,4 +372,26 @@ describe('verdicts', () => {
     expect(run(['context.e2e.js'], env).calls).toBe(0);
     expect(run(['context.e2e.js'], { ...env, AI_CONTEXT: 'Todos are called chores.' }).calls).toBe(4);
   });
+
+  it('sends judgments to the judge model and actions to the acting one', () => {
+    const { dir, run } = project('agent');
+    const requests = path.join(dir, 'requests.jsonl');
+    const env = { AI_MODEL: 'small-actor', AI_JUDGE: 'strong-judge', FAKE_REQUESTS: requests };
+    const first = run(['context.e2e.js'], env);
+    expect([first.status, first.calls]).toEqual([0, 4]);
+    const models = fs
+      .readFileSync(requests, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line))
+      .map((request) => [request.tools ? 'act' : 'judge', request.model]);
+    expect(models).toEqual([
+      ['act', 'small-actor'],
+      ['act', 'small-actor'],
+      ['act', 'small-actor'],
+      ['judge', 'strong-judge'],
+    ]);
+    // Another judge: the act replays, the assert is judged again.
+    expect(run(['context.e2e.js'], { ...env, AI_JUDGE: 'other-judge' }).calls).toBe(1);
+  });
 });

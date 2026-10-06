@@ -6,6 +6,8 @@ const { Budget } = require('./budget');
 
 // Bumped when the prompts change what a model would answer: every recorded result is then a miss.
 const PROMPT_VERSION = 4;
+// The steps a judge model answers, when one is set.
+const JUDGING = new Set(['assert', 'waitFor', 'extract', 'toSatisfy']);
 const KEPT_TURNS = 6;
 const MAX_TURN_TEXT = 4_000;
 
@@ -61,8 +63,13 @@ class AiSession {
     }
   }
 
+  // The provider, model and effort a step's calls go to: the judge's for judgments, when one is set.
+  modelFor(kind) {
+    return JUDGING.has(kind) && this.settings.judge ? this.settings.judge : this.settings;
+  }
+
   keyOf({ kind, text, input }) {
-    const { model, provider } = this.settings;
+    const { model, provider } = this.modelFor(kind);
     // No model set: the provider's own default (OpenRouter's), which the key can not know.
     // A step judged or driven with other vocabulary is another step: the context counts, when there is one.
     const vocabulary = this.context ? [crypto.createHash('sha256').update(this.context).digest('hex')] : [];
@@ -94,7 +101,7 @@ class AiSession {
 
   // The model that answered last, or the one asked: the provider's default model is known once it answered.
   get modelName() {
-    return this.answeredBy ?? this.settings.model ?? `${this.settings.provider.name}'s default model`;
+    return this.answeredBy ?? this.asked ?? this.settings.model ?? `${this.settings.provider.name}'s default model`;
   }
 
   // A recorded result of the step, unless the mode ignores them (live).
@@ -138,9 +145,10 @@ class AiSession {
   }
 
   // One model turn, within the run's budget.
-  async call(request) {
+  async call(request, kind = 'act') {
     this.budget.check();
-    const { model, effort, provider } = this.settings;
+    const { model, effort, provider } = this.modelFor(kind);
+    this.asked = model;
     const completion = await provider.complete({ model, effort, signal: this.test.signal, ...hidden(request) });
     this.budget.add(completion.usage);
     this.answeredBy = completion.model;

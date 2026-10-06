@@ -125,13 +125,13 @@ function blocked(messages) {
 
 module.exports = {
   name: 'fake',
-  async complete({ system, messages, tools, schema }) {
+  async complete({ model, system, messages, tools, schema }) {
     if (process.env.FAKE_CALLS) {
       fs.appendFileSync(process.env.FAKE_CALLS, 'call\n');
     }
     // Everything the model was sent, for the tests to look for secret values in.
     if (process.env.FAKE_REQUESTS) {
-      fs.appendFileSync(process.env.FAKE_REQUESTS, `${JSON.stringify({ system, messages, tools })}\n`);
+      fs.appendFileSync(process.env.FAKE_REQUESTS, `${JSON.stringify({ model, system, messages, tools })}\n`);
     }
     if (tools && textOf(messages[0]).includes('Goal: reach the dashboard')) {
       return blocked(messages);
