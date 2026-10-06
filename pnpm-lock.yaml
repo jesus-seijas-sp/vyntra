@@ -33,6 +33,21 @@ importers:
         specifier: ^3.8.0
         version: 3.9.9
 
+  examples/agent-benchmark:
+    devDependencies:
+      '@vyntra/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      '@vyntra/web':
+        specifier: workspace:*
+        version: link:../../packages/web
+      playwright:
+        specifier: 1.63.0
+        version: 1.63.0
+      vyntra:
+        specifier: workspace:*
+        version: link:../../packages/vyntra
+
   examples/todo-app:
     devDependencies:
       '@vyntra/ai':

@@ -1,0 +1,31 @@
+# Agent benchmark
+
+Pages that are hard to automate, one surface each (`scenarios.js`), for measuring vyntra's agent and catching its
+regressions. Every scenario has two tests:
+
+- `tests/`: the floor. A deterministic test solves it with locators and the browser's own API. It runs with
+  `pnpm test` and in CI; a scenario it can not solve is a gap in the tools, not in the agent.
+- `tests-agent/`: the score. The agent gets the scenario's task in words, and the page's status message decides. It
+  runs live, with a model (`pnpm agent`, with the model's key and `VYNTRA_AI_PROVIDER` / `VYNTRA_AI_MODEL` set), and
+  `pnpm scorecard` writes `.vyntra/scorecard.md`.
+
+| Scenario | Surface |
+| --- | --- |
+| A plain form | Labelled fields and a button: the control |
+| Shadow DOM | A button inside a custom element's shadow root |
+| A form in an iframe | The fields live in another document |
+| A native confirm dialog | `confirm()` must be accepted |
+| A list that remounts | Rebuilt every 400 ms |
+| A button enabled late | Disabled for 1.5 s |
+| A custom select | A combobox of divs with ARIA roles |
+| A menu shown on hover | Items exist only under the pointer |
+| Drag and drop | A card moves only by dragging |
+| A canvas-only control | Nothing in the accessibility tree |
+| Infinite scroll | The item loads when the list is scrolled |
+
+## Baseline
+
+2026-10-06, `deepseek/deepseek-v4-flash` through OpenRouter, effort medium: **7 of 11**, 133 model calls, 853k
+tokens. Failed: the iframe (its content is not in the accessibility tree the agent reads), the native dialog (no tool
+to accept it), drag and drop (no drag tool) and the canvas (needs vision). Each is a tool the agent lacks, not a
+judgment it gets wrong; the failing scenarios also cost most of the tokens.

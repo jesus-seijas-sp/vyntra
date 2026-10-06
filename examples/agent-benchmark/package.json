@@ -1,0 +1,17 @@
+{
+  "name": "vyntra-agent-benchmark",
+  "private": true,
+  "description": "Scenarios that are hard to automate, solved by deterministic tests (the floor) and by vyntra's agent (the score).",
+  "scripts": {
+    "start": "node server.js",
+    "test": "vyntra --project deterministic",
+    "agent": "vyntra --project agent --ai live",
+    "scorecard": "node scorecard.js"
+  },
+  "devDependencies": {
+    "@vyntra/ai": "workspace:*",
+    "@vyntra/web": "workspace:*",
+    "playwright": "1.63.0",
+    "vyntra": "workspace:*"
+  }
+}
