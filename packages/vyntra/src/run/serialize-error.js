@@ -1,4 +1,5 @@
 const { format } = require('../expect/format');
+const { mapStack } = require('../source-maps');
 
 const MAX_AGGREGATED = 10;
 
@@ -12,7 +13,7 @@ function serializeError(error) {
   const result = {
     name: error.name || 'Error',
     message: String(error.message),
-    stack: typeof error.stack === 'string' ? error.stack : '',
+    stack: typeof error.stack === 'string' ? mapStack(error.stack) : '',
   };
   if (error.code !== undefined) {
     result.code = String(error.code);

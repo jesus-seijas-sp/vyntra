@@ -136,11 +136,6 @@
             it to fail sees it succeed.
           </li>
           <li>
-            <strong>Errors point at the compiled code.</strong> In a file a transformer compiled (TypeScript with
-            decorators, JSX, your Jest <code>transform</code>), stack traces and code frames show the lines of the output,
-            not of your source: source maps are not applied yet. Files Node.js runs as they are point at your lines.
-          </li>
-          <li>
             <strong>Mock factories are not checked.</strong> Jest refuses factories that use variables whose names do not
             start with <code>mock</code>; vyntra does not check them, and hoists the calls the same way.
           </li>
@@ -219,7 +214,6 @@
           <li><strong>Test environments of your own</strong> (a Jest <code>testEnvironment</code> module), and <code>testEnvironmentOptions</code>.</li>
           <li><strong>Babel run implicitly</strong>, as Jest does when it finds a Babel config: name <code>babel-jest</code> in <code>transform</code>.</li>
           <li><strong>Asynchronous transformers</strong> (a Jest transformer with only <code>processAsync</code>), and Vite plugins' <code>resolveId</code> and <code>load</code> hooks.</li>
-          <li><strong>Source maps</strong> in stack traces and code frames of compiled files.</li>
           <li><strong>Named imports from JSON</strong> and <code>import.meta.env</code>, which Vite provides.</li>
           <li><strong>Type checking</strong> (Vitest's <code>typecheck</code>), browser mode, <code>bench</code>, and in-source tests.</li>
           <li><strong>The coverage of files no test loads.</strong></li>

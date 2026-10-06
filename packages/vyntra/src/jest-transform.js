@@ -1,4 +1,5 @@
 const crypto = require('node:crypto');
+const { registerCompiledCode } = require('./source-maps');
 const fs = require('node:fs');
 const Module = require('node:module');
 const path = require('node:path');
@@ -102,6 +103,18 @@ function transformOptions(rule) {
   };
 }
 
+// A map the transformer returned beside the code goes inline at its end, where errors find it (see source-maps.js);
+// it adds a line after the code, so no line of the code moves.
+function withInlineMap(code, map) {
+  if (!map || /\/\/[#@] sourceMappingURL=/.test(code.slice(-4096))) {
+    return code;
+  }
+  const json = typeof map === 'string' ? map : JSON.stringify(map);
+  return `${code}\n//# sourceMappingURL=data:application/json;base64,${Buffer.from(json).toString('base64')}\n`;
+}
+
+registerCompiledCode((file) => compiled.get(file)?.code ?? null);
+
 // The code the project's transformer makes of a file, kept in memory for the thread and on disk between runs (under
 // the transformer's own cache key, when it has one). Null when no transformer is configured for the file.
 function transformWithJest(source, filename) {
@@ -120,7 +133,7 @@ function transformWithJest(source, filename) {
   let code = readCompiled(key);
   if (code === null) {
     const result = transformer.process(source, filename, options);
-    code = typeof result === 'string' ? result : result.code;
+    code = withInlineMap(typeof result === 'string' ? result : result.code, result?.map);
     writeCompiled(key, code);
   }
   compiled.set(filename, { source, code });

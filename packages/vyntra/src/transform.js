@@ -1,4 +1,5 @@
 const crypto = require('node:crypto');
+const { registerCompiledCode } = require('./source-maps');
 const fs = require('node:fs');
 const path = require('node:path');
 const { threadId } = require('node:worker_threads');
@@ -303,6 +304,9 @@ function writeCompiled(key, code) {
     }
   }
 }
+
+// Errors in compiled files are reported at their lines as written, through the map the compiler left inline.
+registerCompiledCode((file) => compiled.get(file)?.code ?? null);
 
 function transform(rawSource, file) {
   const kept = compiled.get(file);
