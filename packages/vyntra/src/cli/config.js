@@ -4,6 +4,7 @@ const path = require('node:path');
 const { fileURLToPath, pathToFileURL } = require('node:url');
 const { globToRegExp } = require('./glob');
 const { VITEST_CONFIG_FILES, isVitestConfig, fromVitestConfig } = require('./vitest-config');
+const { expandProjects } = require('./foreign-projects');
 
 const DEFAULTS = {
   roots: ['.'],
@@ -281,6 +282,9 @@ function fromJestConfig(original, rootDir) {
       ])
     );
   }
+  if (jest.projects) {
+    config.foreignProjects = { kind: 'jest', entries: jest.projects };
+  }
   ['globalSetup', 'globalTeardown']
     .filter((key) => jest[key])
     .forEach((key) => {
@@ -340,6 +344,14 @@ async function findVitestConfig(rootDir) {
   return null;
 }
 
+const WORKSPACE_FILES = ['ts', 'mts', 'js', 'mjs', 'json'].map((ext) => `vitest.workspace.${ext}`);
+
+// vitest's older vitest.workspace file: the list of projects, before test.projects.
+async function vitestWorkspace(rootDir) {
+  const file = WORKSPACE_FILES.map((name) => path.join(rootDir, name)).find((one) => fs.existsSync(one));
+  return file ? { kind: 'vitest', entries: await importConfig(file) } : null;
+}
+
 async function findConfig(rootDir, explicit) {
   const own = configFileOf(rootDir, explicit);
   if (own) {
@@ -350,8 +362,12 @@ async function findConfig(rootDir, explicit) {
     return pkg.vyntra;
   }
   const vitest = await findVitestConfig(rootDir);
+  const workspace = await vitestWorkspace(rootDir);
   if (vitest) {
-    return { ...vitest.config, configFile: vitest.file };
+    return { foreignProjects: workspace ?? undefined, ...vitest.config, configFile: vitest.file };
+  }
+  if (workspace) {
+    return { foreignProjects: workspace };
   }
   const jestFile = JEST_FILES.map((name) => path.join(rootDir, name)).find((file) => fs.existsSync(file));
   if (jestFile) {
@@ -392,6 +408,15 @@ function resolveSetupFile(file, rootDir) {
 async function loadConfig(cliOptions) {
   const rootDir = path.resolve(cliOptions.rootDir ?? process.cwd());
   const fileConfig = await findConfig(rootDir, cliOptions.config);
+  if (fileConfig.foreignProjects) {
+    fileConfig.projects = await expandProjects(fileConfig.foreignProjects, rootDir, {
+      importConfig,
+      fromVitestConfig,
+      fromJestConfig,
+      readJestPackage: (dir) => readPackageJson(dir).jest,
+    });
+    delete fileConfig.foreignProjects;
+  }
   const config = {
     ...DEFAULTS,
     ...fileConfig,

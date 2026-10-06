@@ -29,7 +29,7 @@ vyntra reads your `vitest.config.ts` (or a `vite.config.*` with a `test` section
 | Oxc's `decorator` and esbuild's `tsconfigRaw` options | ✓ For the TypeScript transform |
 | Vite plugins | ✓ Their synchronous `transform` hooks; no `resolveId` |
 | `globalSetup` | ✓ Its `provide()` and the tests' `inject()` too |
-| `projects` (and workspaces) | ✗ Not read from a vitest config (vyntra warns): write them as [vyntra projects](../guide/projects.md), or run vyntra in each project's directory |
+| `test.projects`, `vitest.workspace` | ✓ Each project from its own folder: folders (with their own config or none), config files, or projects written inline, which take the root config's options with `extends: true`. Named by `test.name`, or their `package.json`. See [Projects](../guide/projects.md) |
 | Vite plugins' `resolveId` and `load`, async `transform` hooks | ✗ Not run: vyntra's module hooks are synchronous |
 | Browser mode, `typecheck`, `bench`, in-source tests | ✗ Not supported |
 

@@ -1,7 +1,6 @@
 # Not supported yet
 
 - **Watch mode.** `--watch` is accepted and runs the tests once.
-- **Jest's and Vitest's `projects`** and workspaces, read from their configs: vyntra's own [projects](../guide/projects.md) do the same.
 - **Test environments of your own** (a Jest `testEnvironment` module), and `testEnvironmentOptions`.
 - **Babel run implicitly**, as Jest does when it finds a Babel config: name `babel-jest` in `transform`.
 - **Asynchronous transformers** (a Jest transformer with only `processAsync`), and Vite plugins' `resolveId` and `load` hooks.

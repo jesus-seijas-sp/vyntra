@@ -1,0 +1,1 @@
+{ "name": "y-package", "private": true, "jest": { "displayName": { "name": "y", "color": "blue" } } }

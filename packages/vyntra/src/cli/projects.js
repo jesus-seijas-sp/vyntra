@@ -1,5 +1,5 @@
 const { discover } = require('./discover');
-const { resolveSetupFile } = require('./config');
+const { resolveSetupFile, DEFAULTS } = require('./config');
 const { withEngineDefaults } = require('../engines');
 
 // Options of the whole run, which a project can not set for itself.
@@ -21,7 +21,7 @@ const RUN_OPTIONS = [
 ];
 
 // A project's own, not inherited from the top level: the top level's are the whole run's.
-const OWN_OPTIONS = ['name', 'dependsOn', 'globalSetup', 'globalTeardown', 'server'];
+const OWN_OPTIONS = ['name', 'dependsOn', 'globalSetup', 'globalTeardown', 'server', 'root', 'inherit'];
 
 const list = (value) => [value ?? []].flat().filter(Boolean);
 
@@ -33,17 +33,21 @@ function hooksOf(config) {
   };
 }
 
+// A project takes the top level's options, unless inherit: false (the projects of a Jest config, and of a vitest
+// config without extends: true), which starts from vyntra's defaults. root: the folder its relative paths are from.
 function projectConfig(base, project, index) {
+  const parent = project.inherit === false ? { ...DEFAULTS, configFile: base.configFile, colors: base.colors } : base;
   const inherited = Object.fromEntries(
-    Object.entries(base).filter(([key]) => !RUN_OPTIONS.includes(key) && !OWN_OPTIONS.includes(key))
+    Object.entries(parent).filter(([key]) => !RUN_OPTIONS.includes(key) && !OWN_OPTIONS.includes(key))
   );
+  const root = project.root ?? base.rootDir;
   const own = Object.fromEntries(Object.entries(project).filter(([key]) => !OWN_OPTIONS.includes(key)));
   const config = { ...inherited, ...own, rootDir: base.rootDir, projectName: project.name, projectIndex: index };
   if (own.setupFiles) {
-    config.setupFiles = own.setupFiles.map((file) => resolveSetupFile(file, base.rootDir));
+    config.setupFiles = own.setupFiles.map((file) => resolveSetupFile(file, root));
   }
   if (own.use) {
-    config.use = { ...base.use, ...own.use };
+    config.use = { ...parent.use, ...own.use };
   }
   // Workers load a project's plugins from the config file too.
   config.transformPlugins = [config.plugins ?? []]
@@ -109,7 +113,7 @@ function resolveProjects(config, selected = []) {
       name,
       config: withEngineDefaults(projectConfig(config, { ...project, name }, index), explicit),
       dependsOn: list(project.dependsOn),
-      ...hooksOf({ ...project, rootDir: config.rootDir }),
+      ...hooksOf({ ...project, rootDir: project.root ?? config.rootDir }),
     };
   });
   const problem = problemsOf(all);

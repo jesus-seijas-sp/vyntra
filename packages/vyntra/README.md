@@ -93,7 +93,7 @@ Differences with Jest and Vitest: `NODE_ENV` is left as it is (they set it to `t
 `env: { NODE_ENV: 'test' }` in `vyntra.config.js`), `import()` of ES modules works from CommonJS (Jest can not
 run it without `--experimental-vm-modules`).
 
-Not available yet: watch mode, Jest's and Vitest's `projects` read from their configs (vyntra's own `projects` work), custom test
+Not available yet: watch mode, custom test
 environments (a Jest `testEnvironment` module) and `testEnvironmentOptions`, Babel without a `transform`,
 asynchronous transformers and Vite `resolveId`/`load` hooks, named imports from JSON,
 `import.meta.env`, type checking, coverage of files no test loads.

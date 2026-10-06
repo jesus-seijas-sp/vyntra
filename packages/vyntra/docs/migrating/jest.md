@@ -34,7 +34,7 @@ Your tests, your `jest.config.js` (or the `"jest"` key of `package.json`) and yo
 | `testEnvironmentOptions` | ✗ Not read |
 | Babel without a `transform` (Jest runs `babel-jest` by itself when it finds a Babel config) | ✗ Not run: name `babel-jest` in `transform`. Flow, and syntax only Babel knows, do not run otherwise |
 | `globalSetup`, `globalTeardown` | ✓ Run once, in the main process, before and after the test files |
-| `projects` | ✗ Not read from a Jest config: write them as [vyntra projects](../guide/projects.md), or run vyntra in each project's directory |
+| `projects`, `displayName` | ✓ Each project from its own `rootDir`: folders with a `jest.config.*` or a `"jest"` key, config files, or projects written inline. As in Jest, they do not take the root config's options. See [Projects](../guide/projects.md) |
 | `snapshotSerializers` | ✗ Call `expect.addSnapshotSerializer` in a setup file |
 
 ## Differences with Jest

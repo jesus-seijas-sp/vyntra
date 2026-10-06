@@ -23,6 +23,8 @@ A project takes the options of the top level and changes those it sets; `use` is
 
 Each project has its own workers, which share the machine: the top-level `maxWorkers` (the cores less one) is shared out between the projects running at once, in proportion to their work, and a project's own `maxWorkers` keeps it below that. A project waits for those in its `dependsOn` and is skipped when one of them fails; projects that depend on nothing run together. A project left out of the run (by `--project`) is not waited for.
 
+The projects of a Vitest config (`test.projects`, or a `vitest.workspace` file) and of a Jest config (`projects`) run as they are, without a vyntra config: each from its own folder, by the name Vitest or Jest gives it, so `--project` takes the same names. As there, they do not take the root config's options, except Vitest projects with `extends: true`; in a vyntra config, `inherit: false` does the same.
+
 ## Global setup
 
 `globalSetup` files run once, in the main process: at the top level around the whole run, in a project around its files. As in Jest and Vitest, a file exports its setup function (or `setup`), which may return its teardown; `teardown` exports and `globalTeardown` files run after. What it hands to `provide(key, value)`, or returns as an object, the tests read with `inject(key)`:

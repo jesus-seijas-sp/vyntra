@@ -714,6 +714,13 @@ module.exports = {
           is skipped when one of them fails; projects that depend on nothing run together. A project left out of the
           run (by <code>--project</code>) is not waited for.
         </p>
+        <p>
+          The projects of a Vitest config (<code>test.projects</code>, or a <code>vitest.workspace</code> file) and of a
+          Jest config (<code>projects</code>) run as they are, without a vyntra config: each from its own folder, by
+          the name Vitest or Jest gives it, so <code>--project</code> takes the same names. As there, they do not take
+          the root config's options, except Vitest projects with <code>extends: true</code>; in a vyntra config,
+          <code>inherit: false</code> does the same.
+        </p>
         <h3 id="global-setup">Global setup</h3>
         <p>
           <code>globalSetup</code> files run once, in the main process: at the top level around the whole run, in a
@@ -931,7 +938,7 @@ test('adds a todo', async ({ page }) => {
         </p>
         <h3>What is not supported yet?</h3>
         <p>
-          Watch mode, Jest's and Vitest's <code>projects</code> read from their configs, test environments of
+          Watch mode, test environments of
           your own, Babel run without a <code>transform</code>, type checking, and
           coverage of the files no test loads. <a href="migrating.html#missing">Migrating</a> has the whole list.
         </p>
