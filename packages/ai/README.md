@@ -44,7 +44,13 @@ test('a member upgrades to Pro', async ({ page, agent }) => {
 | `expect(value).toSatisfy(claim)` | A model judges a claim about the value; `.not` too. Any project with `engine: 'ai'` |
 | `agent.act(goal, { params }?)` | Drives the page to the goal: clicks, fills, presses keys, picks options, opens URLs. `{name}` in the goal takes `params.name`. Returns `{ summary, actions }` |
 | `agent.assert(claim)` | Judges a claim about the page as it is; fails the test when it does not hold |
+| `agent.waitFor(condition, { timeout, interval }?)` | Waits until a claim about the page holds (30 s and every 500 ms by default), judging the page again only when it changed |
 | `agent.extract(what, schema?)` | Reads something off the page: text, or a value of the JSON schema given, checked against it |
+
+`waitFor` reads the page every `interval` ms but asks the model only about a page it has not judged yet, so a
+wait on an idle page costs one call. Its judgments are recorded like `assert`'s; in `replay` mode a page with
+no recording is not judged at all (the states a page passes through differ from run to run), and the wait goes
+on until a page recorded as holding appears. A `waitFor` that holds counts as a check for the `act` before it.
 
 A judgment has three outcomes: the claim holds, it fails, or it is **inconclusive**, when the value or the
 page does not show enough to decide (another screen, data still loading, a value not there). An inconclusive

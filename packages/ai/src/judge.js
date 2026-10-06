@@ -58,8 +58,9 @@ async function ask(session, messages, claim) {
 
 // { verdict: 'holds' | 'fails' | 'inconclusive', reasoning, source: 'recorded' | 'model' }. kind names the step
 // ('toSatisfy', 'assert'); input is the text the model reads, keyInput what the recording is keyed by (the input,
-// unless it holds what changes from run to run).
-async function judge(session, { kind, claim, input, keyInput = input }) {
+// unless it holds what changes from run to run). With `skipMissing`, a judgment not recorded in replay mode is null
+// instead of a failure (waitFor waits on, for a page it has a recording of).
+async function judge(session, { kind, claim, input, keyInput = input, skipMissing = false }) {
   session.checkEnabled();
   const step = { kind, text: claim, input: keyInput };
   const key = session.keyOf(step);
@@ -70,6 +71,9 @@ async function judge(session, { kind, claim, input, keyInput = input }) {
     return verdict;
   }
   if (session.mode === 'replay') {
+    if (skipMissing) {
+      return null;
+    }
     throw session.missing(step);
   }
   const messages = [{ role: 'user', content: `${asData('input', input)}\n\n<claim>${claim}</claim>` }];

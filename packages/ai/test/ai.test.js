@@ -307,4 +307,14 @@ describe('verdicts', () => {
     const again = agent.run(['readings.e2e.js'], { CI: '1' });
     expect([again.status, again.calls]).toEqual([0, 0]);
   });
+
+  it('waits for a claim, judging only pages that changed, and replays the wait with no model', () => {
+    const { run } = project('agent');
+    const first = run(['waiting.e2e.js']);
+    expect(first.status).toBe(0);
+    // Loading, then Done loading; the static page once, however long it waits.
+    expect(first.calls).toBe(3);
+    const replayed = run(['waiting.e2e.js'], { CI: '1' });
+    expect([replayed.status, replayed.calls]).toEqual([0, 0]);
+  });
 });

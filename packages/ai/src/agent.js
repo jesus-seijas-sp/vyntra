@@ -1,3 +1,4 @@
+const { setTimeout: sleep } = require('node:timers/promises');
 const { currentTest, verified, redact } = require('vyntra/engine');
 const { AiSession } = require('./session');
 const { judge } = require('./judge');
@@ -351,6 +352,48 @@ class Agent {
     }
     verified();
     return { pass: true, reasoning };
+  }
+
+  // Waits until a claim about the page holds: { reasoning }. The page is read every `interval` ms, and judged again only
+  // when it changed, so an idle page costs no model calls. A judgment recorded for a page is reused; in replay mode a
+  // page with no recording is not judged at all (the states a page passes through differ from run to run), and the
+  // wait goes on until a page recorded as holding appears. Fails after `timeout` ms, with the last judgment.
+  async waitFor(condition, { timeout = 30_000, interval = 500 } = {}) {
+    const session = this.session();
+    session.checkEnabled();
+    const deadline = Date.now() + timeout;
+    const judged = new Set();
+    let last = null;
+    for (;;) {
+      // eslint-disable-next-line no-await-in-loop -- the page is read again until the claim holds
+      const state = await pageState(this.page);
+      if (!judged.has(state.key)) {
+        judged.add(state.key);
+        // eslint-disable-next-line no-await-in-loop
+        const judgment = await judge(session, {
+          kind: 'waitFor',
+          claim: condition,
+          input: state.text,
+          keyInput: state.key,
+          skipMissing: true,
+        });
+        if (judgment?.verdict === 'holds') {
+          verified();
+          return { reasoning: judgment.reasoning };
+        }
+        last = judgment ?? last;
+      }
+      if (Date.now() + interval > deadline) {
+        const why = last
+          ? `: ${last.reasoning}`
+          : ' (no recording of a page where it holds; record it with --ai record)';
+        throw new Error(
+          `agent.waitFor(condition) timed out after ${timeout}ms\n\nCondition: ${condition}\nLast judgment${why}`
+        );
+      }
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(interval, undefined, { signal: currentTest()?.signal });
+    }
   }
 
   // Reads something off the page: text by default, or a value of the JSON schema given.

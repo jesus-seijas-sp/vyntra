@@ -17,4 +17,6 @@ Recordings are keyed by the page's route: path and query without the origin and 
 
 Judgments can be inconclusive when the value or the page does not settle the claim, failing the test as such; extract checks its answer against the schema (one repair call) and fails as inconclusive when the page does not show the value, instead of returning a placeholder.
 
+`agent.waitFor(condition)` waits until a claim about the page holds, asking the model only when the page changed, and replays with no model calls.
+
 On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.
