@@ -233,6 +233,10 @@ class FileRunner {
       if (outcome.errors.length === 0 || outcome.skipped) {
         return outcome;
       }
+      if (attempt < retries) {
+        // The failures a retry hides: a flaky test is reported with them.
+        (record.attempts ??= []).push({ errors: outcome.errors.map(serializeError) });
+      }
       record.retries = attempt + 1;
     }
     return outcome;
@@ -270,6 +274,8 @@ class FileRunner {
       record.errors = errors.length > 0 ? [] : [serializeError(new Error('Expect test to fail'))];
     } else if (errors.length > 0) {
       Object.assign(record, { status: 'failed', errors: errors.map(serializeError) });
+    } else if (record.retries > 0) {
+      record.status = 'flaky';
     }
     return record;
   }

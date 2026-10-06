@@ -29,6 +29,8 @@ const OPTIONS = {
   splitFiles: { type: 'boolean' },
   shard: { type: 'string' },
   'last-failed': { type: 'boolean' },
+  'fail-on-flaky': { type: 'boolean' },
+  failOnFlaky: { type: 'boolean' },
   lastFailed: { type: 'boolean' },
   outputDir: { type: 'string' },
   ci: { type: 'boolean' },
@@ -58,6 +60,7 @@ Options:
       --coverageDirectory <dir>  Where coverage reports go (default: coverage; vitest's --coverage.reportsDirectory too)
       --splitFiles               Run long files in parts on several workers (their tests must be independent)
       --shard <index>/<total>    Run one slice of the test files, for CI jobs in parallel (e.g. --shard 2/4)
+      --fail-on-flaky            Fail the run when a test passed only on a retry (also --failOnFlaky)
       --last-failed              Run only the tests that failed, until they pass (also --lastFailed)
       --outputDir <dir>          Where the run's report goes (default: .vyntra)
       --ci                       Do not write new snapshots
@@ -88,6 +91,7 @@ function parseCli(argv) {
     splitFiles: values.splitFiles,
     shard: values.shard,
     lastFailed: values['last-failed'] ?? values.lastFailed,
+    failOnFlaky: values['fail-on-flaky'] ?? values.failOnFlaky,
     outputDir: values.outputDir,
     ci: values.ci,
     isolate: values['no-isolate'] ? false : values.isolate,

@@ -50,6 +50,8 @@ const DEFAULTS = {
   // Jest's collectCoverageFrom: globs of the files to report, "!" excluding.
   collectCoverageFrom: undefined,
   coverageThreshold: undefined,
+  // Fails the run when a test passed only on a retry.
+  failOnFlaky: false,
   // Where every run leaves its report (report.json), which --last-failed reads; false: nowhere.
   outputDir: '.vyntra',
   // Runs only what the last report says still fails.

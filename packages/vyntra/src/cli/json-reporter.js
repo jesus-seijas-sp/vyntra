@@ -16,7 +16,8 @@ class JsonReporter {
 
   onFinish(duration) {
     const failed = (result) => result.errors.length > 0 || result.tests.some((test) => test.status === 'failed');
-    const success = !this.results.some(failed);
+    const flaky = this.results.some((result) => result.tests.some((test) => test.status === 'flaky'));
+    const success = !this.results.some(failed) && !(this.config.failOnFlaky && flaky);
     this.out.write(`${JSON.stringify({ success, duration, files: this.results })}\n`);
     return success;
   }

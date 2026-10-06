@@ -316,6 +316,11 @@ test('done callback', (done) => {
           or <code>--retry 2</code> for all of them. <code>repeats</code> runs a passing test that many more times, to
           catch flaky ones.
         </p>
+        <p>
+          A test that passes only on a retry is <strong>flaky</strong>, not passed: it is counted apart in the summary
+          and listed with the errors of the attempts that failed, so a retry does not hide it. It does not fail the run,
+          unless <code>--fail-on-flaky</code> (or <code>failOnFlaky: true</code>) is given.
+        </p>
 
         <h2 id="context">Test context and fixtures</h2>
         <p>

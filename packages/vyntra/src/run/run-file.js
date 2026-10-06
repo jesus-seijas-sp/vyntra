@@ -66,7 +66,7 @@ async function collect(file, config) {
 
 // complete: every test of the file ran, so the snapshots none of them checked are obsolete. Never for a shard.
 function saveSnapshots(file, results, shard) {
-  const complete = !shard && results.every((test) => test.status === 'passed' || test.status === 'failed');
+  const complete = !shard && results.every((test) => ['passed', 'flaky', 'failed'].includes(test.status));
   try {
     return file.snapshot?.save(complete) ?? null;
   } catch (error) {

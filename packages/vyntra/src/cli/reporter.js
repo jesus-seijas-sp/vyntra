@@ -2,8 +2,15 @@ const path = require('node:path');
 const { colors: c } = require('../colors');
 const { userFrames, codeFrame } = require('../utils/stack');
 
-const ICONS = { passed: c.green('✓'), failed: c.red('×'), skipped: c.yellow('↓'), todo: c.gray('□') };
+const ICONS = {
+  passed: c.green('✓'),
+  flaky: c.yellow('✓'),
+  failed: c.red('×'),
+  skipped: c.yellow('↓'),
+  todo: c.gray('□'),
+};
 const MAX_STACK_FRAMES = 6;
+const MAX_FLAKY_LINES = 6;
 
 function formatDuration(ms) {
   if (ms < 1000) {
@@ -15,6 +22,7 @@ function formatDuration(ms) {
 function countLine(label, counts, total) {
   const parts = [
     counts.failed && c.bold(c.red(`${counts.failed} failed`)),
+    counts.flaky && c.bold(c.yellow(`${counts.flaky} flaky`)),
     counts.passed && c.bold(c.green(`${counts.passed} passed`)),
     counts.skipped && c.yellow(`${counts.skipped} skipped`),
     counts.todo && c.gray(`${counts.todo} todo`),
@@ -67,14 +75,18 @@ class Reporter {
   onFileResult(result) {
     this.results.push(result);
     const failed = result.tests.filter((test) => test.status === 'failed');
+    const flaky = result.tests.filter((test) => test.status === 'flaky');
     const broken = failed.length > 0 || result.errors.length > 0;
     this.printConsole(result, broken);
-    const counts = failed.length > 0 ? ` | ${c.red(`${failed.length} failed`)}` : '';
+    const counts = [
+      failed.length > 0 ? ` | ${c.red(`${failed.length} failed`)}` : '',
+      flaky.length > 0 ? ` | ${c.yellow(`${flaky.length} flaky`)}` : '',
+    ].join('');
     const icon = broken ? c.red('❯') : c.green('✓');
     this.write(
       ` ${icon} ${this.relative(result.path)} ${c.dim(`(${result.tests.length} tests${counts})`)} ${c.gray(formatDuration(result.duration))}`
     );
-    const shown = this.verbose ? result.tests : failed;
+    const shown = this.verbose ? result.tests : [...failed, ...flaky];
     shown.forEach((test) => {
       this.write(`   ${ICONS[test.status]} ${test.path.join(' > ')} ${c.gray(formatDuration(test.duration))}`);
     });
@@ -117,6 +129,26 @@ class Reporter {
     });
   }
 
+  // A test that passed on a retry: where, on which attempt, and why the attempts before it failed.
+  printFlaky() {
+    const flaky = this.results.flatMap((result) =>
+      result.tests.filter((test) => test.status === 'flaky').map((test) => ({ result, test }))
+    );
+    if (flaky.length === 0) {
+      return;
+    }
+    this.write(`\n${c.yellow(c.bold(`⎯⎯⎯⎯⎯⎯ Flaky Tests ${flaky.length} ⎯⎯⎯⎯⎯⎯`))}\n`);
+    flaky.forEach(({ result, test }) => {
+      const title = `${this.relative(result.path)} > ${test.path.join(' > ')}`;
+      this.write(`${c.bgYellow(c.bold(' FLAKY '))} ${title} ${c.dim(`(passed on attempt ${test.retries + 1})`)}`);
+      (test.attempts ?? []).forEach(({ errors }, i) => {
+        const [error] = errors;
+        const lines = error ? `${error.name}: ${error.message}`.split('\n').filter((line) => line.trim()) : ['failed'];
+        this.write(c.dim(`   attempt ${i + 1}: ${lines.slice(0, MAX_FLAKY_LINES).join('\n     ')}`));
+      });
+    });
+  }
+
   printSnapshots() {
     const totals = { added: 0, updated: 0, failed: 0, obsolete: 0 };
     this.results.forEach(({ snapshot }) => {
@@ -138,15 +170,19 @@ class Reporter {
   // Prints the summary and returns whether the run succeeded.
   onFinish(duration) {
     this.printFailures();
+    this.printFlaky();
     const tests = this.results.flatMap((result) => result.tests);
     const count = (list, status) => list.filter((item) => item.status === status).length;
-    const testCounts = Object.fromEntries(['passed', 'failed', 'skipped', 'todo'].map((s) => [s, count(tests, s)]));
+    const testCounts = Object.fromEntries(
+      ['passed', 'flaky', 'failed', 'skipped', 'todo'].map((s) => [s, count(tests, s)])
+    );
     const fileStatus = this.results.map((result) => {
       const failed = result.errors.length > 0 || result.tests.some((test) => test.status === 'failed');
       if (failed) {
         return 'failed';
       }
-      return result.tests.length > 0 && result.tests.every((test) => test.status !== 'passed') ? 'skipped' : 'passed';
+      const ran = result.tests.some((test) => test.status === 'passed' || test.status === 'flaky');
+      return result.tests.length > 0 && !ran ? 'skipped' : 'passed';
     });
     const fileCounts = Object.fromEntries(
       ['passed', 'failed', 'skipped'].map((s) => [s, fileStatus.filter((status) => status === s).length])
@@ -157,7 +193,7 @@ class Reporter {
     this.printSnapshots();
     this.write(`${c.dim('Duration'.padStart(11))}  ${formatDuration(duration)}`);
     this.write('');
-    return fileCounts.failed === 0;
+    return fileCounts.failed === 0 && !(this.config.failOnFlaky && testCounts.flaky > 0);
   }
 }
 

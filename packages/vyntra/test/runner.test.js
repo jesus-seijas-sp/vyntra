@@ -48,9 +48,14 @@ describe('modes', () => {
     expect(statuses['assertion counts > hasAssertions']).toBe('failed');
   });
 
-  it('retries', () => {
-    expect(statuses['retry > passes on the third attempt']).toBe('passed');
-    expect(tests['retry > passes on the third attempt'].retries).toBe(2);
+  it('retries, and reports a test that passed on a retry as flaky, with the failures before', () => {
+    const test = tests['retry > passes on the third attempt'];
+    expect(statuses['retry > passes on the third attempt']).toBe('flaky');
+    expect(test.retries).toBe(2);
+    expect(test.attempts.map(({ errors }) => errors[0].message)).toEqual([
+      expect.stringContaining('Received: 1'),
+      expect.stringContaining('Received: 2'),
+    ]);
   });
 });
 

@@ -108,7 +108,8 @@ asynchronous transformers and Vite `resolveId`/`load` hooks, source maps in stac
     --no-isolate               Share project modules between files (faster, less isolated)
     --testTimeout <ms>         Default timeout of tests (default: 5000)
     --reporter <default|verbose|json>
-    --retry <n>                Retry failing tests
+    --retry <n>                Retry failing tests (one that passes on a retry is reported as flaky)
+    --fail-on-flaky            Fail the run when a test passed only on a retry
     --bail <n>                 Stop after n failed files
     --silent                   Do not print console output of tests
     --passWithNoTests          Do not fail when no test files are found
