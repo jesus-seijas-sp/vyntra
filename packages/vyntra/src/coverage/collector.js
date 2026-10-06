@@ -1,9 +1,18 @@
+const fs = require('node:fs');
 const path = require('node:path');
 const { Session } = require('node:inspector');
 const { fileURLToPath } = require('node:url');
 
 const RUNTIME_DIR = path.join(__dirname, '..');
 const NODE_MODULES = `${path.sep}node_modules${path.sep}`;
+
+function realPath(file) {
+  try {
+    return fs.realpathSync.native(file);
+  } catch {
+    return file;
+  }
+}
 
 function toPath(url) {
   if (!url.startsWith('file:')) {
@@ -64,7 +73,9 @@ function addScript(files, file, functions) {
 class CoverageCollector {
   constructor({ rootDir, testFiles = [] }) {
     this.rootDir = rootDir;
-    this.testFiles = new Set(testFiles);
+    // V8 names scripts by their real path: a root reached through a symlink (macOS's /var) is matched both ways.
+    this.realRoot = realPath(rootDir);
+    this.testFiles = new Set(testFiles.flatMap((file) => [file, realPath(file)]));
     this.session = new Session();
     this.files = new Map();
   }
@@ -85,7 +96,7 @@ class CoverageCollector {
   includes(file) {
     return (
       file !== null &&
-      file.startsWith(this.rootDir) &&
+      (file.startsWith(this.rootDir) || file.startsWith(this.realRoot)) &&
       !file.includes(NODE_MODULES) &&
       !file.startsWith(RUNTIME_DIR) &&
       !this.testFiles.has(file)
@@ -137,4 +148,4 @@ function mergeCoverage(results) {
   return serialize(files);
 }
 
-module.exports = { CoverageCollector, mergeCoverage };
+module.exports = { CoverageCollector, mergeCoverage, realPath };

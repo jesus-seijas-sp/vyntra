@@ -2,6 +2,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { colors: c } = require('../colors');
 const { fileCoverage, summarize, uncoveredLines } = require('./file-coverage');
+const { untestedFiles, untestedCoverage } = require('./untested');
+const { realPath } = require('./collector');
 
 const METRICS = ['statements', 'branches', 'functions', 'lines'];
 const HEADERS = ['% Stmts', '% Branch', '% Funcs', '% Lines'];
@@ -86,7 +88,13 @@ function thresholdFailures(total, thresholds = {}) {
 // Prints and writes the coverage report; returns whether the thresholds are met.
 function reportCoverage(coverage, config, out = process.stdout) {
   const include = config.coverageInclude;
-  const files = Object.entries(coverage)
+  // Files under the root's real path (V8's names) as under the root the project was given.
+  const real = realPath(config.rootDir);
+  const asGiven = (file) => (real !== config.rootDir && file.startsWith(real) ? config.rootDir + file.slice(real.length) : file);
+  coverage = Object.fromEntries(Object.entries(coverage).map(([file, data]) => [asGiven(file), data]));
+  const covered = new Set(Object.keys(coverage));
+  const untested = Object.fromEntries(untestedFiles(config, covered).map((file) => [file, untestedCoverage(file)]));
+  const files = Object.entries({ ...coverage, ...untested })
     .filter(([file]) => !include || include(file))
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([file, data]) => fileCoverage(file, data));

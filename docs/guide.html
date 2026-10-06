@@ -542,6 +542,12 @@ src/prices.js   |   <span class="t-warn">56.52</span> |    <span class="t-ok">83
           Lines are counted as Jest counts them: blank lines, comments and lines with only brackets are not lines of
           code. Branches are the blocks V8 counts, which can differ a little from what istanbul reports.
         </p>
+        <p>
+          With <code>collectCoverageFrom</code> (or Vitest's <code>coverage.include</code>), the report also lists the
+          files it matches that no test loaded, at zero, as Jest and Vitest do: an untested file lowers the totals
+          instead of going unnoticed. Test files and <code>.d.ts</code> files are left out. Without it, the report
+          shows the files the tests loaded.
+        </p>
 
         <h2 id="isolation">Workers and isolation</h2>
         <p>
@@ -947,9 +953,8 @@ test('adds a todo', async ({ page }) => {
         </p>
         <h3>What is not supported yet?</h3>
         <p>
-          Watch mode, test environments of
-          your own, Babel run without a <code>transform</code>, type checking, and
-          coverage of the files no test loads. <a href="migrating.html#missing">Migrating</a> has the whole list.
+          Watch mode, test environments of your own, Babel run without a <code>transform</code>, and type checking.
+          <a href="migrating.html#missing">Migrating</a> has the whole list.
         </p>
         <h3>My tests expect <code>NODE_ENV=test</code>.</h3>
         <p>

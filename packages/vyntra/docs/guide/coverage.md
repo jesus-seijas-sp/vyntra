@@ -28,3 +28,5 @@ module.exports = {
 ```
 
 Lines are counted as Jest counts them: blank lines, comments and lines with only brackets are not lines of code. Branches are the blocks V8 counts, which can differ a little from what istanbul reports.
+
+With `collectCoverageFrom` (or Vitest's `coverage.include`), the report also lists the files it matches that no test loaded, at zero, as Jest and Vitest do: an untested file lowers the totals instead of going unnoticed. Test files and `.d.ts` files are left out. Without it, the report shows the files the tests loaded.
