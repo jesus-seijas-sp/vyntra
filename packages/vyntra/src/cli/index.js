@@ -12,6 +12,7 @@ const { parseCli } = require('./args');
 const { loadConfig } = require('./config');
 const { discover } = require('./discover');
 const { parseShard, selectShard } = require('./select-shard');
+const { EXIT, brokeSetup } = require('./exit-codes');
 const { JsonReporter } = require('./json-reporter');
 const { Reporter } = require('./reporter');
 const { plan } = require('./schedule');
@@ -78,7 +79,10 @@ function relaunch(argv) {
     stdio: 'inherit',
     env: { ...process.env, [RELAUNCHED]: '1' },
   });
-  return signal ? 1 : (status ?? 1);
+  if (signal) {
+    return signal === 'SIGINT' ? EXIT.interrupted : EXIT.failed;
+  }
+  return status ?? EXIT.failed;
 }
 
 async function main(argv = process.argv.slice(2)) {
@@ -96,7 +100,13 @@ async function main(argv = process.argv.slice(2)) {
     process.stderr.write(`${c.yellow('Watch mode is not available yet: running once.')}
 `);
   }
-  const config = await loadConfig(cli.options);
+  let config;
+  try {
+    config = await loadConfig(cli.options);
+  } catch (error) {
+    process.stderr.write(`${c.red('Could not load the config')}\n${error.stack ?? error}\n`);
+    return EXIT.setup;
+  }
   if (localeChanged()) {
     return relaunch(argv);
   }
@@ -108,14 +118,14 @@ async function main(argv = process.argv.slice(2)) {
     shard = config.shard ? parseShard(config.shard) : null;
   } catch (error) {
     process.stderr.write(`${c.red(error.message)}\n`);
-    return 1;
+    return EXIT.setup;
   }
   const discovered = discover(config, cli.patterns);
   const files = timings.sort(shard ? selectShard(discovered, shard, config.rootDir) : discovered);
   if (files.length === 0) {
     const where = shard ? ` in shard ${shard.index}/${shard.total} (of ${discovered.length})` : '';
     process.stdout.write(`${c.yellow(`No test files found${where}`)}\n`);
-    return config.passWithNoTests ? 0 : 1;
+    return config.passWithNoTests ? EXIT.passed : EXIT.setup;
   }
   // One job (a file run whole) runs in the main thread: no worker to start. A single long file split in parts does
   // get workers. In the main thread, split files would only run one part after the other: they run whole.
@@ -126,12 +136,16 @@ async function main(argv = process.argv.slice(2)) {
   const reporter = new ReporterClass({ ...config, pool: inline ? 'inline' : config.pool, shard });
   reporter.onStart(files.length, workers);
   let failedFiles = 0;
+  let brokenFiles = 0;
   let runner;
   const onFileResult = (result) => {
     const work = result.work ?? result.duration;
     const testTime = result.tests.reduce((sum, test) => sum + test.duration, 0);
     timings.record(result.path, work, result.tests.length, Math.max(0, work - testTime) / (result.shards ?? 1));
     reporter.onFileResult(result);
+    if (brokeSetup(result)) {
+      brokenFiles += 1;
+    }
     if (result.errors.length > 0 || result.tests.some((test) => test.status === 'failed')) {
       failedFiles += 1;
       // --bail n: no more files once n have failed.
@@ -161,7 +175,13 @@ async function main(argv = process.argv.slice(2)) {
     );
     runner = new WorkerPool({ size: workers, config: workerConfig, onResult });
   }
+  const onInterrupt = () => {
+    runner.interrupt?.();
+    process.stdout.write(`\n${c.yellow('Interrupted')}\n`, () => process.exit(EXIT.interrupted));
+  };
+  process.once('SIGINT', onInterrupt);
   const collected = await runner.run(jobs);
+  process.off('SIGINT', onInterrupt);
   merger.flush();
   timings.save();
   if (config.resolveCache) {
@@ -173,7 +193,10 @@ async function main(argv = process.argv.slice(2)) {
   const passed = reporter.onFinish(realTimers.performanceNow() - start);
   const coverage = collected.map((item) => item.coverage).filter(Boolean);
   const covered = config.coverage ? reportCoverage(mergeCoverage(coverage), config) : true;
-  return passed && covered && failedFiles === 0 ? 0 : 1;
+  if (brokenFiles > 0) {
+    return EXIT.setup;
+  }
+  return passed && covered && failedFiles === 0 ? EXIT.passed : EXIT.failed;
 }
 
 module.exports = { main };

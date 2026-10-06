@@ -291,7 +291,7 @@ class FileRunner {
 
   async runSuite(suite) {
     if (suite.collectError) {
-      this.file.errors.push(serializeError(suite.collectError));
+      this.file.errors.push({ ...serializeError(suite.collectError), phase: 'collect' });
     }
     const runnable = suite.hasRunnable();
     let beforeFailed = false;

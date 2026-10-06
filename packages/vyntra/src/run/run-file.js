@@ -57,7 +57,7 @@ async function collect(file, config) {
       }
     }
   } catch (error) {
-    file.errors.push(serializeError(error));
+    file.errors.push({ ...serializeError(error), phase: 'collect' });
   } finally {
     state.suite = null;
   }
@@ -84,9 +84,10 @@ async function runFile(path, config, shard = null) {
   await collect(file, config);
   const collectDuration = now() - start;
   if (file.hasOnly && config.allowOnly === false) {
-    file.errors.push(
-      serializeError(new Error('Unexpected .only modifier. Remove it or pass --allowOnly to bypass this error'))
-    );
+    file.errors.push({
+      ...serializeError(new Error('Unexpected .only modifier. Remove it or pass --allowOnly to bypass this error')),
+      phase: 'policy',
+    });
   }
   const runner = new FileRunner(file, config);
   if (file.errors.length === 0) {

@@ -10,7 +10,7 @@ const crashResult = (job, error) => ({
   shard: job.shard,
   duration: 0,
   tests: [],
-  errors: [serializeError(error)],
+  errors: [{ ...serializeError(error), phase: 'crash' }],
   console: [],
 });
 
@@ -124,6 +124,12 @@ class WorkerPool {
   // Skips the files not started yet.
   stop() {
     this.queue = [];
+  }
+
+  // Ends the run now: the files running are cut short.
+  interrupt() {
+    this.stop();
+    this.workers.forEach((worker) => worker.terminate());
   }
 
   retire(worker, collected) {

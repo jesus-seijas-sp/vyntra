@@ -121,6 +121,9 @@ asynchronous transformers and Vite `resolveId`/`load` hooks, source maps in stac
 
 Positional arguments filter the test files by path, as in Jest.
 
+Exit codes: `0` passed, `1` a test failed, `2` the setup is broken (config, no test files, a file that does not
+load, `.only` with `allowOnly: false`), `4` an error of vyntra itself, `130` interrupted.
+
 ## Config
 
 ```js

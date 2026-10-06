@@ -207,7 +207,9 @@ configs move over unchanged. An empty shard fails unless `--passWithNoTests` is 
 | 4 | Internal runner error |
 | 130 | Interrupted |
 
-CI and agents can then tell a broken test from a broken setup.
+CI and agents can then tell a broken test from a broken setup. When a run has both, 2 wins: some
+tests never ran. No test files found is 2 (without `--passWithNoTests`); a worker that dies running a
+file is 1, as the usual cause is the test (`process.exit`, running out of memory).
 
 ### Rerunning failures
 

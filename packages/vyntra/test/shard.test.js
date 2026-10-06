@@ -76,11 +76,11 @@ describe('--shard', () => {
     const run = (...args) =>
       spawnSync(process.execPath, [bin, '--root', root, '--no-color', ...args], { encoding: 'utf8' });
     const empty = run('--shard', '6/6');
-    expect(empty.status).toBe(1);
+    expect(empty.status).toBe(2);
     expect(empty.stdout).toContain('No test files found in shard 6/6 (of 5)');
     expect(run('--shard', '6/6', '--passWithNoTests').status).toBe(0);
     const invalid = run('--shard', '7/6');
-    expect(invalid.status).toBe(1);
+    expect(invalid.status).toBe(2);
     expect(invalid.stderr).toContain('Invalid shard "7/6"');
   });
 });
