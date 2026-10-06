@@ -1,4 +1,4 @@
-const { spawn } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 
 const DEFAULT_TIMEOUT = 60_000;
 const POLL_MS = 100;
@@ -124,7 +124,9 @@ class TestServer {
     }
     try {
       if (process.platform === 'win32') {
-        this.child.kill(name);
+        // The child is the shell: killing it alone would leave the server it started running. taskkill ends the
+        // tree, and is always forced (Windows has no SIGTERM for console programs).
+        spawnSync('taskkill', ['/pid', String(this.child.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true });
       } else {
         process.kill(-this.child.pid, name);
       }
