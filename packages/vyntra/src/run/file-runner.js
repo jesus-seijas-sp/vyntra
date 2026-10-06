@@ -5,6 +5,11 @@ const { clearAllMocks, resetAllMocks, restoreAllMocks } = require('../mock');
 const { realTimers } = require('../timers');
 const { FixtureSet } = require('./fixtures');
 const { builtins } = require('../fixtures');
+
+const MAX_EXCHANGES = 10;
+
+// The last HTTP exchanges of an attempt, for its failure page.
+const exchangesOf = (test) => (test.exchanges?.length > 0 ? { exchanges: test.exchanges.slice(-MAX_EXCHANGES) } : {});
 const { invoke } = require('./invoke');
 const { serializeError } = require('./serialize-error');
 const { SkipError } = require('./skip-error');
@@ -247,7 +252,7 @@ class FileRunner {
       }
       if (attempt < retries) {
         // The failures a retry hides: a flaky test is reported with them.
-        (record.attempts ??= []).push({ errors: outcome.errors.map(serializeError) });
+        (record.attempts ??= []).push({ errors: outcome.errors.map(serializeError), ...exchangesOf(test) });
       }
       record.retries = attempt + 1;
     }
@@ -285,7 +290,7 @@ class FileRunner {
       record.status = errors.length > 0 ? 'passed' : 'failed';
       record.errors = errors.length > 0 ? [] : [serializeError(new Error('Expect test to fail'))];
     } else if (errors.length > 0) {
-      Object.assign(record, { status: 'failed', errors: errors.map(serializeError) });
+      Object.assign(record, { status: 'failed', errors: errors.map(serializeError), ...exchangesOf(test) });
     } else if (record.retries > 0) {
       record.status = 'flaky';
     }

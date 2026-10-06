@@ -267,6 +267,18 @@ report it reruns refers to and writes its own under `artifacts/rerun-<n>/`.
   it when the project ends. `reuseExisting` attaches to a server that is already running.
 - Runs in the `node` environment, so it shares today's isolation and speed.
 
+As built: a path is joined to the base URL's path (`http://host/api` and `/users` make `/api/users`),
+not resolved as a URL, which would drop `/api`. Without `use.baseURL`, the base is the server's origin.
+The client uses Node's own `fetch`, taken before a document environment replaces it. Recorded
+exchanges hide `authorization`, `cookie` and `set-cookie`, and keep the first 4,000 characters of
+bodies. A failing file also carries the last 50 lines of its server's output. A server is up when it
+answers 2xx, 3xx or 400-403 (as Playwright counts it); one that exits or times out is exit code 3.
+
+Projects as built: a file belongs to the first project including it whichever projects `--project`
+selects, and a dependency left out of the run is not waited for. A worker-scoped fixture is identified
+by its name and source, as each file loads its own copy of the module defining it, and a failed setup
+stays failed for the worker. A run without `projects` keeps today's scheduling.
+
 ## End-to-end web testing (milestone 3)
 
 `@vyntra/web`, with Playwright as a peer dependency the project installs.

@@ -88,6 +88,31 @@ function errorSection(error, file, rootDir) {
   return parts.join('\n\n');
 }
 
+const headerLines = (headers) =>
+  Object.entries(headers ?? {})
+    .map(([name, value]) => `${name}: ${value}`)
+    .join('\n');
+
+// The requests a test made with the api fixture, and what came back, the last one first: usually the one that failed.
+function exchangesSection(exchanges) {
+  return [...exchanges].reverse().flatMap(({ request, response, error, duration }, i) => {
+    const title = `### ${i === 0 ? 'Last request: ' : ''}${request.method} ${request.url}`;
+    const sent = [`${request.method} ${request.url}`, headerLines(request.headers), request.body && `\n${request.body}`]
+      .filter(Boolean)
+      .join('\n');
+    const answer = response
+      ? [
+          `${response.status}${duration !== undefined ? ` (${duration}ms)` : ''}`,
+          headerLines(response.headers),
+          response.body && `\n${response.body}`,
+        ]
+          .filter(Boolean)
+          .join('\n')
+      : `No response: ${error}`;
+    return ['', title, '', 'Request:', '', fenced(sent, 'http'), '', 'Response:', '', fenced(answer, 'http')];
+  });
+}
+
 // .vyntra/summary.md and a page per failed or flaky test in .vyntra/failures/: the error and its source line, every
 // attempt, the test's console output and the command that reruns it. Written for people and for coding agents.
 class MarkdownReporter {
@@ -125,13 +150,19 @@ class MarkdownReporter {
         ...outcome.errors.map((error) => errorSection(error, outcome.path, this.config.rootDir))
       );
     }
-    outcome.attempts.forEach(({ errors }, i) => {
+    if (test?.exchanges) {
+      lines.push('', '## HTTP', ...exchangesSection(test.exchanges));
+    }
+    outcome.attempts.forEach(({ errors, exchanges }, i) => {
       lines.push(
         '',
         `## Attempt ${i + 1} (failed)`,
         '',
         ...errors.map((error) => errorSection(error, outcome.path, this.config.rootDir))
       );
+      if (exchanges) {
+        lines.push(...exchangesSection(exchanges));
+      }
     });
     const output = result.console.filter((entry) => (test ? entry.test === test.name : !entry.test));
     if (output.length > 0) {

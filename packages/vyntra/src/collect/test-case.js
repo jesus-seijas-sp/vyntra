@@ -30,6 +30,8 @@ class TestCase {
     this.abort = new AbortController();
     // Snapshot name -> calls so far, for the numbers of the snapshot keys.
     this.snapshotCounts = new Map();
+    // The HTTP requests of the api fixture, and their responses: shown when the test fails.
+    this.exchanges = [];
   }
 
   // Names from the outermost describe to the test.

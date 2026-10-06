@@ -60,6 +60,7 @@
           <li><a href="#between-files">Restored between files</a></li>
           <li><a href="#split-files">Splitting long files</a></li>
           <li><a href="#projects">Projects</a></li>
+          <li><a href="#api-tests">API tests</a></li>
           <li><a href="#typescript">TypeScript and ES modules</a></li>
           <li><a href="#imports">What files can import</a></li>
           <li><a href="#speed">Why it is fast</a></li>
@@ -737,6 +738,35 @@ const url = inject('databaseUrl');</code></pre>
           never runs against a stale server by mistake. A test reaches it through the <code>server</code> fixture,
           <code>{ url, name, reused }</code>, and the failure pages of a file that failed end with the last lines the
           server printed.
+        </p>
+
+        <h2 id="api-tests">API tests</h2>
+        <p>
+          The <code>api</code> fixture is an HTTP client for the test. It sends and reads JSON, joins paths to
+          <code>use.baseURL</code> (or to the server's address, without one), and keeps the cookies the server sets for
+          the rest of the test. Tests check its responses with <code>toHaveStatus</code>, <code>toHaveHeader</code> and
+          <code>toMatchSchema</code>:
+        </p>
+        <pre><code class="language-js">// vyntra.config.js: a project for the API, with the server it tests
+{
+  name: 'api',
+  include: ['test/api/**/*.test.ts'],
+  server: { command: 'npm run start:test', url: 'http://localhost:4000/health' },
+  use: { baseURL: 'http://localhost:4000/api' },
+}
+
+// test/api/users.test.ts
+test('creates a user', async ({ api }) => {
+  const response = await api.post('/users', { name: 'Bo', email: 'bo@example.com' });
+  expect(response).toHaveStatus(201);
+  expect(response).toHaveHeader('location', /^\/api\/users\/\d+$/);
+  expect(response.body).toMatchSchema(userSchema);
+});</code></pre>
+        <p>
+          It records every request and its response. When a test fails, its page in the <code>markdown</code> report
+          shows them, the last one first, with the server's last lines: what was sent, what came back, and what the
+          server said about it. Authorization headers and cookies are hidden there. API tests run in the
+          <code>node</code> environment, as fast as unit tests.
         </p>
 
         <h2 id="typescript">TypeScript and ES modules</h2>

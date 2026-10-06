@@ -45,6 +45,8 @@
         <h4>expect</h4>
         <ul>
           <li><a href="#matchers">Matchers</a></li>
+          <li><a href="#http-matchers">HTTP matchers</a></li>
+          <li><a href="#api-fixture">The api fixture</a></li>
           <li><a href="#mock-matchers">Mock matchers</a></li>
           <li><a href="#snapshot-matchers">Snapshot matchers</a></li>
           <li><a href="#asymmetric">Asymmetric matchers</a></li>
@@ -157,6 +159,32 @@
               <tr><td><code>toHaveProperty(path, value?)</code></td><td>has the property at <code>path</code> (<code>'a.b[0].c'</code> or an array), with that value</td></tr>
               <tr><td><code>toMatch(pattern)</code></td><td>(a string) contains <code>pattern</code>, or matches it when it is a regular expression</td></tr>
               <tr><td><code>toThrow(expected?)</code> / <code>toThrowError</code></td><td>(a function) throws: an error whose message contains a string, matches a regular expression, of a class, or with the message of an error. With <code>.rejects</code>, the rejection</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="http-matchers">HTTP matchers</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Matcher</th><th>Passes when</th></tr></thead>
+            <tbody>
+              <tr><td><code>toHaveStatus(status)</code></td><td>The response has that status (<code>201</code>), or one of that class (<code>'2xx'</code>); a failure shows the request and the start of the body</td></tr>
+              <tr><td><code>toHaveHeader(name, value?)</code></td><td>The response (or a <code>Headers</code>, or an object) has the header, equal to <code>value</code>, matching it if a <code>RegExp</code>, or to an asymmetric matcher</td></tr>
+              <tr><td><code>toMatchSchema(schema)</code></td><td>The value (a response: its body) matches the JSON Schema: types, <code>properties</code>, <code>required</code>, <code>additionalProperties</code>, <code>items</code>, <code>enum</code>, <code>const</code>, lengths, ranges, <code>pattern</code>, formats, <code>allOf</code>/<code>anyOf</code>/<code>oneOf</code>/<code>not</code>, local <code>$ref</code>; a failure lists every problem with its path</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="api-fixture">The api fixture</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Member</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr><td><code>api.get(path, options?)</code>, <code>head</code>, <code>delete</code></td><td>A request; <code>options</code>: <code>{ headers, query, timeout }</code></td></tr>
+              <tr><td><code>api.post(path, body?, options?)</code>, <code>put</code>, <code>patch</code></td><td>With a body: JSON, unless a string, a <code>FormData</code>, <code>URLSearchParams</code>, <code>Blob</code> or bytes</td></tr>
+              <tr><td><code>api.request(method, path, options?)</code></td><td>Any method; <code>options.body</code> as above</td></tr>
+              <tr><td><code>api.headers</code></td><td>Headers sent with every request of the test (<code>api.headers.authorization = ...</code>)</td></tr>
+              <tr><td>The response</td><td><code>{ status, ok, headers, body, text, url, method, duration }</code>: <code>body</code> parsed when the response is JSON</td></tr>
             </tbody>
           </table>
         </div>

@@ -4,10 +4,11 @@ const mocks = require('./mocks');
 const numbers = require('./numbers');
 const throwing = require('./throw');
 const values = require('./values');
+const http = require('./http');
 
 // Every matcher is called with `this` set to a MatcherContext and returns { pass, message }. The message is a
 // function, so nothing is formatted unless the assertion fails.
-const matchers = { ...equality, ...values, ...numbers, ...collections, ...throwing, ...mocks };
+const matchers = { ...equality, ...values, ...numbers, ...collections, ...throwing, ...mocks, ...http };
 
 // Old Jest names and vitest names of the same matchers.
 const ALIASES = {
