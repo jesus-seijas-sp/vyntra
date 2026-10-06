@@ -101,6 +101,19 @@ function read(messages) {
   return answer({ shown: true, value, missing: '' });
 }
 
+// Signs up with the email the goal names.
+function signUp(messages) {
+  const email = /sign up with the email (\S+)/.exec(textOf(messages[0]))[1];
+  const page = textOf(messages.at(-1));
+  if (page.includes('status: Welcome')) {
+    return toolUse('done', { summary: 'Signed up' });
+  }
+  if (page.includes(`textbox "Email": ${email}`)) {
+    return toolUse('click', { target: { ...NO_TARGET, role: 'button', name: 'Sign up' } });
+  }
+  return toolUse('fill', { target: { ...NO_TARGET, role: 'textbox', name: 'Email' }, value: email });
+}
+
 module.exports = {
   name: 'fake',
   async complete({ system, messages, tools, schema }) {
@@ -110,6 +123,9 @@ module.exports = {
     // Everything the model was sent, for the tests to look for secret values in.
     if (process.env.FAKE_REQUESTS) {
       fs.appendFileSync(process.env.FAKE_REQUESTS, `${JSON.stringify({ system, messages, tools })}\n`);
+    }
+    if (tools && textOf(messages[0]).includes('Goal: sign up')) {
+      return signUp(messages);
     }
     if (tools && textOf(messages[0]).includes('Goal: make something happen')) {
       return stuck(tools);

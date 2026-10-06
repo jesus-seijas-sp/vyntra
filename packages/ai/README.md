@@ -64,6 +64,24 @@ its response, and two reads of the tree that agree); it waits for that after eve
 the way the tree does: a role and its name, a label, a placeholder, a text. Claims should be ones a person
 could check from the value or the page.
 
+## Values that change every run
+
+Test data that differs from run to run (a timestamped email, a fresh company name) goes in as `unique()`, so
+the steps that use it still replay:
+
+```js
+const { unique } = require('@vyntra/ai');
+
+const email = `ada+${Date.now()}@example.test`;
+await agent.act('sign up with the email {email}', { params: { email: unique(email) } });
+await expect(page.getByRole('status')).toHaveText(`Welcome ${email}`);
+```
+
+The model sees the value as it is. The replay cache sees `<unique:email>` wherever the value shows: in the
+goal, on the page (so later `assert`, `waitFor` and `extract` steps match too), in what the agent typed and
+in what the step changed; as written, URL-encoded or JSON-escaped. A replay types the value of its own run. Keep
+values that choose the flow (a plan name) as plain params: changing those should record again.
+
 ## Secrets
 
 A password or a key goes to an agent as a `secret()`: a handle with a name and no readable value.

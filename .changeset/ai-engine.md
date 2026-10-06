@@ -19,4 +19,6 @@ Judgments can be inconclusive when the value or the page does not settle the cla
 
 `agent.waitFor(condition)` waits until a claim about the page holds, asking the model only when the page changed, and replays with no model calls.
 
+`unique()` params for values that change every run: the model types them as they are, recordings hold `<unique:name>`, and a replay types the value of its own run.
+
 On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.

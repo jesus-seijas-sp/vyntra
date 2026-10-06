@@ -4,6 +4,8 @@ const { AiSession } = require('./session');
 const { judge } = require('./judge');
 const { effectOf, mismatchOf } = require('./effect');
 const { isSecret } = require('./secrets');
+const { isUnique } = require('./unique');
+const { Uniques } = require('./uniques');
 const { FINISHING, TOOLS, toolsFor, perform, pageState } = require('./page-tools');
 
 // What a step that must conclude is offered.
@@ -30,17 +32,22 @@ into the field it belongs in, and nowhere else.
 
 ${DATA_RULE}`;
 
-// The goal with its params in place: {name} in the goal takes params.name, a secret shows as <secret:NAME>. Params the
-// goal does not name follow it as data. Returns { goal, secrets }, the secrets by their NAME.
-function withParams(goal, params = {}) {
+// The goal with its params in place: {name} in the goal takes params.name, a secret shows as <secret:NAME>, a unique()
+// value as it is (and joins `uniques`, by its param's name). Params the goal does not name follow it as data. Returns
+// { goal, secrets }, the secrets by their NAME.
+function withParams(goal, params = {}, uniques = new Uniques()) {
   if (typeof goal !== 'string' || goal.trim() === '') {
     throw new TypeError('act takes a goal, in words');
   }
   const secrets = new Map();
-  const show = (value) => {
+  const show = (value, name) => {
     if (isSecret(value)) {
       secrets.set(value.name, value);
       return String(value);
+    }
+    if (isUnique(value)) {
+      uniques.add(name, value.value);
+      return value.value;
     }
     return typeof value === 'string' ? value : JSON.stringify(value);
   };
@@ -50,10 +57,10 @@ function withParams(goal, params = {}) {
       return whole;
     }
     used.add(name);
-    return show(params[name]);
+    return show(params[name], name);
   });
   const rest = Object.keys(params).filter((name) => !used.has(name));
-  const data = rest.map((name) => `${name}: ${show(params[name])}`);
+  const data = rest.map((name) => `${name}: ${show(params[name], name)}`);
   return { goal: redact(data.length > 0 ? `${text}\n${data.join('\n')}` : text), secrets };
 }
 
@@ -90,6 +97,9 @@ class Agent {
   #page;
 
   #settings;
+
+  // The unique() values of the test's steps, by name.
+  #uniques = new Uniques();
 
   // Acts the model drove, waiting for a check: { session, key, step, result, checks, replaces }.
   #pending = [];
@@ -138,14 +148,22 @@ class Agent {
     return new AiSession(this.#settings);
   }
 
+  // The page as pageState reads it, with this test's unique() values as placeholders in what keys and recordings use
+  // (the key, the tree, the route); the model's text keeps them as they are.
+  async state() {
+    const state = await pageState(this.page);
+    const keyed = (text) => this.#uniques.keyed(text);
+    return { ...state, key: keyed(state.key), tree: keyed(state.tree), route: keyed(state.route) };
+  }
+
   // Reaches a goal on the page: { summary, actions, source: 'recorded' | 'model' }. `params` fill the goal's {name}s;
   // a secret(...) among them is typed by the runner, its value never seen by the model nor recorded.
   async act(instruction, { params } = {}) {
-    const { goal, secrets } = withParams(instruction, params);
+    const { goal, secrets } = withParams(instruction, params, this.#uniques);
     const session = this.session();
     session.checkEnabled();
-    const start = await pageState(this.page);
-    const step = { kind: 'act', text: goal, input: start.key };
+    const start = await this.state();
+    const step = { kind: 'act', text: this.#uniques.keyed(goal), input: start.key };
     const key = session.keyOf(step);
     const recorded = session.recorded(key);
     const replayed = [];
@@ -171,14 +189,14 @@ class Agent {
     }
     const { summary, actions, turns } = await this.drive(session, goal, replayed, secrets);
     const all = [...replayed, ...actions];
-    const end = await pageState(this.page);
+    const end = await this.state();
     const effect = effectOf(start, end);
     if (effect) {
       this.#pending.push({
         session,
         key,
         step,
-        result: { summary, actions: all, effect },
+        result: this.#uniques.keyedValue({ summary, actions: all, effect }),
         checks: Agent.checks(),
         replaces: Boolean(broken),
       });
@@ -203,7 +221,10 @@ class Agent {
 
   // Runs a recording's actions from the page `start`, then checks the page ends the way it did when recorded; returns
   // { reason } when it does not, or null. The actions that ran go to `done`.
-  async replay({ actions, effect }, start, done, { actionTimeout, secrets }) {
+  async replay(recording, start, done, { actionTimeout, secrets }) {
+    // The values this run has for the unique() placeholders the recording holds.
+    const { actions } = this.#uniques.live(recording);
+    const { effect } = recording;
     for (let i = 0; i < actions.length; i += 1) {
       try {
         // eslint-disable-next-line no-await-in-loop -- actions on a page happen one after the other
@@ -213,7 +234,7 @@ class Agent {
       }
       done.push(actions[i]);
     }
-    const mismatch = mismatchOf(effect, start, await pageState(this.page));
+    const mismatch = mismatchOf(effect, start, await this.state());
     return mismatch ? { reason: `every action ran, but ${mismatch}` } : null;
   }
 
@@ -222,7 +243,7 @@ class Agent {
     const { maxSteps, actionTimeout } = session.settings;
     const taken =
       already.length > 0 ? `\n\nThese actions were taken already:\n${already.map(describeAction).join('\n')}` : '';
-    const start = await pageState(this.page);
+    const start = await this.state();
     const messages = [{ role: 'user', content: `Goal: ${goal}${taken}\n\nThe page:\n${asData('page', start.text)}` }];
     const actions = [];
     const guard = new LoopGuard(maxSteps);
@@ -256,7 +277,7 @@ class Agent {
         return { summary: finish.input.summary, actions, turns: messages };
       }
       // eslint-disable-next-line no-await-in-loop
-      const now = await pageState(this.page);
+      const now = await this.state();
       advice = guard.advice(turn + 1);
       messages.push({
         role: 'user',
@@ -303,7 +324,7 @@ class Agent {
         result('Noted.');
       } else {
         // eslint-disable-next-line no-await-in-loop -- the page as this action finds it
-        const before = options.guard ? (await pageState(this.page)).key : null;
+        const before = options.guard ? (await this.state()).key : null;
         if (options.guard?.repeated(call, before)) {
           failed = true;
           options.guard.failed();
@@ -333,7 +354,7 @@ class Agent {
   async assert(claim) {
     const session = this.session();
     session.checkEnabled();
-    const state = await pageState(this.page);
+    const state = await this.state();
     const { verdict, reasoning } = await judge(session, {
       kind: 'assert',
       claim,
@@ -366,7 +387,7 @@ class Agent {
     let last = null;
     for (;;) {
       // eslint-disable-next-line no-await-in-loop -- the page is read again until the claim holds
-      const state = await pageState(this.page);
+      const state = await this.state();
       if (!judged.has(state.key)) {
         judged.add(state.key);
         // eslint-disable-next-line no-await-in-loop
@@ -400,7 +421,7 @@ class Agent {
   async extract(what, schema = { type: 'string' }) {
     const session = this.session();
     session.checkEnabled();
-    const state = await pageState(this.page);
+    const state = await this.state();
     const step = { kind: 'extract', text: what, input: `${JSON.stringify(schema)}\n${state.key}` };
     const key = session.keyOf(step);
     const notShown = ({ missing }) =>

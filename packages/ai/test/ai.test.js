@@ -317,4 +317,20 @@ describe('verdicts', () => {
     const replayed = run(['waiting.e2e.js'], { CI: '1' });
     expect([replayed.status, replayed.calls]).toEqual([0, 0]);
   });
+
+  it('records a unique() value as a placeholder, and replays with the value of the next run', () => {
+    const { dir, run } = project('agent');
+    const env = { VYNTRA_AI_SRC: path.join(__dirname, '..', 'src', 'index.js') };
+    const first = run(['unique.e2e.js'], env);
+    // fill, click, done; the assert.
+    expect([first.status, first.calls]).toEqual([0, 4]);
+    const cache = path.join(dir, 'vyntra.ai-cache', 'unique.e2e.js');
+    const recording = fs.readFileSync(path.join(cache, fs.readdirSync(cache)[0]), 'utf8');
+    expect(recording).toContain('"value": "<unique:email>"');
+    expect(recording).not.toContain('ada+');
+    // Another email, the same recordings: no model, in record mode and in CI.
+    expect(run(['unique.e2e.js'], env).calls).toBe(0);
+    const replayed = run(['unique.e2e.js'], { ...env, CI: '1' });
+    expect([replayed.status, replayed.calls]).toEqual([0, 0]);
+  });
 });
