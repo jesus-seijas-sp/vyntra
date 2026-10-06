@@ -6,6 +6,7 @@ const state = require('./state');
 const { isSpyable, makeSpyable, markSpyable } = require('./modules/spyable');
 const { installCjsLoader, nearestType } = require('./cjs-loader');
 const { rewriteImportMetaEnv } = require('./import-meta-env');
+const { rewriteImportMetaVitest } = require('./in-source');
 const { resolveWithPlugins, loadWithPlugins, applyPlugins, transformWithPlugins } = require('./plugins');
 
 // Modules Vite plugins make up (resolveId to an id that is no file, load to its code).
@@ -354,7 +355,7 @@ function hookEsm(config) {
         return loaded;
       }
       const source = String(loaded.source);
-      const rewritten = rewriteImportMetaEnv(source);
+      const rewritten = rewriteImportMetaVitest(rewriteImportMetaEnv(source));
       // Coverage of a compiled file needs the lines of the code that ran, to map its counts back (coverage/remap.js).
       if (config.coverage && compiledCodeOf(fileURLToPath(url))) {
         recordExecuted(fileURLToPath(url), rewritten);

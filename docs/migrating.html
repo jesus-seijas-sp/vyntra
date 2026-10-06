@@ -175,7 +175,8 @@
               <tr><td><code>globalSetup</code></td><td><span class="check">✓</span> Its <code>provide()</code> and the tests' <code>inject()</code> too</td></tr>
               <tr><td><code>test.projects</code>, <code>vitest.workspace</code></td><td><span class="check">✓</span> Each project from its own folder: folders (with their own config or none), config files, or projects written inline, which take the root config's options with <code>extends: true</code>. Named by <code>test.name</code>, or their <code>package.json</code>. See <a href="guide.html#projects">Projects</a></td></tr>
               <tr><td><code>typecheck</code>, <code>expectTypeOf</code>, <code>assertType</code></td><td><span class="check">✓</span> <code>--typecheck</code> checks the <code>*.test-d.ts</code> files with your <code>tsc</code> (or <code>vue-tsc</code>), each error on its test; <code>include</code>, <code>tsconfig</code>, <code>checker</code>, <code>ignoreSourceErrors</code> as in Vitest. At run time <code>expectTypeOf</code> and <code>assertType</code> do nothing</td></tr>
-              <tr><td>Browser mode, <code>bench</code>, in-source tests</td><td><span class="cross">✗</span> Not supported</td></tr>
+              <tr><td><code>includeSource</code>, in-source tests (<code>if (import.meta.vitest)</code>)</td><td><span class="check">✓</span> The same: a source file is a test file when it has them, and a module another test imports keeps them to itself</td></tr>
+              <tr><td>Browser mode, <code>bench</code></td><td><span class="cross">✗</span> Not supported</td></tr>
             </tbody>
           </table>
         </div>
@@ -208,7 +209,7 @@
 
         <h2 id="missing">Not supported yet</h2>
         <ul>
-          <li>Vitest's browser mode, <code>bench</code>, and in-source tests.</li>
+          <li>Vitest's browser mode and <code>bench</code>.</li>
         </ul>
         <p>
           If your suite needs one of them, keep your current runner for now, or run the tests that need it with it.

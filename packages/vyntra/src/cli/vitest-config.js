@@ -10,6 +10,7 @@ const isVitestConfig = (config) => config !== null && typeof config?.test === 'o
 // Options of the same name and meaning in both.
 const SAME = [
   'include',
+  'includeSource',
   'exclude',
   'testTimeout',
   'hookTimeout',

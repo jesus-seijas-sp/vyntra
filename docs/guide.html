@@ -175,6 +175,24 @@ npx vyntra -u                   # update the snapshots that changed</code></pre>
             node or jsdom environment the class extends, and copies in what the class adds to its global.</li>
         </ul>
 
+        <h3 id="in-source">In-source tests</h3>
+        <p>
+          As in Vitest, tests can live in the source file they test, in an <code>if (import.meta.vitest)</code> block,
+          for the files <code>includeSource</code> names. A file there that has such a block is a test file;
+          <code>import.meta.vitest</code> is the test API in it, and <code>undefined</code> anywhere else, so a module
+          another test file imports does not add its tests to that one. A build leaves the block out with Vite's
+          <code>define: { 'import.meta.vitest': 'undefined' }</code>.
+        </p>
+        <pre><code class="language-js">// src/math.js, with includeSource: ['src/**/*.js']
+export const add = (a, b) => a + b;
+
+if (import.meta.vitest) {
+  const { it, expect } = import.meta.vitest;
+  it('adds', () => {
+    expect(add(1, 2)).toBe(3);
+  });
+}</code></pre>
+
         <h3 id="typecheck">Type tests</h3>
         <p>
           <code>vyntra --typecheck</code> (or Vitest's <code>typecheck.enabled</code>) checks the types of the
@@ -994,7 +1012,7 @@ test('adds a todo', async ({ page }) => {
         </p>
         <h3>What is not supported yet?</h3>
         <p>
-          Vitest's browser mode, <code>bench</code> and in-source tests.
+          Vitest's browser mode and <code>bench</code>.
           <a href="migrating.html#missing">Migrating</a> has the whole list.
         </p>
         <h3>My tests expect <code>NODE_ENV=test</code>.</h3>

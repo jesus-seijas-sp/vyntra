@@ -11,6 +11,8 @@ const { loadEnvFiles } = require('../import-meta-env');
 const DEFAULTS = {
   roots: ['.'],
   include: ['**/*.{test,spec}.?(c|m)[jt]s?(x)', '**/__tests__/**/*.?(c|m)[jt]s?(x)'],
+  // Source files with tests of their own (`if (import.meta.vitest)`), as vitest's includeSource.
+  includeSource: [],
   exclude: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/coverage/**'],
   // Regular expressions (Jest's testPathIgnorePatterns) matched against the path of every test file.
   excludePatterns: [],

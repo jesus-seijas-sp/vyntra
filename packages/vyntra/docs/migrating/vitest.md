@@ -32,7 +32,8 @@ vyntra reads your `vitest.config.ts` (or a `vite.config.*` with a `test` section
 | `globalSetup` | ✓ Its `provide()` and the tests' `inject()` too |
 | `test.projects`, `vitest.workspace` | ✓ Each project from its own folder: folders (with their own config or none), config files, or projects written inline, which take the root config's options with `extends: true`. Named by `test.name`, or their `package.json`. See [Projects](../guide/projects.md) |
 | `typecheck`, `expectTypeOf`, `assertType` | ✓ `--typecheck` checks the `*.test-d.ts` files with your `tsc` (or `vue-tsc`), each error on its test; `include`, `tsconfig`, `checker`, `ignoreSourceErrors` as in Vitest. At run time `expectTypeOf` and `assertType` do nothing |
-| Browser mode, `bench`, in-source tests | ✗ Not supported |
+| `includeSource`, in-source tests (`if (import.meta.vitest)`) | ✓ The same: a source file is a test file when it has them, and a module another test imports keeps them to itself |
+| Browser mode, `bench` | ✗ Not supported |
 
 ## Differences with Vitest
 

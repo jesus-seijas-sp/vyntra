@@ -9,6 +9,7 @@ In `vyntra.config.js`, `"vyntra"` in `package.json`, or your Vitest or Jest conf
 | `excludePatterns` | `[]` | Regular expressions of paths left out (Jest's `testPathIgnorePatterns`) |
 | `roots` | `['.']` | Folders to look for tests in |
 | `engine` | `undefined` | The kind of tests of the project: `'web'` runs them in a browser with `@vyntra/web` (see [End-to-end tests](../guide/e2e.md)) |
+| `includeSource` | `[]` | Globs of source files that hold tests of their own, in an `if (import.meta.vitest)` block (see [In-source tests](../guide/running.md)) |
 | `projects` | `undefined` | Parts of the suite with options of their own: `{ name, include, dependsOn, globalSetup, globalTeardown, ... }`; `root` is the folder its paths are from, and `inherit: false` leaves out the top level's options (see [Projects](../guide/projects.md)). A Vitest or Jest config's projects are read as these |
 | `globalSetup`, `globalTeardown` | `undefined` | Files run once in the main process, before and after the test files (see [Global setup](../guide/projects.md)) |
 | `server` | `undefined` | A command started before the tests and stopped after: `{ command, url \| port, timeout, reuseExisting, env, cwd }` (see [A server for the tests](../guide/projects.md)) |

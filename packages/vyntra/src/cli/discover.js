@@ -59,6 +59,25 @@ const isFile = (file) => {
   }
 };
 
+const hasInSourceTests = (file) => {
+  try {
+    return fs.readFileSync(file, 'utf8').includes('import.meta.vitest');
+  } catch {
+    return false;
+  }
+};
+
+// vitest's includeSource: source files that are test files too, when they hold tests (`if (import.meta.vitest)`).
+function inSourceFiles(config, exclude, ignore) {
+  if (!config.includeSource?.length) {
+    return [];
+  }
+  const includeSource = config.includeSource.map(globToRegExp);
+  return config.roots
+    .flatMap((root) => walk(path.resolve(config.rootDir, root), includeSource, exclude))
+    .filter((file) => !ignore.some((regex) => regex.test(toPosix(file))) && hasInSourceTests(file));
+}
+
 function discover(config, patterns = []) {
   const include = config.include.map(globToRegExp);
   const exclude = config.exclude.map(globToRegExp);
@@ -68,8 +87,10 @@ function discover(config, patterns = []) {
   if (named.length > 0 && named.every(isFile)) {
     return [...new Set(named)].filter((file) => {
       const relative = toPosix(path.relative(config.rootDir, file));
+      const inSource =
+        (config.includeSource ?? []).some((glob) => globToRegExp(glob).test(relative)) && hasInSourceTests(file);
       return (
-        include.some((regex) => regex.test(relative)) &&
+        (include.some((regex) => regex.test(relative)) || inSource) &&
         !exclude.some((regex) => regex.test(relative)) &&
         !ignore.some((regex) => regex.test(toPosix(file)))
       );
@@ -78,7 +99,11 @@ function discover(config, patterns = []) {
   const files = config.roots
     .flatMap((root) => walk(path.resolve(config.rootDir, root), include, exclude))
     .filter((file) => !ignore.some((regex) => regex.test(toPosix(file))));
-  return filterByPatterns([...new Set(files)], config.rootDir, patterns);
+  return filterByPatterns(
+    [...new Set([...files, ...inSourceFiles(config, exclude, ignore)])],
+    config.rootDir,
+    patterns
+  );
 }
 
 module.exports = { discover };

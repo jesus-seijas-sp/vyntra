@@ -6,7 +6,9 @@ const state = require('./state');
 const { realTimers } = require('./timers/real-timers');
 const { setColors } = require('./colors');
 const { CoverageCollector } = require('./coverage/collector');
-const { installGlobals } = require('./index');
+const testApi = require('./index');
+
+const { installGlobals } = testApi;
 const { isolateModules, forgetModules } = require('./loader');
 const { runFile, reportUncaught } = require('./run/run-file');
 const { mocks } = require('./modules/registry');
@@ -23,6 +25,7 @@ const { loadPlugins } = require('./plugins');
 const { teardownScope } = require('./run/fixtures');
 const { loadEngine } = require('./engines');
 const { installImportMetaEnv } = require('./import-meta-env');
+const { installImportMetaVitest } = require('./in-source');
 const { isCustom, setupEnvironment, baseEnvironment } = require('./custom-environment');
 const { expect } = require('./expect');
 const { serializeError } = require('./run/serialize-error');
@@ -207,6 +210,7 @@ async function createRuntime(config) {
   const resolutions = speedUpLoading(config);
   installGlobals();
   installImportMetaEnv(config.importMetaEnv);
+  installImportMetaVitest(testApi);
   captureConsole(config.silent);
   catchUncaught();
   shimProcessSend();

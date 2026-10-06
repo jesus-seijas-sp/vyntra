@@ -44,6 +44,22 @@ AssertionError: expect(received).toEqual(expected)
 - A Vitest environment, `{ name, setup(global, options) }`, gets the global object the tests run in, and its options from `environmentOptions[name]`.
 - A Jest environment class gets `testEnvironmentOptions` and the test file's path as Jest gives them. Jest runs the tests in its `this.global`; vyntra runs them in the worker's global, over the node or jsdom environment the class extends, and copies in what the class adds to its global.
 
+## In-source tests
+
+As in Vitest, tests can live in the source file they test, in an `if (import.meta.vitest)` block, for the files `includeSource` names. A file there that has such a block is a test file; `import.meta.vitest` is the test API in it, and `undefined` anywhere else, so a module another test file imports does not add its tests to that one. A build leaves the block out with Vite's `define: { 'import.meta.vitest': 'undefined' }`.
+
+```js
+// src/math.js, with includeSource: ['src/**/*.js']
+export const add = (a, b) => a + b;
+
+if (import.meta.vitest) {
+  const { it, expect } = import.meta.vitest;
+  it('adds', () => {
+    expect(add(1, 2)).toBe(3);
+  });
+}
+```
+
 ## Type tests
 
 `vyntra --typecheck` (or Vitest's `typecheck.enabled`) checks the types of the `*.test-d.ts` files instead of running them, with your project's `tsc`, as Vitest does: a type error fails the test whose call it is in, one outside every test fails the file, and one in a file the tests reach fails the run unless `typecheck.ignoreSourceErrors`. The other tests run as usual; `--typecheck.only` runs none of them. `expectTypeOf` and `assertType` are there for the checker, and do nothing at run time. `typecheck.include`, `tsconfig` and `checker` (`'vue-tsc'`) are read as Vitest reads them.
