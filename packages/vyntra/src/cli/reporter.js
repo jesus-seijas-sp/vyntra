@@ -43,16 +43,24 @@ class Reporter {
     this.out.write(`${text}\n`);
   }
 
+  // A file as the lines show it: from the root, after its project's name in a run of several.
+  label(result) {
+    const file = this.relative(result.path);
+    return result.project ? `${c.dim(`[${result.project}]`)} ${file}` : file;
+  }
+
   relative(file) {
     return path.relative(this.config.rootDir, file).split(path.sep).join('/');
   }
 
   onStart(fileCount, workers) {
     const mode = this.config.pool === 'inline' ? 'inline' : `${workers} worker${workers === 1 ? '' : 's'}`;
-    const { shard, rerunning } = this.config;
-    const notes = [shard && `shard ${shard.index}/${shard.total}`, rerunning && `last failed: ${rerunning}`].filter(
-      Boolean
-    );
+    const { shard, rerunning, projectNames } = this.config;
+    const notes = [
+      shard && `shard ${shard.index}/${shard.total}`,
+      rerunning && `last failed: ${rerunning}`,
+      projectNames && `projects: ${projectNames.join(', ')}`,
+    ].filter(Boolean);
     const scope = notes.length > 0 ? ` (${notes.join(', ')})` : '';
     this.write(`\n ${c.bold(c.cyan('VYNTRA'))} ${c.dim(`running ${fileCount} test files${scope} on ${mode}`)}\n`);
   }
@@ -65,7 +73,7 @@ class Reporter {
         ? result.console.filter(({ test }) => (test ? failed.has(test) : broken))
         : result.console;
     shown.forEach(({ type, test, text }) => {
-      const where = [this.relative(result.path), test].filter(Boolean).join(' > ');
+      const where = [this.label(result), test].filter(Boolean).join(' > ');
       const stream = type === 'error' || type === 'warn' ? 'stderr' : 'stdout';
       this.write(c.dim(`${stream} | ${where}`));
       this.write(`${text}\n`);
@@ -84,7 +92,7 @@ class Reporter {
     ].join('');
     const icon = broken ? c.red('❯') : c.green('✓');
     this.write(
-      ` ${icon} ${this.relative(result.path)} ${c.dim(`(${result.tests.length} tests${counts})`)} ${c.gray(formatDuration(result.duration))}`
+      ` ${icon} ${this.label(result)} ${c.dim(`(${result.tests.length} tests${counts})`)} ${c.gray(formatDuration(result.duration))}`
     );
     const shown = this.verbose ? result.tests : [...failed, ...flaky];
     shown.forEach((test) => {
@@ -112,11 +120,11 @@ class Reporter {
 
   printFailures() {
     const failures = this.results.flatMap((result) => [
-      ...result.errors.map((error) => ({ title: `${this.relative(result.path)}`, error, kind: 'Suite error' })),
+      ...result.errors.map((error) => ({ title: `${this.label(result)}`, error, kind: 'Suite error' })),
       ...result.tests
         .filter((test) => test.status === 'failed')
         .flatMap((test) =>
-          test.errors.map((error) => ({ title: `${this.relative(result.path)} > ${test.path.join(' > ')}`, error }))
+          test.errors.map((error) => ({ title: `${this.label(result)} > ${test.path.join(' > ')}`, error }))
         ),
     ]);
     if (failures.length === 0) {
@@ -139,7 +147,7 @@ class Reporter {
     }
     this.write(`\n${c.yellow(c.bold(`⎯⎯⎯⎯⎯⎯ Flaky Tests ${flaky.length} ⎯⎯⎯⎯⎯⎯`))}\n`);
     flaky.forEach(({ result, test }) => {
-      const title = `${this.relative(result.path)} > ${test.path.join(' > ')}`;
+      const title = `${this.label(result)} > ${test.path.join(' > ')}`;
       this.write(`${c.bgYellow(c.bold(' FLAKY '))} ${title} ${c.dim(`(passed on attempt ${test.retries + 1})`)}`);
       (test.attempts ?? []).forEach(({ errors }, i) => {
         const [error] = errors;

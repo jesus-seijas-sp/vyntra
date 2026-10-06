@@ -59,7 +59,8 @@ class JunitReporter {
     const skipped = result.tests.filter((test) => test.status === 'skipped' || test.status === 'todo').length;
     const errors = result.errors.length;
     const tests = result.tests.length + (errors > 0 ? 1 : 0);
-    const attributes = `name="${escape(file)}" tests="${tests}" failures="${failures}" errors="${errors}" skipped="${skipped}" time="${seconds(result.duration)}" timestamp="${this.startedAt}" hostname="${escape(os.hostname())}"`;
+    const name = result.project ? `${result.project} > ${file}` : file;
+    const attributes = `name="${escape(name)}" tests="${tests}" failures="${failures}" errors="${errors}" skipped="${skipped}" time="${seconds(result.duration)}" timestamp="${this.startedAt}" hostname="${escape(os.hostname())}"`;
     const cases = result.tests.flatMap((test) => testcase(file, test));
     if (errors > 0) {
       cases.push(

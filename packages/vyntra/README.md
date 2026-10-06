@@ -91,7 +91,7 @@ Differences with Jest and Vitest: `NODE_ENV` is left as it is (they set it to `t
 `env: { NODE_ENV: 'test' }` in `vyntra.config.js`), `import()` of ES modules works from CommonJS (Jest can not
 run it without `--experimental-vm-modules`), and stack traces of compiled files show the compiled lines.
 
-Not available yet: watch mode, Jest and Vitest `projects` in one run, `globalSetup`/`globalTeardown`, custom test
+Not available yet: watch mode, Jest's and Vitest's `projects` read from their configs (vyntra's own `projects` work), custom test
 environments (a Jest `testEnvironment` module) and `testEnvironmentOptions`, Babel without a `transform`,
 asynchronous transformers and Vite `resolveId`/`load` hooks, source maps in stack traces, named imports from JSON,
 `import.meta.env`, type checking, coverage of files no test loads.
@@ -118,6 +118,7 @@ asynchronous transformers and Vite `resolveId`/`load` hooks, source maps in stac
     --coverageDirectory <dir>  Where coverage reports go (default: coverage; vitest's --coverage.reportsDirectory too)
     --ci                       Do not write new snapshots
     --shard <index>/<total>    Run one slice of the test files, for CI jobs in parallel (e.g. --shard 2/4)
+    --project <name>           Run only this project (repeat it, or use commas)
     --last-failed              Run only the tests that failed, until they pass (also --lastFailed)
     --outputDir <dir>          Where the run's report goes (default: .vyntra)
 ```

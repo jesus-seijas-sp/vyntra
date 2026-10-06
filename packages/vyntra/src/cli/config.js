@@ -281,6 +281,11 @@ function fromJestConfig(original, rootDir) {
       ])
     );
   }
+  ['globalSetup', 'globalTeardown']
+    .filter((key) => jest[key])
+    .forEach((key) => {
+      config[key] = resolveRootDir(jest[key], rootDir);
+    });
   const setupFiles = [...(jest.setupFiles ?? []), ...(jest.setupFilesAfterEnv ?? [])];
   if (setupFiles.length > 0) {
     config.setupFiles = setupFiles.map((file) => resolveRootDir(file, rootDir));
@@ -407,4 +412,4 @@ async function loadConfig(cliOptions) {
   return config;
 }
 
-module.exports = { loadConfig, importConfig, DEFAULTS };
+module.exports = { loadConfig, importConfig, resolveSetupFile, DEFAULTS };

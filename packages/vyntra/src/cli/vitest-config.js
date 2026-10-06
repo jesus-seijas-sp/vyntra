@@ -88,7 +88,6 @@ function compilerOptionsOf(vite) {
 // What vyntra does not do, said once rather than silently ignored.
 function warnUnsupported(test) {
   const unsupported = [
-    test.globalSetup && 'globalSetup',
     (test.projects || test.workspace) && 'projects',
     test.browser?.enabled && 'browser mode',
     test.typecheck?.enabled && 'typecheck',
@@ -113,6 +112,9 @@ function fromVitestConfig(vite, rootDir) {
     config.setupFiles = [test.setupFiles]
       .flat()
       .map((file) => (file.startsWith('.') ? path.resolve(root, file) : file));
+  }
+  if (test.globalSetup) {
+    config.globalSetup = [test.globalSetup].flat().map((file) => path.resolve(root, file));
   }
   if (test.mockReset !== undefined) {
     config.resetMocks = test.mockReset;

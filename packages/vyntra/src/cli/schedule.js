@@ -86,4 +86,4 @@ function plan(files, timings, config) {
   return { jobs, workers: Math.max(1, Math.min(workers, jobs.length)) };
 }
 
-module.exports = { plan };
+module.exports = { plan, explicitWorkers };

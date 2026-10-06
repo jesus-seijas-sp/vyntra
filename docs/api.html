@@ -324,6 +324,7 @@
             <thead><tr><th>Function</th><th>What it does</th></tr></thead>
             <tbody>
               <tr><td><code>vi.stubGlobal(name, value)</code>, <code>vi.unstubAllGlobals()</code></td><td>Replaces a global, until the file ends</td></tr>
+              <tr><td><code>inject(key)</code></td><td>A value a <code>globalSetup</code> provided (see <a href="guide.html#global-setup">Global setup</a>); imported from <code>vyntra</code> or <code>vitest</code></td></tr>
               <tr><td><code>vi.stubEnv(name, value)</code>, <code>vi.unstubAllEnvs()</code></td><td>Replaces an environment variable, until the file ends</td></tr>
               <tr><td><code>vi.waitFor(fn, { timeout, interval })</code></td><td>Retries <code>fn</code> until it does not throw</td></tr>
               <tr><td><code>vi.waitUntil(fn, { timeout, interval })</code></td><td>Retries <code>fn</code> until it returns something truthy</td></tr>
@@ -358,6 +359,7 @@
               <tr><td><code>--coverage</code></td><td>Reports the coverage of the project</td></tr>
               <tr><td><code>--coverageDirectory &lt;dir&gt;</code></td><td>Where the coverage reports go (<code>coverage</code>); vitest's <code>--coverage.reportsDirectory</code> is accepted too</td></tr>
               <tr><td><code>--fail-on-flaky</code></td><td>Fails the run when a test passed only on a retry (see <a href="guide.html#retry">Retries</a>); also <code>--failOnFlaky</code></td></tr>
+              <tr><td><code>--project &lt;name&gt;</code></td><td>Runs only these projects (repeat it, or use commas; see <a href="guide.html#projects">Projects</a>)</td></tr>
               <tr><td><code>--last-failed</code></td><td>Runs only the tests that failed, until they pass (see <a href="guide.html#last-failed">Rerunning failures</a>); also <code>--lastFailed</code></td></tr>
               <tr><td><code>--outputDir &lt;dir&gt;</code></td><td>Where the run's report goes (<code>.vyntra</code>)</td></tr>
               <tr><td><code>--shard &lt;index&gt;/&lt;total&gt;</code></td><td>Runs one slice of the test files (from 1), the same on every machine, for CI jobs in parallel (see <a href="guide.html#sharding">Sharding</a>)</td></tr>
@@ -395,6 +397,8 @@
               <tr><td><code>exclude</code></td><td><code>node_modules</code>, <code>.git</code>, <code>dist</code>, <code>coverage</code></td><td>Globs of the folders and files left out</td></tr>
               <tr><td><code>excludePatterns</code></td><td><code>[]</code></td><td>Regular expressions of paths left out (Jest's <code>testPathIgnorePatterns</code>)</td></tr>
               <tr><td><code>roots</code></td><td><code>['.']</code></td><td>Folders to look for tests in</td></tr>
+              <tr><td><code>projects</code></td><td><code>undefined</code></td><td>Parts of the suite with options of their own: <code>{ name, include, dependsOn, globalSetup, globalTeardown, ... }</code> (see <a href="guide.html#projects">Projects</a>)</td></tr>
+              <tr><td><code>globalSetup</code>, <code>globalTeardown</code></td><td><code>undefined</code></td><td>Files run once in the main process, before and after the test files (see <a href="guide.html#global-setup">Global setup</a>)</td></tr>
               <tr><td><code>use</code></td><td><code>undefined</code></td><td>Options of the fixtures (<code>{ baseURL: 'http://localhost:4000' }</code>): each a fixture tests can destructure, and the value of a <code>test.extend</code> option of that name</td></tr>
               <tr><td><code>setupFiles</code></td><td><code>[]</code></td><td>Files loaded before every test file: paths from the root, or package names (<code>'reflect-metadata'</code>, <code>'jest-extended/all'</code>)</td></tr>
               <tr><td><code>testTimeout</code></td><td><code>5000</code></td><td>Timeout of tests, in ms</td></tr>

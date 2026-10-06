@@ -1,47 +1,23 @@
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { version } = require('../../package.json');
 const { colors: c, setColors, detectColors } = require('../colors');
 const { mergeCoverage } = require('../coverage/collector');
 const { reportCoverage } = require('../coverage/report');
 const { ResolveCache, dependencyStamp, cacheFile } = require('../resolve-cache');
-const { createRuntime } = require('../runtime');
 const { realTimers } = require('../timers');
 const { parseCli } = require('./args');
 const { loadConfig } = require('./config');
-const { discover } = require('./discover');
 const { parseShard, selectShard } = require('./select-shard');
 const { EXIT, brokeSetup } = require('./exit-codes');
 const { readReport, owedAfter, rerunOf, writeReport } = require('./last-run');
 const { reporterNames, unknownReporters, createReporters, clearOutputs } = require('./reporters');
-const { plan } = require('./schedule');
-const { ShardMerger } = require('./shard-merger');
+const { explicitWorkers } = require('./schedule');
 const { Timings } = require('./timings');
-const { WorkerPool } = require('./worker-pool');
-
-// Everything in the main thread: no worker startup, the fastest option for a handful of small files. Same interface
-// as the WorkerPool: run(jobs) resolves with what was collected (coverage), stop() skips the jobs left.
-class InlineRunner {
-  constructor({ config, onResult }) {
-    this.config = config;
-    this.onResult = onResult;
-    this.stopped = false;
-  }
-
-  async run(jobs) {
-    const { run, finish } = await createRuntime(this.config);
-    await jobs.reduce(
-      (prev, job) => prev.then(async () => (this.stopped ? undefined : this.onResult(await run(job.path, job.shard)))),
-      Promise.resolve()
-    );
-    return [await finish()];
-  }
-
-  stop() {
-    this.stopped = true;
-  }
-}
+const { resolveProjects, assignFiles } = require('./projects');
+const { ProjectRun } = require('./run-projects');
 
 // Caches that make loading the dependencies faster, kept in node_modules/.cache (only for projects with node_modules).
 function loadingCaches(rootDir) {
@@ -137,108 +113,137 @@ async function main(argv = process.argv.slice(2)) {
     );
     return EXIT.setup;
   }
+  let resolved;
+  try {
+    resolved = resolveProjects(config, cli.projects);
+  } catch (error) {
+    process.stderr.write(`${c.red(error.message)}\n`);
+    return EXIT.setup;
+  }
   const startedAt = new Date().toISOString();
   const previous = readReport(config);
-  let discovered = discover(config, cli.patterns);
+  let projects = assignFiles(resolved.projects, cli.patterns).filter(
+    (project) => !resolved.selected || resolved.selected.has(project.name)
+  );
+  let discovered = projects.flatMap((project) => project.files);
   let rerunning = null;
+  const keep = (wanted) => {
+    projects = projects.map((project) => ({ ...project, files: project.files.filter((file) => wanted.has(file)) }));
+  };
   if (config.lastFailed && !previous) {
     process.stdout.write(`${c.yellow('No report of an earlier run: running every test')}\n`);
   } else if (config.lastFailed) {
-    config.rerun = rerunOf(previous, config.rootDir);
-    discovered = discovered.filter((file) => file in config.rerun);
+    const rerun = rerunOf(previous, config.rootDir);
+    discovered = discovered.filter((file) => file in rerun);
     if (discovered.length === 0) {
       process.stdout.write(`${c.green('No failed tests to rerun')}\n`);
       return EXIT.passed;
     }
-    rerunning = describeRerun(discovered.map((file) => config.rerun[file]));
+    keep(new Set(discovered));
+    projects.forEach((project) => Object.assign(project.config, { rerun }));
+    rerunning = describeRerun(discovered.map((file) => rerun[file]));
   }
-  const files = timings.sort(shard ? selectShard(discovered, shard, config.rootDir) : discovered);
+  if (shard) {
+    keep(new Set(selectShard(discovered, shard, config.rootDir)));
+  }
+  projects = projects.map((project) => ({ ...project, files: timings.sort(project.files) }));
+  const files = projects.flatMap((project) => project.files);
   if (files.length === 0) {
     const where = shard ? ` in shard ${shard.index}/${shard.total} (of ${discovered.length})` : '';
     process.stdout.write(`${c.yellow(`No test files found${where}`)}\n`);
     return config.passWithNoTests ? EXIT.passed : EXIT.setup;
   }
-  // One job (a file run whole) runs in the main thread: no worker to start. A single long file split in parts does
-  // get workers. In the main thread, split files would only run one part after the other: they run whole.
-  const planned = config.pool === 'inline' ? null : plan(files, timings, config);
-  const inline = !planned || planned.jobs.length === 1;
-  const { jobs, workers } = inline ? { jobs: files.map((file) => ({ path: file, shard: null })), workers: 1 } : planned;
-  const reporter = createReporters(reporters, { ...config, pool: inline ? 'inline' : config.pool, shard, rerunning });
-  if (!config.lastFailed) {
-    clearOutputs(config);
+  // Coverage leaves out the test files themselves. V8 keys its code cache by module URL, and each test file imports
+  // the project's modules under URLs of its own: the cache grows by a copy per file and run and is rarely read back.
+  // Measured slower than compiling, so it is only kept for configs that ask (compileCache: true).
+  const shared = { testFiles: files, ...loadingCaches(config.rootDir) };
+  if (config.compileCache === true) {
+    shared.compileCacheDir = path.join(config.rootDir, 'node_modules', '.cache', 'vyntra', 'v8');
   }
-  reporter.onStart(files.length, workers);
   let failedFiles = 0;
   let brokenFiles = 0;
-  let runner;
+  let environmentFiles = 0;
+  let run;
   const results = [];
+  let reporter;
   const onFileResult = (result) => {
     results.push(result);
-    const work = result.work ?? result.duration;
-    const testTime = result.tests.reduce((sum, test) => sum + test.duration, 0);
-    timings.record(result.path, work, result.tests.length, Math.max(0, work - testTime) / (result.shards ?? 1));
+    if (!result.synthetic) {
+      const work = result.work ?? result.duration;
+      const testTime = result.tests.reduce((sum, test) => sum + test.duration, 0);
+      timings.record(result.path, work, result.tests.length, Math.max(0, work - testTime) / (result.shards ?? 1));
+    }
     reporter.onFileResult(result);
-    if (brokeSetup(result)) {
+    if (result.errors.some((error) => error.phase === 'environment')) {
+      environmentFiles += 1;
+    } else if (brokeSetup(result)) {
       brokenFiles += 1;
     }
     if (result.errors.length > 0 || result.tests.some((test) => test.status === 'failed')) {
       failedFiles += 1;
       // --bail n: no more files once n have failed.
       if (config.bail > 0 && failedFiles >= config.bail) {
-        runner.stop();
+        run.stop();
       }
     }
   };
-  const merger = new ShardMerger(onFileResult);
-  const onResult = (result) => merger.add(result);
-  // Coverage leaves out the test files themselves.
-  config.testFiles = files;
-  Object.assign(config, loadingCaches(config.rootDir));
-  // V8 keys its code cache by module URL, and each test file imports the project's modules under URLs of
-  // its own: the cache grows by a copy per file and run and is rarely read back. Measured slower than
-  // compiling, so it is only kept for configs that ask (compileCache: true).
-  if (config.compileCache === true) {
-    config.compileCacheDir = path.join(config.rootDir, 'node_modules', '.cache', 'vyntra', 'v8');
+  const named = projects.filter((project) => project.name);
+  run = new ProjectRun({
+    run: resolved.run,
+    projects,
+    timings,
+    shared: { ...shared, configFile: config.configFile, rootDir: config.rootDir },
+    onFileResult,
+    onNotice: (text) => process.stdout.write(`${c.yellow(text)}\n`),
+    explicitWorkers:
+      config.maxWorkers !== undefined ? explicitWorkers(config.maxWorkers, os.availableParallelism()) : undefined,
+  });
+  const layout = run.layout();
+  reporter = createReporters(reporters, {
+    ...config,
+    pool: layout.inline ? 'inline' : config.pool,
+    shard,
+    rerunning,
+    projectNames: named.length > 0 ? named.map((project) => project.name) : null,
+  });
+  if (!config.lastFailed) {
+    clearOutputs(config);
   }
-  if (inline) {
-    runner = new InlineRunner({ config, onResult });
-  } else {
-    // The config crosses to the workers by structured clone: no functions.
-    // Plugins hold functions too: each worker loads them from the config file.
-    const workerConfig = Object.fromEntries(
-      Object.entries(config).filter(([key, value]) => typeof value !== 'function' && key !== 'plugins')
-    );
-    runner = new WorkerPool({ size: workers, config: workerConfig, onResult });
-  }
+  reporter.onStart(files.length, layout.workers);
   const onInterrupt = () => {
-    runner.interrupt?.();
+    run.interrupt();
     process.stdout.write(`\n${c.yellow('Interrupted')}\n`, () => process.exit(EXIT.interrupted));
   };
   process.once('SIGINT', onInterrupt);
-  const collected = await runner.run(jobs);
+  const collected = await run.run();
   process.off('SIGINT', onInterrupt);
-  merger.flush();
   timings.save();
-  if (config.resolveCache) {
+  if (shared.resolveCache) {
     ResolveCache.save(
-      config.resolveCache,
+      shared.resolveCache,
       collected.map((item) => item.resolutions)
     );
   }
   const duration = realTimers.performanceNow() - start;
   const passed = reporter.onFinish(duration);
   const coverage = collected.map((item) => item.coverage).filter(Boolean);
-  const covered = config.coverage ? reportCoverage(mergeCoverage(coverage), config) : true;
+  const covered = config.coverage ? reportCoverage(mergeCoverage(coverage), { ...config, testFiles: files }) : true;
   // Fixtures shared by a worker end with it, after its files: their teardown errors belong to no file.
   const teardownErrors = collected.flatMap((item) => item?.errors ?? []);
   teardownErrors.forEach((error) => {
     process.stderr.write(`${c.red('A worker fixture failed to tear down:')}\n${error.stack || error.message}\n`);
   });
   let exitCode = passed && covered && failedFiles === 0 && teardownErrors.length === 0 ? EXIT.passed : EXIT.failed;
-  if (brokenFiles > 0) {
+  if (environmentFiles > 0) {
+    exitCode = EXIT.environment;
+  } else if (brokenFiles > 0) {
     exitCode = EXIT.setup;
   }
-  const owed = owedAfter(previous?.owed ?? [], results, config.rootDir);
+  const owed = owedAfter(
+    previous?.owed ?? [],
+    results.filter((result) => !result.synthetic),
+    config.rootDir
+  );
   writeReport(config, { startedAt, duration, exitCode, results, owed });
   return exitCode;
 }

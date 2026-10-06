@@ -102,8 +102,8 @@
               <tr><td><code>testEnvironment</code> as a module of your own (a class extending <code>jest-environment-jsdom</code>)</td><td><span class="cross">✗</span> Not supported: the tests run in Node's environment, without a warning</td></tr>
               <tr><td><code>testEnvironmentOptions</code></td><td><span class="cross">✗</span> Not read</td></tr>
               <tr><td>Babel without a <code>transform</code> (Jest runs <code>babel-jest</code> by itself when it finds a Babel config)</td><td><span class="cross">✗</span> Not run: name <code>babel-jest</code> in <code>transform</code>. Flow, and syntax only Babel knows, do not run otherwise</td></tr>
-              <tr><td><code>globalSetup</code>, <code>globalTeardown</code></td><td><span class="cross">✗</span> Not run, without a warning: use <code>beforeAll</code> in a setup file</td></tr>
-              <tr><td><code>projects</code></td><td><span class="cross">✗</span> Not supported: run vyntra in each project's directory</td></tr>
+              <tr><td><code>globalSetup</code>, <code>globalTeardown</code></td><td><span class="check">✓</span> Run once, in the main process, before and after the test files</td></tr>
+              <tr><td><code>projects</code></td><td><span class="cross">✗</span> Not read from a Jest config: write them as <a href="guide.html#projects">vyntra projects</a>, or run vyntra in each project's directory</td></tr>
               <tr><td><code>snapshotSerializers</code></td><td><span class="cross">✗</span> Call <code>expect.addSnapshotSerializer</code> in a setup file</td></tr>
             </tbody>
           </table>
@@ -177,7 +177,8 @@
               <tr><td><code>test.alias</code>, <code>resolve.alias</code>, <code>test.env</code></td><td><span class="check">✓</span> The same</td></tr>
               <tr><td>Oxc's <code>decorator</code> and esbuild's <code>tsconfigRaw</code> options</td><td><span class="check">✓</span> For the TypeScript transform</td></tr>
               <tr><td>Vite plugins</td><td><span class="check">✓</span> Their synchronous <code>transform</code> hooks; no <code>resolveId</code></td></tr>
-              <tr><td><code>globalSetup</code>, <code>projects</code> (and workspaces)</td><td><span class="cross">✗</span> Not supported (vyntra warns): run vyntra in each project's directory, with <code>--config</code></td></tr>
+              <tr><td><code>globalSetup</code></td><td><span class="check">✓</span> Its <code>provide()</code> and the tests' <code>inject()</code> too</td></tr>
+              <tr><td><code>projects</code> (and workspaces)</td><td><span class="cross">✗</span> Not read from a vitest config (vyntra warns): write them as <a href="guide.html#projects">vyntra projects</a>, or run vyntra in each project's directory</td></tr>
               <tr><td>Vite plugins' <code>resolveId</code> and <code>load</code>, async <code>transform</code> hooks</td><td><span class="cross">✗</span> Not run: vyntra's module hooks are synchronous</td></tr>
               <tr><td>Browser mode, <code>typecheck</code>, <code>bench</code>, in-source tests</td><td><span class="cross">✗</span> Not supported</td></tr>
             </tbody>
@@ -214,8 +215,7 @@
         <h2 id="missing">Not supported yet</h2>
         <ul>
           <li><strong>Watch mode.</strong> <code>--watch</code> is accepted and runs the tests once.</li>
-          <li><strong>Projects in one run:</strong> Jest's <code>projects</code>, Vitest's <code>projects</code> and workspaces. Run vyntra in each project's directory.</li>
-          <li><strong><code>globalSetup</code> and <code>globalTeardown</code></strong>, of Jest and Vitest.</li>
+          <li><strong>Jest's and Vitest's <code>projects</code></strong> and workspaces, read from their configs: vyntra's own <a href="guide.html#projects">projects</a> do the same.</li>
           <li><strong>Test environments of your own</strong> (a Jest <code>testEnvironment</code> module), and <code>testEnvironmentOptions</code>.</li>
           <li><strong>Babel run implicitly</strong>, as Jest does when it finds a Babel config: name <code>babel-jest</code> in <code>transform</code>.</li>
           <li><strong>Asynchronous transformers</strong> (a Jest transformer with only <code>processAsync</code>), and Vite plugins' <code>resolveId</code> and <code>load</code> hooks.</li>

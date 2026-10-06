@@ -28,6 +28,7 @@ const OPTIONS = {
   'coverage.reportsDirectory': { type: 'string' },
   splitFiles: { type: 'boolean' },
   shard: { type: 'string' },
+  project: { type: 'string', multiple: true },
   'last-failed': { type: 'boolean' },
   'fail-on-flaky': { type: 'boolean' },
   failOnFlaky: { type: 'boolean' },
@@ -59,6 +60,7 @@ Options:
       --coverage                 Report the coverage of the project files (V8)
       --coverageDirectory <dir>  Where coverage reports go (default: coverage; vitest's --coverage.reportsDirectory too)
       --splitFiles               Run long files in parts on several workers (their tests must be independent)
+      --project <name>           Run only this project (repeat it, or use commas)
       --shard <index>/<total>    Run one slice of the test files, for CI jobs in parallel (e.g. --shard 2/4)
       --fail-on-flaky            Fail the run when a test passed only on a retry (also --failOnFlaky)
       --last-failed              Run only the tests that failed, until they pass (also --lastFailed)
@@ -100,7 +102,15 @@ function parseCli(argv) {
   const given = Object.fromEntries(Object.entries(options).filter(([, value]) => value !== undefined));
   // "jest ." means every file: a pattern that matches everything is no filter.
   const patterns = positionals.filter((pattern) => pattern !== '.' && pattern !== './');
-  return { options: given, patterns, help: values.help, version: values.version, watch: values.watch, usage: USAGE };
+  return {
+    options: given,
+    patterns,
+    projects: values.project ?? [],
+    help: values.help,
+    version: values.version,
+    watch: values.watch,
+    usage: USAGE,
+  };
 }
 
 module.exports = { parseCli };

@@ -20,7 +20,9 @@ async function loadPlugins(config) {
   if (missing && config.configFile && config.transformPlugins !== false) {
     // eslint-disable-next-line global-require -- the config is only reloaded where it lost its functions
     const { importConfig } = require('./cli/config');
-    list = (await importConfig(config.configFile))?.plugins;
+    const loaded = await importConfig(config.configFile);
+    // A project's own plugins, or the top level's it inherits.
+    list = loaded?.projects?.[config.projectIndex]?.plugins ?? loaded?.plugins;
   }
   plugins = [list ?? []]
     .flat(Infinity)

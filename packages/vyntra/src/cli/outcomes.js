@@ -58,12 +58,13 @@ const byPath = (results) => [...results].sort((a, b) => (a.path < b.path ? -1 : 
 function outcomesOf(results, rootDir) {
   return byPath(results).flatMap((result) => {
     const file = relative(rootDir, result.path);
+    const where = result.project ? `[${result.project}] ${file}` : file;
     return [
       ...result.errors.map((error) => ({
         path: result.path,
         file,
         test: null,
-        title: file,
+        title: where,
         status: 'failed',
         errors: [error],
         attempts: [],
@@ -74,7 +75,7 @@ function outcomesOf(results, rootDir) {
           path: result.path,
           file,
           test,
-          title: `${file} > ${test.path.join(' > ')}`,
+          title: `${where} > ${test.path.join(' > ')}`,
           status: test.status,
           errors: test.errors,
           attempts: test.attempts ?? [],

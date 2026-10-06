@@ -15,6 +15,7 @@ export const {
   vi,
   vitest,
   jest,
+  inject,
   installGlobals,
 } = vyntra;
 

@@ -2,7 +2,12 @@ const collect = require('./collect/api');
 const { expect } = require('./expect');
 const { vi } = require('./vi');
 
-const api = { ...collect, expect, vi, vitest: vi, jest: vi };
+const state = require('./state');
+
+// vitest's inject(): a value a globalSetup provided.
+const inject = (key) => state.config?.provided?.[key];
+
+const api = { ...collect, expect, vi, vitest: vi, jest: vi, inject };
 
 const GLOBALS = [
   'describe',

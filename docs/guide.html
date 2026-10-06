@@ -59,6 +59,7 @@
           <li><a href="#isolation">Workers and isolation</a></li>
           <li><a href="#between-files">Restored between files</a></li>
           <li><a href="#split-files">Splitting long files</a></li>
+          <li><a href="#projects">Projects</a></li>
           <li><a href="#typescript">TypeScript and ES modules</a></li>
           <li><a href="#imports">What files can import</a></li>
           <li><a href="#speed">Why it is fast</a></li>
@@ -662,6 +663,61 @@ steps:
           <code>--passWithNoTests</code> is given.
         </p>
 
+        <h2 id="projects">Projects</h2>
+        <p>
+          A project is a part of the suite with options of its own: its files, environment, setup files, timeouts,
+          workers. One run runs them all, and reports them together, each file under its project's name.
+        </p>
+        <pre><code class="language-js">// vyntra.config.js
+module.exports = {
+  setupFiles: ['./test/setup.js'], // every project's, unless one sets its own
+  projects: [
+    { name: 'unit', include: ['src/**/*.test.ts'], environment: 'happy-dom' },
+    {
+      name: 'api',
+      include: ['test/api/**/*.test.ts'],
+      globalSetup: './test/api/seed.ts',
+      use: { baseURL: 'http://localhost:4000' },
+      dependsOn: ['unit'],
+    },
+  ],
+};</code></pre>
+        <p>
+          A project takes the options of the top level and changes those it sets; <code>use</code> is merged. A file
+          belongs to the first project that includes it. Options of the whole run (reporters, coverage,
+          <code>--shard</code>, <code>bail</code>) stay at the top level. <code>--project api</code> runs only that
+          project (repeat it, or use commas), and a file stays in its project whichever are run.
+        </p>
+        <p>
+          Each project has its own workers, which share the machine: the top-level <code>maxWorkers</code> (the cores
+          less one) is shared out between the projects running at once, in proportion to their work, and a project's
+          own <code>maxWorkers</code> keeps it below that. A project waits for those in its <code>dependsOn</code> and
+          is skipped when one of them fails; projects that depend on nothing run together. A project left out of the
+          run (by <code>--project</code>) is not waited for.
+        </p>
+        <h3 id="global-setup">Global setup</h3>
+        <p>
+          <code>globalSetup</code> files run once, in the main process: at the top level around the whole run, in a
+          project around its files. As in Jest and Vitest, a file exports its setup function (or <code>setup</code>),
+          which may return its teardown; <code>teardown</code> exports and <code>globalTeardown</code> files run after.
+          What it hands to <code>provide(key, value)</code>, or returns as an object, the tests read with
+          <code>inject(key)</code>:
+        </p>
+        <pre><code class="language-js">// test/api/seed.ts
+export default async function setup({ provide }) {
+  const db = await startDatabase();
+  provide('databaseUrl', db.url);
+  return () => db.stop();
+}
+
+// test/api/users.test.ts
+import { inject } from 'vyntra';
+const url = inject('databaseUrl');</code></pre>
+        <p>
+          A setup that throws is reported against its file, as a broken setup (exit code 2), and its project's tests
+          do not run.
+        </p>
+
         <h2 id="typescript">TypeScript and ES modules</h2>
         <p>
           vyntra loads files with Node.js, so what Node.js runs, vyntra runs: CommonJS, ES modules (<code>.mjs</code>, or
@@ -774,7 +830,7 @@ steps:
         </p>
         <h3>What is not supported yet?</h3>
         <p>
-          Watch mode, Jest and Vitest <code>projects</code> in one run, <code>globalSetup</code>, test environments of
+          Watch mode, Jest's and Vitest's <code>projects</code> read from their configs, test environments of
           your own, Babel run without a <code>transform</code>, source maps in stack traces, type checking, and
           coverage of the files no test loads. <a href="migrating.html#missing">Migrating</a> has the whole list.
         </p>

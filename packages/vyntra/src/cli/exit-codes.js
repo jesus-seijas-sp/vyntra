@@ -10,8 +10,9 @@ const EXIT = {
   interrupted: 130,
 };
 
-// File errors that come before any test runs: the file's tests never got the chance to pass or fail.
-const SETUP_PHASES = new Set(['collect', 'policy']);
+// File errors that come before any test runs: the file's tests never got the chance to pass or fail (a globalSetup
+// that threw is one too).
+const SETUP_PHASES = new Set(['collect', 'policy', 'setup']);
 
 const brokeSetup = (result) => result.errors.some((error) => SETUP_PHASES.has(error.phase));
 
