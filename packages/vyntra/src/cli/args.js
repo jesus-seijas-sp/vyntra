@@ -36,11 +36,13 @@ const OPTIONS = {
   outputDir: { type: 'string' },
   ci: { type: 'boolean' },
   watch: { type: 'boolean' },
+  watchAll: { type: 'boolean' },
   // Accepted for compatibility, nothing to do.
   run: { type: 'boolean' },
 };
 
 const USAGE = `Usage: vyntra [options] [path patterns...]
+       vyntra watch [options]     Run the tests, then what each change touches (also --watch)
        vyntra guide [topic]       Print the documentation (no topic: the list of topics)
        vyntra init --agents       Write the skill coding agents use to run and fix tests here
 
@@ -110,7 +112,7 @@ function parseCli(argv) {
     projects: values.project ?? [],
     help: values.help,
     version: values.version,
-    watch: values.watch,
+    watch: values.watch || values.watchAll,
     usage: USAGE,
   };
 }

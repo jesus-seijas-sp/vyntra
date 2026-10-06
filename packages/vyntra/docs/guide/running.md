@@ -37,6 +37,12 @@ AssertionError: expect(received).toEqual(expected)
 
 `--verbose` lists every test; `--reporter json` prints the whole run as one JSON document, for tools. Other reporters write the run next to it: see [Reports for CI and agents](ci.md).
 
+## Watch mode
+
+`vyntra --watch` (or `vyntra watch`, or Jest's `--watchAll`) runs the tests, then runs again what each change touches, until you quit: a changed test file runs again, a changed module reruns the test files that loaded it, a new test file runs, and a change to the config (or `package.json`, or a `.env` file) reruns everything. In a terminal, keys narrow it: Enter runs the last ones again, a all, f the files that failed, p and t filter by file and by test name, q quits.
+
+It knows what a test file loaded by watching it load, so a module only its types reach (compiled away) does not rerun anything, and with `isolate: false` a module loaded by an earlier file is only known for that one.
+
 ## Common flags
 
 | Flag | What it does |

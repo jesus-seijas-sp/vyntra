@@ -1,6 +1,5 @@
 # Not supported yet
 
-- **Watch mode.** `--watch` is accepted and runs the tests once.
 - **Test environments of your own** (a Jest `testEnvironment` module), and `testEnvironmentOptions`.
 - **Babel run implicitly**, as Jest does when it finds a Babel config: name `babel-jest` in `transform`.
 - **Asynchronous transformers** (a Jest transformer with only `processAsync`), and Vite plugins' `resolveId` and `load` hooks.

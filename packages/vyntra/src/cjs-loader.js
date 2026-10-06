@@ -59,6 +59,9 @@ function installCjsLoader() {
   state.cjsLoader = true;
   const loadJs = Module._extensions['.js'];
   Module._extensions['.js'] = function vyntraLoadJs(module, filename) {
+    if (state.dependencies && !filename.includes(`${path.sep}node_modules${path.sep}`)) {
+      state.dependencies.add(filename);
+    }
     // A file the project's Jest transformer compiles, whatever loads it.
     if (handles(filename)) {
       return compileWithJest(module, filename);

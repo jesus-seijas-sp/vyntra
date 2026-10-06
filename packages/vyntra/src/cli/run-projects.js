@@ -59,7 +59,7 @@ class ProjectRun {
       return { workers: Math.min(this.cap, files), inline: false };
     }
     const planned = this.singlePlan();
-    const inline = !planned || planned.jobs.length === 1;
+    const inline = !planned || (planned.jobs.length === 1 && !this.projects[0].config.watch);
     return { workers: inline ? 1 : planned.workers, inline };
   }
 
@@ -265,7 +265,7 @@ class ProjectRun {
     const planned = single ? this.singlePlan() : plan(files, this.timings, limited);
     // One job (a file run whole) runs in the main thread: no worker to start. A single long file split in parts does
     // get workers. In the main thread, split files would only run one part after the other: they run whole.
-    if (single && (!planned || planned.jobs.length === 1)) {
+    if (single && (!planned || (planned.jobs.length === 1 && !config.watch))) {
       return {
         runner: new InlineRunner({ config, onResult }),
         jobs: files.map((file) => ({ path: file, shard: null })),

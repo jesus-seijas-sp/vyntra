@@ -19,6 +19,7 @@ const { Timings } = require('./timings');
 const { resolveProjects, assignFiles } = require('./projects');
 const { ProjectRun } = require('./run-projects');
 const { guide, init } = require('./guide');
+const { watch } = require('./watch');
 
 // Caches that make loading the dependencies faster, kept in node_modules/.cache (only for projects with node_modules).
 function loadingCaches(rootDir) {
@@ -71,28 +72,12 @@ function describeRerun(selections) {
   return [tests > 0 && plural(tests, 'test'), whole > 0 && plural(whole, 'file')].filter(Boolean).join(', ');
 }
 
-async function main(argv = process.argv.slice(2)) {
+// One run of the tests: what `vyntra` does, and what watch mode does on every change. outcome gets what the watcher
+// needs to know about it: the config, the results (with each file's dependencies), and whether the process had to
+// start again for its locale, in which case the run, watching included, happened in that new process.
+async function runOnce(argv, outcome = {}) {
   const start = realTimers.performanceNow();
-  // Commands, not test file filters: a file named "guide" is reached with ./guide.
-  if (argv[0] === 'guide') {
-    return guide(argv.slice(1));
-  }
-  if (argv[0] === 'init') {
-    return init(argv.slice(1));
-  }
   const cli = parseCli(argv);
-  if (cli.help) {
-    process.stdout.write(cli.usage);
-    return 0;
-  }
-  if (cli.version) {
-    process.stdout.write(`${version}\n`);
-    return 0;
-  }
-  if (cli.watch) {
-    process.stderr.write(`${c.yellow('Watch mode is not available yet: running once.')}
-`);
-  }
   let config;
   try {
     config = await loadConfig(cli.options);
@@ -101,8 +86,15 @@ async function main(argv = process.argv.slice(2)) {
     return EXIT.setup;
   }
   if (localeChanged()) {
+    Object.assign(outcome, { relaunched: true });
     return relaunch(argv);
   }
+  // Watch mode keeps the main process for watching: every file runs on a worker, which records what it loads.
+  config.watch = Boolean(cli.watch);
+  if (config.watch && config.pool === 'inline') {
+    config.pool = 'threads';
+  }
+  Object.assign(outcome, { config });
   config.colors ??= detectColors();
   setColors(config.colors);
   const timings = new Timings(config.rootDir);
@@ -253,7 +245,30 @@ async function main(argv = process.argv.slice(2)) {
     config.rootDir
   );
   writeReport(config, { startedAt, duration, exitCode, results, owed });
+  Object.assign(outcome, { results, exitCode });
   return exitCode;
 }
 
-module.exports = { main };
+async function main(argv = process.argv.slice(2)) {
+  // Commands, not test file filters: a file named "guide" is reached with ./guide.
+  if (argv[0] === 'guide') {
+    return guide(argv.slice(1));
+  }
+  if (argv[0] === 'init') {
+    return init(argv.slice(1));
+  }
+  // `vyntra watch`, as `vitest watch`.
+  const command = argv[0] === 'watch' ? ['--watch', ...argv.slice(1)] : argv;
+  const cli = parseCli(command);
+  if (cli.help) {
+    process.stdout.write(cli.usage);
+    return 0;
+  }
+  if (cli.version) {
+    process.stdout.write(`${version}\n`);
+    return 0;
+  }
+  return cli.watch ? watch(command, runOnce) : runOnce(command);
+}
+
+module.exports = { main, runOnce };

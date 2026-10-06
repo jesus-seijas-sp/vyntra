@@ -23,6 +23,9 @@ function merge(parts) {
     console: parts.flatMap((part) => part.console),
     snapshot: mergeSnapshots(parts),
     shards: parts.length,
+    ...(parts.some((part) => part.dependencies)
+      ? { dependencies: [...new Set(parts.flatMap((part) => part.dependencies ?? []))] }
+      : {}),
   };
 }
 

@@ -308,6 +308,9 @@ function hookEsm(config) {
     // A project's ES modules read Vite's import.meta.env from vyntra's (see import-meta-env.js).
     load: (url, context, nextLoad) => {
       const loaded = hooks.load(url, context, nextLoad);
+      if (state.dependencies && url.startsWith('file:') && !url.includes('/node_modules/')) {
+        state.dependencies.add(fileURLToPath(url));
+      }
       if (
         !['module', 'module-typescript'].includes(loaded?.format) ||
         !loaded.source ||

@@ -160,6 +160,21 @@ npx vyntra -u                   # update the snapshots that changed</code></pre>
           for tools. Other reporters write the run next to it: see <a href="#reports">Reports for CI and agents</a>.
         </p>
 
+        <h3 id="watch">Watch mode</h3>
+        <p>
+          <code>vyntra --watch</code> (or <code>vyntra watch</code>, or Jest's <code>--watchAll</code>) runs the tests,
+          then runs again what each change touches, until you quit: a changed test file runs again, a changed module
+          reruns the test files that loaded it, a new test file runs, and a change to the config (or
+          <code>package.json</code>, or a <code>.env</code> file) reruns everything. In a terminal, keys narrow it:
+          <kbd>Enter</kbd> runs the last ones again, <kbd>a</kbd> all, <kbd>f</kbd> the files that failed,
+          <kbd>p</kbd> and <kbd>t</kbd> filter by file and by test name, <kbd>q</kbd> quits.
+        </p>
+        <p>
+          It knows what a test file loaded by watching it load, so a module only its types reach (compiled away) does
+          not rerun anything, and with <code>isolate: false</code> a module loaded by an earlier file is only known
+          for that one.
+        </p>
+
         <h3 id="flags">Common flags</h3>
         <div class="table-wrap">
           <table>
@@ -953,7 +968,7 @@ test('adds a todo', async ({ page }) => {
         </p>
         <h3>What is not supported yet?</h3>
         <p>
-          Watch mode, test environments of your own, Babel run without a <code>transform</code>, and type checking.
+          Test environments of your own, Babel run without a <code>transform</code>, and type checking.
           <a href="migrating.html#missing">Migrating</a> has the whole list.
         </p>
         <h3>My tests expect <code>NODE_ENV=test</code>.</h3>

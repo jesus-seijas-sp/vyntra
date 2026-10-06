@@ -10,7 +10,7 @@ Jest runs tests in child processes, where `process.send` exists. In vyntra's wor
 
 ## What is not supported yet?
 
-Watch mode, test environments of your own, Babel run without a `transform`, and type checking. [Migrating](../migrating/missing.md) has the whole list.
+Test environments of your own, Babel run without a `transform`, and type checking. [Migrating](../migrating/missing.md) has the whole list.
 
 ## My tests expect `NODE_ENV=test`.
 

@@ -27,6 +27,7 @@ Path patterns are regular expressions matched against the path of every test fil
 | `--coverageDirectory <dir>` | Where the coverage reports go (`coverage`); vitest's `--coverage.reportsDirectory` is accepted too |
 | `--fail-on-flaky` | Fails the run when a test passed only on a retry (see [Retries](../guide/async.md)); also `--failOnFlaky` |
 | `--project <name>` | Runs only these projects (repeat it, or use commas; see [Projects](../guide/projects.md)) |
+| `--watch`, `--watchAll`, `vyntra watch` | Runs the tests, then what each change touches, until q (see [Watch mode](../guide/running.md)) |
 | `--last-failed` | Runs only the tests that failed, until they pass (see [Rerunning failures](../guide/ci.md)); also `--lastFailed` |
 | `--outputDir <dir>` | Where the run's report goes (`.vyntra`) |
 | `--shard <index>/<total>` | Runs one slice of the test files (from 1), the same on every machine, for CI jobs in parallel (see [Sharding](../guide/ci.md)) |

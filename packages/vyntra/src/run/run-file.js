@@ -93,6 +93,8 @@ async function runFile(path, config, shard = null) {
   const file = createFileState(path);
   state.file = file;
   state.test = null;
+  // In watch mode, the project files this test file loads: what a change reruns it for.
+  state.dependencies = config.watch ? new Set() : null;
   await collect(file, config);
   const collectDuration = now() - start;
   if (file.hasOnly && config.allowOnly === false) {
@@ -124,6 +126,7 @@ async function runFile(path, config, shard = null) {
     console: file.console,
     snapshot,
     shard,
+    ...(state.dependencies ? { dependencies: [...state.dependencies] } : {}),
   };
 }
 
