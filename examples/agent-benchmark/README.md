@@ -27,6 +27,7 @@ regressions. Every scenario has two tests:
 
 | Date | Model | Score | Calls | Tokens | Changed |
 | --- | --- | --- | ---: | ---: | --- |
+| 2026-10-07 | deepseek/deepseek-v4-flash, anthropic/claude-opus-5.5 for vision | 10 of 11 | 28 | 112k | Smaller tool schemas: targets are explained once in the prompt (12.7k to 7.9k chars of tools a call); infinite scroll lost its connection to the provider (ECONNRESET) |
 | 2026-10-06 | deepseek/deepseek-v4-flash, anthropic/claude-opus-5.5 for vision | 11 of 11 | 34 | 182k | Vision: the agent asks for a screenshot and clicks a point of it |
 | 2026-10-06 | deepseek/deepseek-v4-flash | 10 of 11 | 56 | 303k | Dialogs, iframes and drag for the agent; plain text named by its text |
 | 2026-10-06 | deepseek/deepseek-v4-flash | 7 of 11 | 133 | 853k | The first run |

@@ -49,4 +49,6 @@ Vision: the agent can ask for a screenshot and click a point of it, and `assert`
 
 After each action the agent gets a diff of the page against what it last saw, not the whole page again (`use.ai.diffs: false` to turn it off).
 
+The tools are smaller: how to name an element is said once in the act prompt, not on every field of every tool, which takes the tools sent with each call from 12.7k to 7.9k characters.
+
 On Windows, a project's `server` is now stopped with the process tree it started: stopping the shell alone left the server running after the run.

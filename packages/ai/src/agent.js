@@ -7,7 +7,7 @@ const { effectOf, mismatchOf } = require('./effect');
 const { isSecret } = require('./secrets');
 const { isUnique } = require('./unique');
 const { Uniques } = require('./uniques');
-const { FINISHING, TOOLS, toolsFor, perform, pageState, screenshotOf } = require('./page-tools');
+const { FINISHING, TOOLS, TARGETS, toolsFor, perform, pageState, screenshotOf } = require('./page-tools');
 
 // What a step that must conclude is offered.
 const CONCLUDING = TOOLS.filter((tool) => FINISHING.has(tool.name));
@@ -33,6 +33,8 @@ reached, call done; when it can not be reached, call give_up and say why.
 
 The goal may name secrets as <secret:NAME>. You never see their values: type one with type_secret and its NAME, \
 into the field it belongs in, and nowhere else.
+
+${TARGETS}
 
 ${DATA_RULE}`;
 

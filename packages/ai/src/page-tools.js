@@ -13,26 +13,34 @@ const MAX_TREE = 30_000;
 const dialogs = new WeakMap();
 const DIALOG_ACTIONS = new Set(['accept_dialog', 'dismiss_dialog']);
 
-const nullable = (type, description) => ({ anyOf: [{ type }, { type: 'null' }], description });
+const nullable = (type, description) => ({
+  anyOf: [{ type }, { type: 'null' }],
+  ...(description ? { description } : {}),
+});
 
+// The element an action is on. It is repeated in most tools, so its fields carry no descriptions: the act prompt
+// explains them once (TARGETS), which keeps every call's tools far smaller.
 const TARGET = {
   type: 'object',
-  description:
-    'The element, as the accessibility tree shows it. Give role and name (preferred), or label, placeholder or ' +
-    'text; set the others to null. A line "- text: Write tests" is plain text, with no role: give text. nth picks ' +
-    'one of several matches, from 0.',
+  description: 'The element, named as the instructions say under Targets',
   properties: {
-    role: nullable('string', 'An ARIA role from the tree: button, link, textbox, checkbox, combobox, listitem...'),
-    name: nullable('string', 'The accessible name of the element, exactly as the tree shows it'),
-    label: nullable('string', 'The text of the label of a form field'),
-    placeholder: nullable('string', 'The placeholder of a text field'),
-    text: nullable('string', 'Text the element shows, exactly'),
-    nth: nullable('integer', 'Which match, from 0, when several elements match'),
-    frame: nullable('string', 'The iframe the element is in, as the tree names it (Inside iframe "Coupon": Coupon)'),
+    role: nullable('string'),
+    name: nullable('string'),
+    label: nullable('string'),
+    placeholder: nullable('string'),
+    text: nullable('string'),
+    nth: nullable('integer'),
+    frame: nullable('string'),
   },
   required: ['role', 'name', 'label', 'placeholder', 'text', 'nth', 'frame'],
   additionalProperties: false,
 };
+
+// How to name an element, said once in the act prompt rather than in every tool.
+const TARGETS = `Targets: name an element exactly as the accessibility tree shows it. For a line \`- button "Add"\`, role is \
+button and name is Add. Or give label (a form field's label), placeholder, or text; a line \`- text: Write tests\` is \
+plain text with no role: give text. Set the fields you do not use to null. nth picks one of several matches, from 0. \
+frame names the iframe the element is in, as the tree's "Inside iframe" line names it.`;
 
 const object = (properties) => ({
   type: 'object',
@@ -367,4 +375,4 @@ async function screenshotOf(page) {
   return { type: 'image', source: { type: 'base64', media_type: 'image/png', data: data.toString('base64') } };
 }
 
-module.exports = { TOOLS, FINISHING, toolsFor, perform, pageState, locate, screenshotOf };
+module.exports = { TOOLS, TARGETS, FINISHING, toolsFor, perform, pageState, locate, screenshotOf };
