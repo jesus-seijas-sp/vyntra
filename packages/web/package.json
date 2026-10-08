@@ -1,6 +1,6 @@
 {
   "name": "@vyntra/web",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "End-to-end web testing for vyntra, on Playwright: browser, context and page fixtures, web-first assertions, and failure pages with a screenshot, the accessibility tree, the console, the network and a trace.",
   "license": "MIT",
   "main": "./src/index.js",

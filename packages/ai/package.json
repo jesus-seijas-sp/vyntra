@@ -1,6 +1,6 @@
 {
   "name": "@vyntra/ai",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "AI steps for vyntra: an agent that drives a page toward a goal and judges claims about it, and expect(value).toSatisfy(claim), all through a replay cache committed to the repository, so CI makes no model calls.",
   "license": "MIT",
   "main": "./src/index.js",

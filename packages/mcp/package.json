@@ -1,6 +1,6 @@
 {
   "name": "@vyntra/mcp",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "MCP server for vyntra: coding agents run the tests, read failure pages and the docs, and try locators on pages.",
   "license": "MIT",
   "main": "./src/index.js",
