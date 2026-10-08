@@ -243,6 +243,18 @@ describe('isolation between files of one thread', () => {
   });
 });
 
+describe('vi.doMock() and the ES modules a test imports', () => {
+  const { statuses } = runFixture('esm-mocks', ['--maxWorkers', '1']);
+
+  it('reaches the imports of ES modules from a CommonJS test file, after one loaded them unmocked', () => {
+    expect(statuses['a CommonJS test mocks a builtin for the ES modules it imports']).toBe('passed');
+  });
+
+  it('settles an async factory (importOriginal of a builtin) before the import() after it', () => {
+    expect(statuses['an async doMock factory runs before the import() after it']).toBe('passed');
+  });
+});
+
 describe('unawaited assertions under a Jest config', () => {
   it('drops one whose promise never settles, as Jest does, without waiting', () => {
     const { statuses } = runFixture('jest-preset', ['--config', 'jest.config.unit.js']);

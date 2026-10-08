@@ -2,7 +2,7 @@ const path = require('node:path');
 const Module = require('node:module');
 const { fileURLToPath } = require('node:url');
 const state = require('../state');
-const { hoistMocks } = require('./hoist');
+const { rewriteMocks } = require('./hoist');
 const { mocks, resolveKey, isBypassed, ACTUAL } = require('./registry');
 
 const MOCK_SCHEME = 'vyntra-mock:';
@@ -56,6 +56,10 @@ function resolveHook(specifier, context, nextResolve) {
     // it): the original stands in, the same instance importOriginal() is loading.
     return { ...result, url: `${result.url.replace(/\?.*$/, '')}?${ACTUAL}=${state.generation}`, shortCircuit: true };
   }
+  if (entry.preparing && result.url.startsWith('node:')) {
+    // A builtin imported while its factory runs (importOriginal()): the builtin itself.
+    return { ...result, shortCircuit: true };
+  }
   return {
     url: `${MOCK_SCHEME}${state.generation}:${encodeURIComponent(entry.key)}`,
     format: 'module',
@@ -73,7 +77,11 @@ function loadHook(url, context, nextLoad) {
     return result;
   }
   const esm = result.format === 'module' || result.format === 'module-typescript';
-  const hoisted = hoistMocks(String(result.source), { esm });
+  if (!esm && installed.compile) {
+    // A CommonJS file is hoisted when it is compiled (installCjsHoisting).
+    return result;
+  }
+  const hoisted = rewriteMocks(String(result.source), { esm });
   return hoisted ? { ...result, source: hoisted } : result;
 }
 
@@ -98,19 +106,23 @@ function installCjsHoisting() {
   installed.compile = true;
   const compile = Module.prototype._compile;
   Module.prototype._compile = function compileHoisted(content, filename, ...rest) {
-    const hoisted = hoistTargets.has(filename) ? hoistMocks(content) : null;
+    const hoisted = hoistTargets.has(filename) ? rewriteMocks(content) : null;
     return compile.call(this, hoisted ?? content, filename, ...rest);
   };
 }
 
 // Prepares the loaders for a file that mocks modules: its mock calls are hoisted and mocked modules served. The
-// loader hooks are only needed by ES modules.
-function enableMocking(file, esm) {
+// loader hooks are only needed by ES modules: the test file itself, or those a CommonJS test file imports (its mocks
+// must reach their imports too).
+function enableMocking(file, esm, importsEsm = false) {
   installCjs();
   if (esm) {
     installEsm();
   } else {
     installCjsHoisting();
+    if (importsEsm) {
+      installEsm();
+    }
   }
   hoistTargets.add(file);
 }

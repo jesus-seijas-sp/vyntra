@@ -42,6 +42,8 @@ const {
 // Test files that call vi.mock() / jest.mock() get it hoisted; checked on the source, before loading them. Those
 // that only call jest.doMock() or jest.dontMock() (not hoisted) need the mocking hooks too.
 const MOCK_CALL = /\b(?:vi|jest)\s*\.\s*(?:mock|unmock|hoisted|doMock|doUnmock|dontMock|deepUnmock)\s*\(/;
+// A dynamic import() in a CommonJS test file: what it imports may be ES modules, whose imports its mocks must reach.
+const DYNAMIC_IMPORT = /\bimport\s*\(/;
 
 // Only vyntra's runtime stays loaded between files; vyntra's own tests are isolated like any other project files.
 const RUNTIME_DIR = `${__dirname}${path.sep}`;
@@ -229,6 +231,9 @@ function hookEsm(config) {
     return;
   }
   hooked.esm = true;
+  // Loaded here: a require() inside the hooks would go through them.
+  // eslint-disable-next-line global-require -- the registry is loaded once a test file loads
+  const registry = require('./modules/registry');
   // From now on CommonJS sources go through these hooks too, which only Node's own loader runs.
   state.loaderHooks = true;
   const isolate = config.isolate !== false;
@@ -255,7 +260,10 @@ function hookEsm(config) {
       // with a query (a mock's real module, ?raw) are left to Node.
       const cacheable = !/^(?:node:|data:)/.test(request) && !/[?#]/.test(request);
       const key = cacheable ? `${request}\0${from}\0${context.conditions.join(',')}` : null;
-      let result = key ? resolutions.get(key) : undefined;
+      // A cached answer would skip the mocking hook (registered before this one, so run after it): while modules are
+      // mocked, Node resolves them, through that hook.
+      const mocking = registry.mocks.size > 0;
+      let result = key && !mocking ? resolutions.get(key) : undefined;
       if (result) {
         const url = isolate ? isolatedUrl(result.url, context.conditions) : result.url;
         return { ...result, url, shortCircuit: true };
@@ -419,8 +427,13 @@ async function loadModule(file, config, fresh) {
   // eslint-disable-next-line global-require -- read the registry only once a file loads
   markSpyable(file, source, require('./modules/registry').resolveKey);
   if (MOCK_CALL.test(source)) {
+    const importsEsm = !isEsm(file) && DYNAMIC_IMPORT.test(source);
     // eslint-disable-next-line global-require -- the mocking hooks are only loaded by the files that mock
-    require('./modules/hooks').enableMocking(file, isEsm(file));
+    require('./modules/hooks').enableMocking(file, isEsm(file), importsEsm);
+    if (importsEsm) {
+      // After vi.resetModules(), its import() must give fresh copies of the ES modules, as in an ES module test file.
+      hookEsm(config);
+    }
   }
   if (isEsm(file)) {
     hookEsm(config);

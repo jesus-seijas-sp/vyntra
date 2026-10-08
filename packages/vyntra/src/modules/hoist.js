@@ -147,4 +147,40 @@ function hoistMocks(src, { esm = false } = {}) {
   return first ? `${first[0]} ${header}${body.slice(first[0].length)}` : `${header} ${body}`;
 }
 
-module.exports = { hoistMocks };
+// vi.doMock() is not hoisted: the import() calls after it get the mock. Its factory may be async (importOriginal), and
+// the ES module hooks that serve mocks are synchronous, so each import() of a file that calls vi.doMock() first settles
+// the factories, as vitest's own rewrite of import() does. Returns null when there is nothing to rewrite.
+const DO_MOCK = /\b(?:vi|jest)\s*\.\s*doMock\s*\(/;
+const DYNAMIC_IMPORT = /\bimport\s*\(/g;
+const PREPARE = `globalThis[Symbol.for('vyntra.mocks')].prepare()`;
+
+function settleBeforeImports(src) {
+  if (!DO_MOCK.test(src)) {
+    return null;
+  }
+  const scanner = scan(src);
+  let body = '';
+  let cursor = 0;
+  [...src.matchAll(DYNAMIC_IMPORT)].forEach((match) => {
+    const start = match.index;
+    // Inside an import() already rewritten, in a string or a comment, or a method named import.
+    if (start < cursor || !scanner.isCode(start) || scanner.previousCode(start) === '.') {
+      return;
+    }
+    const close = scanner.closingParen(start + match[0].length - 1);
+    if (close === -1) {
+      return;
+    }
+    body += `${src.slice(cursor, start)}${PREPARE}.then(() => ${src.slice(start, close + 1)})`;
+    cursor = close + 1;
+  });
+  return cursor === 0 ? null : body + src.slice(cursor);
+}
+
+// Both rewrites of a file that mocks: hoisting, then import() after vi.doMock(); null when neither applies.
+function rewriteMocks(src, options) {
+  const hoisted = hoistMocks(src, options);
+  return settleBeforeImports(hoisted ?? src) ?? hoisted;
+}
+
+module.exports = { hoistMocks, rewriteMocks };
